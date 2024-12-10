@@ -10,6 +10,7 @@ export function parseBountyFromFirestoreDocument(
     timestamp: d.timestamp,
     title: d.title,
     creator: {
+      country_code: d.creator.country_code,
       name: d.creator.name,
       id: d.creator.id,
       image: d.creator.image,
@@ -24,6 +25,7 @@ export function parseBountyFromFirestoreDocument(
         artistUnicode: d.beatmapset.metadata.artistUnicode,
       },
       creator: {
+        country_code: d.beatmapset.creator.country_code,
         name: d.beatmapset.creator.name,
         id: d.beatmapset.creator.id,
         image: d.beatmapset.creator.image,

@@ -4,15 +4,19 @@ import Image from "next/image";
 export default function InlineUser({
   user,
   noAvatar,
+  notClickable,
 }: {
   user: OsuUser;
   noAvatar?: boolean;
+  notClickable?: boolean;
 }) {
   return (
     <div
       className="w-fit h-full flex flex-row space-x-1 items-center cursor-pointer text-nowrap"
       onClick={() => {
-        window.open(`https://osu.ppy.sh/users/${user.id}`);
+        !notClickable
+          ? window.open(`https://osu.ppy.sh/users/${user.name}`)
+          : null;
       }}
     >
       <p className="font-semibold">{user.name}</p>
@@ -22,7 +26,7 @@ export default function InlineUser({
             src={user.image}
             width={128}
             height={128}
-            alt="Creator Avatar"
+            alt="User osu! Avatar"
           />
         </div>
       )}

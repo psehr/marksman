@@ -11,6 +11,18 @@ const nextConfig: NextConfig = {
       },
       {
         protocol: "https",
+        hostname: "assets.ppy.sh",
+        port: "",
+        pathname: "/user-profile-covers/**",
+      },
+      {
+        protocol: "https",
+        hostname: "assets.ppy.sh",
+        port: "",
+        pathname: "/user-cover-presets/**",
+      },
+      {
+        protocol: "https",
         hostname: "a.ppy.sh",
         port: "",
         pathname: "/**",

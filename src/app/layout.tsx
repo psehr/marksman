@@ -3,6 +3,8 @@ import type { Metadata } from "next";
 import { Comfortaa } from "next/font/google";
 import { BasicButton } from "@components/buttons";
 import Nav from "@components/nav";
+import { auth } from "@/auth";
+import { SessionProvider } from "next-auth/react";
 
 export const metadata: Metadata = {
   title: "Marksman 🎯",
@@ -11,11 +13,12 @@ export const metadata: Metadata = {
 
 const inter = Comfortaa({ subsets: ["latin"] });
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const session = await auth();
   return (
     <html
       lang="en"
@@ -24,10 +27,12 @@ export default function RootLayout({
       <body
         className={`flex flex-col w-full h-full ${inter.className} relative`}
       >
-        <Nav />
-        <main className="absolute flex w-full h-[calc(100%_-_6rem)] place-content-center items-center mt-24 mb-24">
-          {children}
-        </main>
+        <SessionProvider session={session}>
+          <Nav />
+          <main className="absolute flex w-full h-[calc(100%_-_6rem)] place-content-center items-center mt-24 mb-24">
+            {children}
+          </main>
+        </SessionProvider>
       </body>
     </html>
   );
