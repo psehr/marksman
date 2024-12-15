@@ -344,7 +344,7 @@ export default function Bounties() {
 
   return (
     <div className="flex flex-col sm:flex-row w-full h-full place-content-center items-start space-x-4 font-extrabold overflow-y-auto">
-      <div className="flex flex-col w-fit sm:w-[45%] min-h-full h-fit bg-slate-800/70 place-content-start items-center p-8 mt-8 rounded-xl space-y-4 shadow-lg">
+      <div className="flex relative flex-col w-full md:w-1/2 min-h-full h-fit bg-slate-800/70 place-content-start items-center p-8 mt-8 rounded-xl space-y-4 shadow-lg">
         <div className="flex flex-row w-full h-fit bg-slate-700 p-4 rounded-xl space-x-2 place-content-center shadow-lg">
           <BasicButton
             onClick={() => {

@@ -138,15 +138,18 @@ export function CreateBountyModal({
   };
 
   return (
-    <div className="fixed w-[105vw] h-full z-50 bg-black/50 flex place-content-center items-start backdrop-blur-sm space-x-8">
+    <div
+      className="fixed top-0 w-screen h-screen z-50 bg-black/50 flex place-content-center items-center backdrop-blur-sm md:space-x-8"
+      style={{ marginLeft: "0px" }}
+    >
       <div
-        className="flex flex-col w-1/2 h-2/3 bg-slate-700 rounded-xl space-y-8 place-content-start items-center mt-24 p-8"
+        className="flex flex-col w-full md:w-1/2 h-full md:h-2/3 bg-slate-700 md:rounded-xl space-y-8 place-content-around items-center md:mt-24 md:p-4"
         onClick={(e) => e.stopPropagation()}
       >
         {renderStep()}
       </div>
       <div
-        className="flex flex-col w-1/4 h-2/3 bg-slate-800/70 rounded-xl space-y-8 place-content-start items-center mt-24 p-8  overflow-y-scroll"
+        className="hidden md:flex flex-col w-1/4 h-2/3 bg-slate-800/70 rounded-xl space-y-8 place-content-start items-center mt-24 p-8  overflow-y-scroll"
         onClick={(e) => e.stopPropagation()}
       >
         {step == "intro" || bountyDraft.beatmapset.id == 0 ? (

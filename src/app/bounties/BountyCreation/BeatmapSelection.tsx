@@ -98,13 +98,13 @@ export function BeatmapSelection({
   };
 
   return (
-    <div className="flex flex-col w-full h-full space-y-2 place-content-between">
+    <div className="flex flex-col w-full h-full space-y-2 items-center place-content-start overflow-y-scroll md:place-content-between">
       <div className="flex flex-row rounded-xl bg-slate-800 w-fit h-fit items-center">
         <p className="text-2xl p-2 px-4">Step I.</p>
         <p className="text-xl font-thin p-2 px-4">Beatmap selection</p>
       </div>
-      <div className="flex flex-row h-3/4 w-full place-content-evenly space-x-4">
-        <div className="flex flex-col rounded-xl bg-slate-800 w-3/4 h-full p-4 space-y-4 overflow-y-scroll ">
+      <div className="flex flex-col md:flex-row h-4/5 md:h-3/4 w-full space-y-2 md:space-y-0 md:space-x-4">
+        <div className="flex flex-col md:rounded-xl bg-slate-800 w-full md:w-3/4 h-2/3 md:h-full p-4 space-y-4 overflow-y-scroll ">
           <form
             action=""
             onSubmit={(e) => {
@@ -133,7 +133,7 @@ export function BeatmapSelection({
             )}
           </div>
         </div>
-        <div className="flex flex-col rounded-xl bg-slate-800 w-1/4 h-full p-4 place-content-start items-center">
+        <div className="flex flex-col md:rounded-xl bg-slate-800 w-full md:w-1/4 h-1/3 md:h-full p-4 place-content-start items-center">
           {selectedBeatmapset ? (
             <div className="flex flex-col space-y-4 w-full h-full">
               <p className="text-center">
@@ -151,7 +151,7 @@ export function BeatmapSelection({
         </div>
       </div>
 
-      <div className="flex flex-row rounded-xl bg-slate-800 w-full h-16 p-4 px-4 items-center place-content-between">
+      <div className="flex flex-row md:rounded-xl bg-slate-800 w-full h-32 md:h-16 p-4 items-center place-content-center md:place-content-between flex-wrap space-y-2 md:space-y-0">
         <div className="flex flex-row space-x-2">
           <BasicButton
             onClick={() => {
@@ -167,7 +167,7 @@ export function BeatmapSelection({
             }}
             color="blue"
           >
-            Manual beatmap selection
+            Manual selection
           </BasicButton>
         </div>
         <div className="flex flex-row space-x-2">
