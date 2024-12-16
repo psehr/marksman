@@ -40,8 +40,7 @@ export default function Bounties() {
 
   const [bountyClaimModal, setBountyClaimModal] = useState<{
     display: boolean;
-    type: "manual" | "auto";
-  }>({ display: false, type: "manual" });
+  }>({ display: false });
 
   const [sortType, setSortType] = useState<"recent" | "reward" | "popularity">(
     "recent"
@@ -270,28 +269,15 @@ export default function Bounties() {
           <BountyDescriptiveContainer bounty={selectedBounty}>
             <BasicButton
               color="green"
-              onClick={() =>
-                setBountyClaimModal({ display: true, type: "auto" })
-              }
+              onClick={() => setBountyClaimModal({ display: true })}
               large
             >
               Claim bounty
             </BasicButton>
-            <BasicButton
-              color="green"
-              onClick={() =>
-                setBountyClaimModal({ display: true, type: "manual" })
-              }
-              large
-            >
-              Claim bounty (manual)
-            </BasicButton>
 
             <BasicButton
               color="blue"
-              onClick={() =>
-                setBountyClaimModal({ display: true, type: "auto" })
-              }
+              onClick={() => setBountyClaimModal({ display: true })}
               large
             >
               Community section

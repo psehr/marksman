@@ -169,6 +169,7 @@ export function BountyDescriptiveContainer({
                 id: 9239673,
                 name: "pseh",
                 image: "https://a.ppy.sh/9239673?1729549056.jpeg",
+                country_code: "FR",
               }}
             />
           </div>

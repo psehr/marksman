@@ -9,7 +9,7 @@ import { useSession } from "next-auth/react";
 import { useEffect, useState } from "react";
 import InlineUser from "./user/inline";
 import { OsuUser } from "../_models/user";
-import { parseUsedIdFromImageUrl } from "../_services/utils/parsers/user";
+import { parseUserIdFromImageUrl } from "../_services/utils/parsers/user";
 import { RxHamburgerMenu, RxCross1 } from "react-icons/rx";
 
 export default function Nav() {
@@ -24,7 +24,7 @@ export default function Nav() {
     setIsAuthenticated(session.status == "authenticated");
     session.status == "authenticated"
       ? setCurrentUser({
-          id: parseInt(parseUsedIdFromImageUrl(session.data?.user?.image!)),
+          id: parseInt(parseUserIdFromImageUrl(session.data?.user?.image!)),
           name: session.data.user?.name!,
           image: session.data.user?.image!,
           country_code: "FR",

@@ -6,7 +6,7 @@ import { OsuUser } from "../_models/user";
 export function claimValidation(
   bounty: Bounty,
   score_data: OsuScore,
-  user: OsuUser
+  user_id: number
 ): ClaimResults {
   return {
     isFC: isAnFC(score_data, bounty.version, bounty.sliderend_leniency),
@@ -17,7 +17,7 @@ export function claimValidation(
       bounty.disallowed_mods
     ),
     isValidBeatmap: bounty.version.id == score_data.beatmap_id,
-    isValidUser: user.id == score_data.user_id,
+    isValidUser: user_id == score_data.user_id,
     isTimestampValid: score_data.timestamp > bounty.timestamp,
   };
 }

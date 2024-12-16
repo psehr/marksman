@@ -73,7 +73,7 @@ export async function fetchAllBounties({
 export async function bountyClaimAttempt(
   type: "manual" | "auto",
   score_id: number,
-  user: OsuUser,
+  user_id: number,
   bounty_id: string
 ): Promise<ClaimResults> {
   return new Promise(async (resolve, reject) => {
@@ -92,7 +92,7 @@ export async function bountyClaimAttempt(
         fetchedScore as scores_details_response
       );
       if (bounty_data && score_data) {
-        const claimResults = claimValidation(bounty_data, score_data, user);
+        const claimResults = claimValidation(bounty_data, score_data, user_id);
         resolve(claimResults);
       }
     }

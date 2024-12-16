@@ -30,6 +30,6 @@ export function parseUserFromFirestoreDocument(
   } as MarksmanUser;
 }
 
-export function parseUsedIdFromImageUrl(url: string) {
+export function parseUserIdFromImageUrl(url: string) {
   return url.split("/")[3].split("?")[0];
 }
