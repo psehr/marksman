@@ -1,6 +1,14 @@
 import { Bounty } from "@models/bounty";
 
-// UNTESTED
+/**
+ * Parses a bounty from its firebase document.
+ *
+ * @privateRemarks
+ * !! This parsing function has not been extensively tested. !!
+ *
+ * @param bountyDocument The firebase document to parse.
+ * @returns A {@link Bounty} object.
+ */
 export function parseBountyFromFirestoreDocument(
   bountyDocument: FirebaseFirestore.DocumentData
 ) {

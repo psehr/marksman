@@ -11,6 +11,7 @@ export function initBounty(): Bounty {
       id: 0,
       image: "",
       name: "",
+      country_code: "",
     },
     beatmapset: {
       id: 0,
@@ -20,6 +21,7 @@ export function initBounty(): Bounty {
         id: 0,
         image: "",
         name: "",
+        country_code: "",
       },
       status: "wip",
       cover: "",

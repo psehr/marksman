@@ -51,23 +51,22 @@ export type MarksmanUser = {
 export type MarksmanTier = {
   title: MarksmanTitle;
   rank_percentile: number;
+  color: string;
 };
 
 export type MarksmanTitle =
-  | "Peasant"
-  | "Squire"
-  | "Knight"
-  | "Baron"
-  | "Duke"
-  | "King";
+  | "Beginner Hunter"
+  | "Hunter"
+  | "Pro Hunter"
+  | "Legendary Hunter"
+  | "Mythic Hunter";
 
 export const MARKSMAN_TIERS: MarksmanTier[] = [
-  { title: "Peasant", rank_percentile: 100 },
-  { title: "Squire", rank_percentile: 75 },
-  { title: "Knight", rank_percentile: 40 },
-  { title: "Baron", rank_percentile: 10 },
-  { title: "Duke", rank_percentile: 2 },
-  { title: "King", rank_percentile: 0.5 },
+  { title: "Beginner Hunter", rank_percentile: 100, color: "gray-400" },
+  { title: "Hunter", rank_percentile: 40, color: "blue-400" },
+  { title: "Pro Hunter", rank_percentile: 10, color: "purple-400" },
+  { title: "Legendary Hunter", rank_percentile: 2, color: "gold-400" },
+  { title: "Mythic Hunter", rank_percentile: 0.5, color: "red-400" },
 ];
 
 export type OsuUser = {

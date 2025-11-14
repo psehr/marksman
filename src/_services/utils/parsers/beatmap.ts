@@ -2,6 +2,11 @@ import { BeatmapSet, BeatmapStatus, BeatmapVersion } from "@models/beatmap";
 import { beatmaps_details_set_response } from "osu-api-extended/dist/types/v2/beatmaps_details_set";
 import { SearchBeatmaps } from "osu-api-extended/dist/types/v2/search_all";
 
+/**
+ * Parses a beatmapset from the osu! API v2 raw response.
+ * @param raw_api_beatmap The osu! API v2 raw response.
+ * @returns A {@link BeatmapSet} object.
+ */
 export function parseBeatmapsetFromOsuApiBeatmap(
   raw_api_beatmap: beatmaps_details_set_response
 ) {
@@ -51,6 +56,11 @@ export function parseBeatmapsetFromOsuApiBeatmap(
   return parsedBeatmap;
 }
 
+/**
+ * Parses a beatmapset array from the osu! API v2 raw response.
+ * @param raw_api_search The osu! API v2 raw response.
+ * @returns A {@link BeatmapSet} object array.
+ */
 export function parseBeatmapsetsFromOsuApiSearch(
   raw_api_search: SearchBeatmaps
 ) {

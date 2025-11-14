@@ -25,13 +25,21 @@ const arrayToSearchParams = (arr: string[] | number[]) => {
   return arr.join(",");
 };
 
+/**
+ * Fetches all existing bounties from the local API, with selection and ordering filters.
+ * @param sortMethod The selected sorting type out of "recent" (date) and "reward".
+ * @param typeFilter The selected {@link BountyType}.
+ * @param modsFilter The selected {@link Mod | mods} array.
+ * @param bountyTierFilter The selected {@link BountyTier}.
+ * @returns An array of the corresponding {@link Bounty | bounties}.
+ */
 export async function fetchAllBounties({
   sortMethod,
   typeFilter,
   modsFilter,
   bountyTierFilter,
 }: {
-  sortMethod: "recent" | "reward" | "popularity";
+  sortMethod: "recent" | "reward";
   typeFilter?: BountyType;
   modsFilter?: Mod[];
   bountyTierFilter?: BountyTier;
@@ -70,6 +78,17 @@ export async function fetchAllBounties({
   });
 }
 
+/**
+ * Compares a score_id against a bounty_id to obtain a potential claim result.
+ *
+ *
+ * @param type - The selected bounty claim type out of "manual" and "auto".
+ * @param score_id - The score_id that will be checked in the attempt.
+ * @param user_id - The user_id of the user trying to claim the bounty.
+ * @param bounty_id - The bounty_id that is attempted to be claimed.
+ * @returns A {@link ClaimResults} object containing the results of the attempt.
+ *
+ */
 export async function bountyClaimAttempt(
   type: "manual" | "auto",
   score_id: number,

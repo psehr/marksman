@@ -1,9 +1,18 @@
 import { MarksmanUser } from "@/src/_models/user";
 
+/**
+ * Parses an user from its firebase document.
+ *
+ * @privateRemarks
+ * !! This parsing function has not been extensively tested. !!
+ *
+ * @param userDocument The firebase document to parse.
+ * @returns A {@link MarksmanUser} object.
+ */
 export function parseUserFromFirestoreDocument(
-  raw_user: FirebaseFirestore.DocumentData
+  userDocument: FirebaseFirestore.DocumentData
 ): MarksmanUser {
-  const d = raw_user;
+  const d = userDocument;
   return {
     creation_timestamp: d.creation_timestamp,
     last_created_bounty_timestamp: d.last_created_bounty_timestamp,
@@ -30,6 +39,11 @@ export function parseUserFromFirestoreDocument(
   } as MarksmanUser;
 }
 
+/**
+ * Parses an user_id from an osu! profile image URL.
+ * @param url The string url to be used.
+ * @returns A user_id string.
+ */
 export function parseUserIdFromImageUrl(url: string) {
   return url.split("/")[3].split("?")[0];
 }

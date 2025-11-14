@@ -1,5 +1,8 @@
 import { auth, v2 } from "osu-api-extended";
 
+/**
+ * Tries to authenticate to the public osu! API v2 using the local environment variables for OSU_CLIENT_ID and OSU_CLIENT_SECRET.
+ */
 export async function osuAuth() {
   try {
     await auth.login({

@@ -29,6 +29,7 @@ export function BountySearchContainer({
   setBountyTierFilter: any;
   setSearchFilter: any;
 }) {
+  // move to utils
   const switchModFilter = (mod: Mod) => {
     setModsFilter(
       modsFilter.includes(mod)
@@ -37,6 +38,7 @@ export function BountySearchContainer({
     );
   };
 
+  // move to utils
   const switchTypeFilter = (type: BountyType) => {
     setTypeFilter(
       typeFilter.includes(type)
@@ -61,6 +63,7 @@ export function BountySearchContainer({
             <div className="flex flex-row space-x-4 items-center">
               <p>Type</p>
               <div className="flex flex-row space-x-3">
+                {/* Get this out of of the main div component as a static thing */}
                 <BountyTypePill
                   type={"Clear"}
                   clickAction={() =>
@@ -83,6 +86,7 @@ export function BountySearchContainer({
             </div>
             <div className="text-sm flex flex-row space-x-4">
               <p>Mods</p>
+              {/* Get this out of of the main div component as a static thing */}
               <div className="flex flex-row space-x-2">
                 <ModIcon
                   mod="hd"
@@ -118,6 +122,7 @@ export function BountySearchContainer({
             </div>
             <div className="text-sm flex flex-row place-content-start items-center space-x-2">
               <p>Tier</p>
+              {/* Get this out of of the main div component as a static thing */}
               <div className="flex flex-row space-x-2 flex-wrap">
                 <RewardTierPill
                   tier={"Common"}
