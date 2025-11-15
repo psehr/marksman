@@ -9,7 +9,7 @@ export function Introduction({
 }) {
   return (
     <div className="flex flex-col w-full h-full space-y-2 md:place-content-around">
-      <div className="flex flex-col md:flex-row md:rounded-xl bg-slate-800 w-full h-full md:h-fit">
+      <div className="flex flex-col md:flex-row md:rounded-lg bg-slate-800 w-full h-full md:h-fit">
         <div className="flex flex-col w-full md:w-2/3">
           <p className="p-2 px-4">Welcome to the bounty creation tool!</p>
           <p className="text-sm font-light p-2 px-4">
@@ -45,7 +45,7 @@ export function Introduction({
           <p className="p-2 px-4">Have fun creating bounties!</p>
         </div>
         <div className="hidden md:flex flex-col w-1/2 place-content-center items-center text-gray-400">
-          <div className="flex flex-col w-fit h-fit space-y-4 items-center bg-slate-700 p-4 rounded-xl">
+          <div className="flex flex-col w-fit h-fit space-y-4 items-center bg-slate-700 p-4 rounded-lg">
             <p className="text-xl hover:text-white cursor-pointer">
               What is a bounty?
             </p>
@@ -59,7 +59,7 @@ export function Introduction({
         </div>
       </div>
 
-      <div className="flex flex-row md:rounded-xl bg-slate-800 w-full h-16 p-4 px-4 items-center place-content-between">
+      <div className="flex flex-row md:rounded-lg bg-slate-800 w-full h-16 p-4 px-4 items-center place-content-between">
         <BasicButton
           onClick={() => {
             setBountyCreationModalDisplay(false);

@@ -57,7 +57,7 @@ export function StatusPill({ status }: { status: BeatmapStatus }) {
 
   return (
     <p
-      className={`text-[2vw] md:text-xs font-extrabold shadow-lg rounded-full md:p-1 px-1 md:px-3 ${bg_color} ${
+      className={`text-[2vw] md:text-xs font-extrabold shadow-lg rounded-lg md:p-1 px-1 md:px-3 ${bg_color} ${
         status != "graveyard" ? "text-gray-700" : "text-gray-400"
       }`}
     >

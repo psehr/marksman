@@ -74,9 +74,9 @@ export function BeatmapSlim({
   return (
     <div
       className={`
-    relative flex w-full h-12 place-content-center items-center overflow-hidden rounded-xl sm:rounded-3xl font-extrabold text-nowrap ${
+    relative flex w-full h-12 place-content-center items-center overflow-hidden rounded-lg font-extrabold text-nowrap ${
       selected ? "border-2 border-green-400" : ""
-    } ${border_color} hover:scale-[101%] transition-all duration-[50ms] cursor-pointer text-[2vw] sm:text-sm shadow-lg
+    } ${border_color} transition-all duration-[50ms] cursor-pointer text-[2vw] sm:text-sm shadow-lg
     `}
       onMouseEnter={() => setHover(true)}
       onMouseLeave={() => setHover(false)}

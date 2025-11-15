@@ -11,6 +11,7 @@ import { bounty_base_cost } from "@/src/_utils/maths";
 import { Final } from "./Final";
 // @ts-ignore
 import hash from "hash-sum";
+import BountyCostContainer from "./BountyCostContainer";
 
 const API_URL = "http://localhost:3000/api";
 
@@ -138,58 +139,37 @@ export function CreateBountyModal({
   };
 
   return (
-    <div
-      className="fixed top-0 w-screen h-screen z-50 bg-black/50 flex place-content-center items-center backdrop-blur-sm md:space-x-8"
-      style={{ marginLeft: "0px" }}
-    >
+    <div className="fixed top-0 w-full h-full z-50 bg-black/50 backdrop-blur-sm">
       <div
-        className="flex flex-col w-full md:w-1/2 h-full md:h-2/3 bg-slate-700 md:rounded-xl space-y-8 place-content-around items-center md:mt-24 md:p-4"
-        onClick={(e) => e.stopPropagation()}
+        className="fixed -top-12 w-full h-full flex place-content-center items-center  md:space-x-8"
+        style={{ marginLeft: "0px" }}
       >
-        {renderStep()}
-      </div>
-      <div
-        className="hidden md:flex flex-col w-1/4 h-2/3 bg-slate-800/70 rounded-xl space-y-8 place-content-start items-center mt-24 p-8  overflow-y-scroll"
-        onClick={(e) => e.stopPropagation()}
-      >
-        {step == "intro" || bountyDraft.beatmapset.id == 0 ? (
-          <p className="text-4xl text-gray-500 text-center h-full flex items-center">
-            Bounty draft will be displayed here
-          </p>
-        ) : (
-          <div className="flex flex-col w-full h-full space-y-6">
-            <p className="text-2xl p-2 px-4 bg-slate-700/70 rounded-xl">
-              Bounty draft
+        <div
+          className="flex flex-col w-full md:w-1/2 h-full md:h-2/3 bg-slate-700 md:rounded-lg space-y-8 place-content-around items-center md:mt-24 md:p-4"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {renderStep()}
+        </div>
+        <div
+          className="hidden md:flex flex-col w-1/4 h-2/3 bg-slate-800/70 rounded-lg place-content-start items-center mt-24 p-4  overflow-y-scroll"
+          onClick={(e) => e.stopPropagation()}
+        >
+          {step == "intro" || bountyDraft.beatmapset.id == 0 ? (
+            <p className="text-4xl text-gray-500 text-center h-full flex items-center">
+              Bounty draft will be displayed here
             </p>
-            <BountyDescriptiveContainer bounty={bountyDraft} />
-            {step != "final" ? (
-              <div className="flex flex-row rounded-xl bg-slate-700/70 w-full h-fit items-center">
-                <div className="flex flex-col space-y-1 p-2 px-4">
-                  <p className="">Bounty cost</p>
-                  <div className="flex flex-row space-x-2">
-                    <p className="font-thin">Base</p>
-                    <p>
-                      🪙{bounty_base_cost(bountyDraft).toLocaleString("en-US")}
-                    </p>
-                  </div>
-                  <div className="flex flex-row space-x-2">
-                    <p className="font-thin">+ Reward</p>
-                    <p>🪙{bountyDraft.reward.toLocaleString("en-US")}</p>
-                  </div>
-                  <div className="flex flex-row space-x-2">
-                    <p className="font-thin">= Total</p>
-                    <p>
-                      🪙
-                      {(
-                        bounty_base_cost(bountyDraft) + bountyDraft.reward
-                      ).toLocaleString("en-US")}
-                    </p>
-                  </div>
-                </div>
-              </div>
-            ) : null}
-          </div>
-        )}
+          ) : (
+            <div className="flex flex-col w-full h-fit space-y-4">
+              <p className="text-2xl p-2 px-4 bg-slate-700/70 rounded-lg">
+                Bounty draft
+              </p>
+              <BountyDescriptiveContainer bounty={bountyDraft} />
+              {step != "final" ? (
+                <BountyCostContainer bountyDraft={bountyDraft} />
+              ) : null}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

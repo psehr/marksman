@@ -23,7 +23,7 @@ export function VersionPill({
   ).bg_color;
   return (
     <div
-      className={`text-center select-none flex shadow-lg flex-row h-full p-1 px-4 ${difficulty_bg_color} rounded-xl space-x-1 place-content-center items-center border ${difficulty_border_color}`}
+      className={`text-center select-none flex shadow-lg flex-row h-full p-1 px-4 ${difficulty_bg_color} rounded-lg space-x-1 place-content-center items-center border ${difficulty_border_color}`}
     >
       <p className="sm:text-xs">{diffname}</p>
       <DifficultyCircle version={version} />

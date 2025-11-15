@@ -34,7 +34,7 @@ export function claimValidation(
  * @param score The {@link OsuScore} to be checked.
  * @param beatmap The {@link BeatmapVersion} that was played.
  * @param leniency The allowed integer leniency for the score to be considered an FC.
- * @returns A boolean that is true if the score is an FC, false otherwise.
+ * @returns A boolean that is **true if the score is an FC**, false otherwise.
  */
 export function isAnFC(
   score: OsuScore,
@@ -51,7 +51,7 @@ export function isAnFC(
 /**
  * Checks if an osu! score is a clear, and does not includes NoFail.
  * @param score The {@link OsuScore} to be checked.
- * @returns A boolean that is true if the score is a clear, false otherwise.
+ * @returns A boolean that is **true if the score is a clear**, false otherwise.
  */
 export function isAClear(score: OsuScore) {
   return score.pass && !score.mods.includes("nf");
@@ -61,7 +61,7 @@ export function isAClear(score: OsuScore) {
  * Checks if an osu! score includes at least the required mods array.
  * @param score The {@link OsuScore} to be checked.
  * @param required_mods The required {@link Mod} object array.
- * @returns A boolean that is true if the score includes every required mod, false otherwise.
+ * @returns A boolean that is **true if the score includes every required mod**, false otherwise.
  */
 export function hasRequiredMods(score: OsuScore, required_mods: Mod[]) {
   let isValid = true;
@@ -75,7 +75,7 @@ export function hasRequiredMods(score: OsuScore, required_mods: Mod[]) {
  * Checks if an osu! score does not include the disallowed mods array.
  * @param score The {@link OsuScore} to be checked.
  * @param disallowed_mods The disallowed {@link Mod} object array.
- * @returns A boolean  that is true if the score does not include every disallowed mod, false otherwise.
+ * @returns A boolean that is **true if the score does not include every disallowed mod**, false otherwise.
  */
 export function lacksDisallowedMods(score: OsuScore, disallowed_mods: Mod[]) {
   let isValid = true;

@@ -46,13 +46,6 @@ export default function Nav() {
       <div className="w-full h-full relative hidden md:flex flex-row space-x-4 place-content-center items-center">
         <BasicButton
           onClick={() => {
-            router.push("/");
-          }}
-        >
-          Home
-        </BasicButton>
-        <BasicButton
-          onClick={() => {
             router.push("/bounties");
           }}
         >
@@ -70,7 +63,7 @@ export default function Nav() {
         {isAuthenticated && currentUser ? (
           <div className="flex flex-row space-x-4">
             <div
-              className="p-1 px-4 w-fit h-fit bg-slate-700 rounded-xl cursor-pointer"
+              className="p-1 px-4 w-fit h-fit bg-slate-700 rounded-lg cursor-pointer"
               onClick={() => {
                 router.push("/user/" + currentUser.id);
               }}
@@ -131,7 +124,7 @@ export default function Nav() {
             {isAuthenticated && currentUser ? (
               <div className="flex flex-col items-center space-y-4">
                 <div
-                  className="p-1 px-4 w-fit h-fit bg-slate-700 rounded-xl cursor-pointer"
+                  className="p-1 px-4 w-fit h-fit bg-slate-700 rounded-lg cursor-pointer"
                   onClick={() => {
                     setShowBurger(false);
 

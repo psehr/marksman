@@ -29,5 +29,5 @@
 
 input,
 textarea {
-  @apply w-full rounded-xl text-center bg-slate-700;
+  @apply w-full rounded-lg text-center bg-slate-700;
 }

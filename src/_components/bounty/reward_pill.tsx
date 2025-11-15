@@ -8,7 +8,7 @@ export function BountyRewardPill({ bounty }: { bounty: Bounty }) {
   );
 
   return (
-    <div className="shadow-lg flex flex-row h-full bg-green-800/90 p-1 px-2 rounded-xl space-x-1 place-content-between items-center min-w-16">
+    <div className="shadow-lg flex flex-row h-full bg-green-800/90 p-1 px-2 rounded-lg space-x-1 place-content-between items-center min-w-16">
       <p>🪙</p>
       <p>{bounty.reward.toLocaleString("en-US")}</p>
     </div>

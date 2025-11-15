@@ -42,9 +42,7 @@ export default function Bounties() {
     display: boolean;
   }>({ display: false });
 
-  const [sortType, setSortType] = useState<"recent" | "reward" | "popularity">(
-    "recent"
-  );
+  const [sortType, setSortType] = useState<"recent" | "reward">("recent");
 
   const [typeFilter, setTypeFilter] = useState<BountyType>("Any");
   const [modsFilter, setModsFilter] = useState<Mod[]>([
@@ -287,7 +285,7 @@ export default function Bounties() {
           {/* 
         
           <div>
-            <div className="w-full h-fit bg-black/20 p-4 rounded-xl space-y-4">
+            <div className="w-full h-fit bg-black/20 p-4 rounded-lg space-y-4">
               <p>Comments (2)</p>
               <div className="flex flex-col">
                 <InlineUser
@@ -316,7 +314,7 @@ export default function Bounties() {
               <div className="flex w-full h-8 text-sm font-light items-center space-x-2 place-content-center">
                 <input
                   type="text"
-                  className="w-2/3 h-full bg-slate-700 rounded-xl px-2"
+                  className="w-2/3 h-full bg-slate-700 rounded-lg px-2"
                   placeholder="Type your comment here.."
                 />
                 <BasicButton onClick={() => {}}>Send</BasicButton>
@@ -329,9 +327,22 @@ export default function Bounties() {
   };
 
   return (
-    <div className="flex flex-col sm:flex-row w-full h-full place-content-center items-start space-x-4 font-extrabold overflow-y-auto">
-      <div className="flex relative flex-col w-full md:w-1/2 min-h-full h-fit bg-slate-800/70 place-content-start items-center p-8 mt-8 rounded-xl space-y-4 shadow-lg">
-        <div className="flex flex-row w-full h-fit bg-slate-700 p-4 rounded-xl space-x-2 place-content-center shadow-lg">
+    <div className="flex flex-col sm:flex-row w-full h-full place-content-center items-start sm:space-x-4 font-extrabold ">
+      <div className="flex relative flex-col w-full md:w-2/3 h-full bg-slate-800/70 place-content-start p-8 mt-8 rounded-lg space-y-4 shadow-lg">
+        <BountySearchContainer
+          displayStyle={displayStyle}
+          setDisplayStyle={setDisplayStyle}
+          modsFilter={modsFilter}
+          setModsFilter={setModsFilter}
+          sortType={sortType}
+          setSortType={setSortType}
+          typeFilter={typeFilter}
+          setTypeFilter={setTypeFilter}
+          bountyTierFilter={bountyTierFilter}
+          setBountyTierFilter={setBountyTierFilter}
+          setSearchFilter={setSearchFilter}
+        />
+        <div className="flex flex-row w-full h-fit bg-slate-700 p-4 rounded-lg space-x-2 place-content-center shadow-lg">
           <BasicButton
             onClick={() => {
               setBountyCreationModalDisplay(true);
@@ -347,21 +358,15 @@ export default function Bounties() {
             Refresh bounties
           </BasicButton>
         </div>
-        <BountySearchContainer
-          displayStyle={displayStyle}
-          setDisplayStyle={setDisplayStyle}
-          modsFilter={modsFilter}
-          setModsFilter={setModsFilter}
-          sortType={sortType}
-          setSortType={setSortType}
-          typeFilter={typeFilter}
-          setTypeFilter={setTypeFilter}
-          bountyTierFilter={bountyTierFilter}
-          setBountyTierFilter={setBountyTierFilter}
-          setSearchFilter={setSearchFilter}
-        />
         {/* Render bounties in the following div */}
-        <div className="p-8 flex flex-col w-full min-h-full h-fit bg-slate-700 rounded-xl space-y-2 place-content-center items-center">
+        <div className="p-8 flex flex-col w-full h-full overflow-scroll bg-slate-700 rounded-lg space-y-2 items-center">
+          {!isLoading ? (
+            renderBounties()
+          ) : (
+            <div className="flex w-fit h-fit place-content-center items-center">
+              <Loading />
+            </div>
+          )}
           {!isLoading ? (
             renderBounties()
           ) : (
@@ -371,9 +376,9 @@ export default function Bounties() {
           )}
         </div>
       </div>
-      <div className={`sticky top-0 sm:w-[25%] h-full`}>
+      <div className={`sticky top-0 hidden sm:flex sm:w-[25%] h-full`}>
         <div
-          className={`my-8 flex flex-col w-full h-full space-y-2 place-content-center items-center rounded-xl`}
+          className={`my-8 flex flex-col w-full h-full space-y-2 place-content-center items-center rounded-lg`}
         >
           {selectedBounty ? (
             renderSelectedBounty()

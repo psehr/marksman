@@ -45,7 +45,7 @@ export function BasicButton({
         small ? "" : "min-w-24"
       } ${
         large ? "w-full" : "w-fit"
-      } h-fit ${bg_color} transition-all duration-[25ms] p-1 px-4 rounded-xl`}
+      } h-fit ${bg_color} transition-all duration-[25ms] p-1 px-4 rounded-lg`}
       onClick={onClick}
     >
       {children}

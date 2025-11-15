@@ -24,7 +24,7 @@ export function AdditionalRequirements({
 
   return (
     <div className="flex flex-col w-full h-full space-y-2 place-content-between">
-      <div className="flex flex-row rounded-xl bg-slate-800 w-fit h-fit items-center">
+      <div className="flex flex-row rounded-lg bg-slate-800 w-fit h-fit items-center">
         <p className="text-2xl p-2 px-4">Step III.</p>
         <p className="text-xl font-thin p-2 px-4">
           Additional bounty requirements
@@ -32,7 +32,7 @@ export function AdditionalRequirements({
       </div>
       <div className="flex flex-col h-3/4 w-full space-y-4">
         {bountyDraft.type == "FC" ? (
-          <div className="flex flex-col rounded-xl bg-slate-800 w-full h-fit p-4 items-start space-y-4">
+          <div className="flex flex-col rounded-lg bg-slate-800 w-full h-fit p-4 items-start space-y-4">
             <p>Select slider-end leniency</p>
             <div className="space-y-1">
               <p className="text-sm">
@@ -78,14 +78,14 @@ export function AdditionalRequirements({
             </div>
           </div>
         ) : (
-          <div className="flex flex-col rounded-xl bg-slate-800 w-full h-1/3 p-4 items-center place-content-center space-y-4">
+          <div className="flex flex-col rounded-lg bg-slate-800 w-full h-1/3 p-4 items-center place-content-center space-y-4">
             <p className="text-3xl text-gray-600">
               Additional requirements are not available yet.
             </p>
           </div>
         )}
       </div>
-      <div className="flex flex-row rounded-xl bg-slate-800 w-full h-16 p-4 px-4 items-center place-content-between">
+      <div className="flex flex-row rounded-lg bg-slate-800 w-full h-16 p-4 px-4 items-center place-content-between">
         <div className="flex flex-row space-x-2">
           <BasicButton
             onClick={() => {

@@ -75,7 +75,7 @@ export function RewardTierPill({
   }
   return (
     <p
-      className={`select-none text-[2vw] md:text-xs font-extrabold shadow-lg rounded-full md:p-1 px-1 md:px-2  w-fit h-fit ${bg_color} ${
+      className={`select-none text-[2vw] md:text-xs font-extrabold shadow-lg rounded-lg md:p-1 px-1 md:px-2  w-fit h-fit ${bg_color} ${
         grayed ? "brightness-[50%]" : ""
       } ${clickAction ? "cursor-pointer" : ""}`}
       onClick={clickAction}

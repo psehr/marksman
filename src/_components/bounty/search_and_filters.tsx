@@ -48,17 +48,17 @@ export function BountySearchContainer({
   };
 
   return (
-    <div className="flex flex-col bg-slate-700 w-full h-fit rounded-xl p-4 space-y-3 place-content-center select-none">
+    <div className="flex flex-col bg-slate-700 w-full h-fit rounded-lg p-4 space-y-3 place-content-center select-none">
       <div className="flex w-full h-8">
         <input
           type="text"
-          className="w-full rounded-xl text-center bg-slate-800"
+          className="w-full rounded-lg text-center bg-slate-800"
           placeholder="Search bounties here..."
           onChange={(e) => setSearchFilter(e.currentTarget.value)}
         />
       </div>
       <div className="flex flex-col w-full h-fit text-sm">
-        <div className="flex flex-row w-full h-full">
+        <div className="flex flex-col sm:flex-row space-y-8 sm:space-y-0 w-full h-full">
           <div className="flex flex-col w-2/3 h-full space-y-3">
             <div className="flex flex-row space-x-4 items-center">
               <p>Type</p>

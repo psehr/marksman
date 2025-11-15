@@ -50,7 +50,7 @@ export function BeatmapCard({
   return (
     <div
       className={`
-        relative flex w-full h-full place-content-center items-center overflow-x-hidden rounded-xl sm:rounded-3xl font-extrabold shadow-lg text-nowrap border ${border_color} hover:scale-[101%] transition-all duration-[50ms] cursor-pointer text-[2vw] sm:text-sm
+        relative flex w-full h-full place-content-center items-center overflow-x-hidden rounded-lg sm:rounded-3xl font-extrabold shadow-lg text-nowrap border ${border_color} hover:scale-[101%] transition-all duration-[50ms] cursor-pointer text-[2vw] sm:text-sm
         `}
     >
       <div className="relative flex  w-full h-full">
@@ -61,7 +61,7 @@ export function BeatmapCard({
       <div className="absolute flex flex-col w-full h-full space-y-1.5 sm:space-y-3 place-content-center">
         <div className="flex flex-row w-full h-1/5 place-content-center items-center space-x-2">
           {!simplified ? (
-            <div className="flex place-content-center items-center w-fit h-full min-w-32 bg-black/50 p-2 px-4 rounded-xl border border-white/50">
+            <div className="flex place-content-center items-center w-fit h-full min-w-32 bg-black/50 p-2 px-4 rounded-lg border border-white/50">
               <p className="text-center text-sm">{artist}</p>
             </div>
           ) : null}
@@ -69,14 +69,14 @@ export function BeatmapCard({
           {bounty ? <VersionPill version={bounty.version} /> : null}
           {!simplified ? (
             <div
-              className={`flex flex-row w-fit h-full items-center bg-black/50 p-2 px-4 rounded-xl space-x-4 border border-white/50 text-sm`}
+              className={`flex flex-row w-fit h-full items-center bg-black/50 p-2 px-4 rounded-lg space-x-4 border border-white/50 text-sm`}
             >
               <InlineUser user={beatmapset.creator} />
             </div>
           ) : null}
         </div>
         <div className="flex flex-row w-full h-1/4 place-content-center items-center">
-          <div className="flex w-fit min-w-64 h-fit place-content-center items-center bg-black/60 px-4 rounded-xl border border-white/50">
+          <div className="flex w-fit min-w-64 h-fit place-content-center items-center bg-black/60 px-4 rounded-lg border border-white/50">
             <p className="text-center text-xs sm:text-lg">{title}</p>
           </div>
         </div>
@@ -84,7 +84,7 @@ export function BeatmapCard({
         {bounty ? (
           <div className="flex flex-row w-full h-1/5 place-content-center items-center space-x-2">
             {bounty.required_mods.length ? (
-              <div className="flex flex-row h-full bg-yellow-800/50 p-1 px-4 rounded-xl place-content-center items-center border border-yellow-400">
+              <div className="flex flex-row h-full bg-yellow-800/50 p-1 px-4 rounded-lg place-content-center items-center border border-yellow-400">
                 <ModList
                   mods={bounty.required_mods}
                   direction="row"

@@ -50,12 +50,12 @@ export function Final({
   } else
     return (
       <div className="flex flex-col w-full h-full space-y-2 place-content-between">
-        <div className="flex flex-row rounded-xl bg-slate-800 w-fit h-fit items-center">
+        <div className="flex flex-row rounded-lg bg-slate-800 w-fit h-fit items-center">
           <p className="text-2xl p-2 px-4">Step V.</p>
           <p className="text-xl font-thin p-2 px-4">Recap</p>
         </div>
         <div className="flex flex-col h-fit w-full space-y-4">
-          <div className="flex flex-col rounded-xl bg-slate-800 w-full h-fit p-4 items-start">
+          <div className="flex flex-col rounded-lg bg-slate-800 w-full h-fit p-4 items-start">
             <p>
               Before submitting your creation, be sure to check the following:
             </p>
@@ -69,7 +69,7 @@ export function Final({
               day (i.e don't be stupid).
             </p>
           </div>
-          <div className="flex flex-col rounded-xl bg-slate-800 w-full h-fit p-4 items-start space-y-4">
+          <div className="flex flex-col rounded-lg bg-slate-800 w-full h-fit p-4 items-start space-y-4">
             <p>If you wish so, you can add a visible comment on the bounty.</p>
             <textarea
               className="h-24 text-start place-content-start items-start p-2"
@@ -79,7 +79,7 @@ export function Final({
               defaultValue={bountyDesc}
             />
           </div>
-          <div className="flex flex-col rounded-xl bg-slate-800 w-full h-fit p-4 items-start space-y-8">
+          <div className="flex flex-col rounded-lg bg-slate-800 w-full h-fit p-4 items-start space-y-8">
             <div className="flex flex-row space-x-8 text-2xl font-thin place-content-center w-full items-center">
               <div className="text-center text-green-400 ">
                 <p className="">Your balance</p>
@@ -128,7 +128,7 @@ export function Final({
             )}
           </div>
         </div>
-        <div className="flex flex-row rounded-xl bg-slate-800 w-full h-16 p-4 px-4 items-center place-content-between">
+        <div className="flex flex-row rounded-lg bg-slate-800 w-full h-16 p-4 px-4 items-center place-content-between">
           <div className="flex flex-row space-x-2">
             <BasicButton
               onClick={() => {

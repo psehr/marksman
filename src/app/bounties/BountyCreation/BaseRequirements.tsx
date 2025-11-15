@@ -87,12 +87,12 @@ export function BaseRequirements({
 
   return (
     <div className="flex flex-col w-full h-full space-y-2 place-content-between">
-      <div className="flex flex-row rounded-xl bg-slate-800 w-fit h-fit items-center">
+      <div className="flex flex-row rounded-lg bg-slate-800 w-fit h-fit items-center">
         <p className="text-2xl p-2 px-4">Step II.</p>
         <p className="text-xl font-thin p-2 px-4">Basic bounty requirements</p>
       </div>
       <div className="flex flex-col h-3/4 w-full space-y-4">
-        <div className="flex flex-col rounded-xl bg-slate-800 w-full h-1/3 p-4 items-start place-content-between">
+        <div className="flex flex-col rounded-lg bg-slate-800 w-full h-1/3 p-4 items-start place-content-between">
           <p className="text-xl">Click to select bounty type</p>
           <div className="flex flex-row space-x-4 items-center">
             <BountyTypePill
@@ -128,7 +128,7 @@ export function BaseRequirements({
             </p>
           </div>
         </div>
-        <div className="flex flex-col rounded-xl bg-slate-800 w-full h-1/3 p-4 px-4 items-start space-y-4">
+        <div className="flex flex-col rounded-lg bg-slate-800 w-full h-1/3 p-4 px-4 items-start space-y-4">
           <p className="text-xl">Click to select required mods (max. 3)</p>
           <div className="flex flex-row space-x-2">
             <ModIcon
@@ -185,7 +185,7 @@ export function BaseRequirements({
             can chose to add other mods aswell.
           </p>
         </div>
-        <div className="flex flex-col rounded-xl bg-slate-800 w-full h-1/3 p-4 px-4 items-start space-y-4">
+        <div className="flex flex-col rounded-lg bg-slate-800 w-full h-1/3 p-4 px-4 items-start space-y-4">
           <p className="text-xl">Click to select disallowed mods</p>
           <div className="flex flex-row space-x-2">
             <ModIcon
@@ -230,7 +230,7 @@ export function BaseRequirements({
           </p>
         </div>
       </div>
-      <div className="flex flex-row rounded-xl bg-slate-800 w-full h-16 p-4 px-4 items-center place-content-between">
+      <div className="flex flex-row rounded-lg bg-slate-800 w-full h-16 p-4 px-4 items-center place-content-between">
         <div className="flex flex-row space-x-2">
           <BasicButton
             onClick={() => {

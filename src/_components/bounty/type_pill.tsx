@@ -48,7 +48,7 @@ export default function BountyTypePill({
 
   return (
     <p
-      className={`shadow-lg select-none text-[2vw] md:text-xs font-extrabold rounded-full md:p-1 px-1 md:px-3 ${bg_color} ${
+      className={`shadow-lg select-none text-[2vw] md:text-xs font-extrabold rounded-lg md:p-1 px-1 md:px-3 ${bg_color} ${
         selected ? "border-2 border-green-400" : ""
       } ${clickAction ? "cursor-pointer" : ""} ${
         grayed ? "brightness-50" : ""

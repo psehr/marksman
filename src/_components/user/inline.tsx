@@ -21,7 +21,7 @@ export default function InlineUser({
     >
       <p className="font-semibold">{user.name}</p>
       {noAvatar ? null : (
-        <div className="hidden sm:flex sm:size-4 rounded-full overflow-hidden">
+        <div className="hidden sm:flex sm:size-4 rounded-lg overflow-hidden">
           <Image
             src={user.image}
             width={128}

@@ -39,16 +39,16 @@ export function BountyPropertyBarContainer({
   return (
     <div className="relative flex flex-row w-full h-8 items-center">
       <div
-        className={`absolute z-10 h-full w-fit ${bg_color} rounded-xl flex items-center`}
+        className={`absolute z-10 h-full w-fit ${bg_color} rounded-lg flex items-center`}
       >
         <p
-          className={`select-none text-[2vw] md:text-xs font-extrabold rounded-full md:p-1 px-1 md:px-3 h-fit min-w-24 text-center`}
+          className={`select-none text-[2vw] md:text-xs font-extrabold rounded-lg md:p-1 px-1 md:px-3 h-fit min-w-48 text-center`}
         >
           {title}
         </p>
       </div>
       <div
-        className={`${bg_color2} absolute w-full z-0 px-2 rounded-full h-full flex place-content-end items-center space-x-2`}
+        className={`${bg_color2} absolute w-full z-0 px-2 rounded-lg h-full flex place-content-end items-center space-x-2`}
       >
         {children}
       </div>
@@ -87,7 +87,7 @@ export function BountyDescriptiveContainer({
   return (
     <div className="w-full h-fit flex flex-col space-y-4">
       <div
-        className={`w-full h-fit ${container_colors.bg_color} ${container_colors.border_color} border-2 shadow-lg p-4 rounded-xl space-y-1`}
+        className={`w-full h-fit ${container_colors.bg_color} ${container_colors.border_color} border-2 shadow-lg p-4 rounded-lg space-y-1`}
       >
         <div className="mb-6">
           <BeatmapSlim
@@ -97,17 +97,17 @@ export function BountyDescriptiveContainer({
           />
         </div>
         {bounty.type != "Any" ? (
-          <BountyPropertyBarContainer color={color} title="Your goal">
+          <BountyPropertyBarContainer color={color} title="Completion goal">
             <p>{desc_type}</p>
           </BountyPropertyBarContainer>
         ) : null}
         {bounty.required_mods.length ? (
-          <BountyPropertyBarContainer color={color} title="Must use">
+          <BountyPropertyBarContainer color={color} title="Required mods">
             <ModList mods={bounty.required_mods} direction="row" width="w-8" />
           </BountyPropertyBarContainer>
         ) : null}
         {bounty.disallowed_mods.length ? (
-          <BountyPropertyBarContainer color={color} title="Can't use">
+          <BountyPropertyBarContainer color={color} title="Disallowed mods">
             <ModList
               mods={bounty.disallowed_mods}
               direction="row"
@@ -116,7 +116,7 @@ export function BountyDescriptiveContainer({
           </BountyPropertyBarContainer>
         ) : null}
         {bounty.type == "FC" ? (
-          <BountyPropertyBarContainer color={color} title="Min. combo">
+          <BountyPropertyBarContainer color={color} title="Required combo">
             <p>
               {bounty.version.attributes.max_combo - bounty.sliderend_leniency}/
               {bounty.version.attributes.max_combo}
@@ -125,13 +125,13 @@ export function BountyDescriptiveContainer({
         ) : null}
         {bounty.reward > 0 ? (
           <div className="pt-8 flex flex-col space-y-1">
-            <BountyPropertyBarContainer color={color} title="Tier">
+            <BountyPropertyBarContainer color={color} title="Difficulty tier">
               <RewardTierPill tier={bounty.tier} />
             </BountyPropertyBarContainer>
-            <BountyPropertyBarContainer color={color} title="Reward">
+            <BountyPropertyBarContainer color={color} title="🪙 Reward">
               🪙 {bounty.reward.toLocaleString("en-US")}
             </BountyPropertyBarContainer>
-            <BountyPropertyBarContainer color={color} title="XP">
+            <BountyPropertyBarContainer color={color} title="XP Reward">
               🎮{" "}
               {gold_to_experience(
                 bounty.reward,
@@ -142,13 +142,12 @@ export function BountyDescriptiveContainer({
         ) : null}
 
         {bounty.version.id != 0 ? (
-          <div className="pt-8">
-            <div className="flex flex-row w-full h-fit place-content-center items-center space-x-2">
+          <div className="pt-4">
+            <div className="flex flex-col w-full h-fit place-content-center items-center space-y-2">
               <div className="w-fit h-fit">
                 <VersionPill version={bounty.version} />
               </div>
 
-              <p className="flex flex-row items-center">by</p>
               <InlineUser
                 user={bounty.beatmapset.creator}
                 noAvatar
@@ -159,7 +158,7 @@ export function BountyDescriptiveContainer({
       </div>
       {children}
       <div
-        className={`flex flex-col w-full h-fit ${container_colors.bg_color} ${container_colors.border_color} border-2 p-4 rounded-xl shadow-lg space-y-4 place-content-center items-center`}
+        className={`flex flex-col w-full h-fit ${container_colors.bg_color} ${container_colors.border_color} border-2 p-4 rounded-lg shadow-lg space-y-4 place-content-center items-center`}
       >
         <div className="flex flex-row place-content-between w-full">
           <div className="flex flex-row space-x-2">

@@ -46,10 +46,10 @@ export default function BountyClaim({
     return (
       <div className="fixed w-[105vw] h-full z-50 bg-black/50 flex place-content-center items-start backdrop-blur-sm space-x-8">
         <div
-          className="flex flex-col w-1/2 h-fit bg-slate-700 rounded-xl place-content-center items-center mt-64 p-4 space-y-2"
+          className="flex flex-col w-1/2 h-fit bg-slate-700 rounded-lg place-content-center items-center mt-64 p-4 space-y-2"
           onClick={(e) => e.stopPropagation()}
         >
-          <div className="bg-slate-800 w-full h-fit flex flex-col place-content-start items-center rounded-xl p-4">
+          <div className="bg-slate-800 w-full h-fit flex flex-col place-content-start items-center rounded-lg p-4">
             <form
               action=""
               className="w-full h-full flex place-content-center items-center"
@@ -62,7 +62,7 @@ export default function BountyClaim({
             </form>
           </div>
           {claimResults ? (
-            <div className="bg-slate-800 w-full h-fit flex flex-col place-content-start items-start rounded-xl p-4">
+            <div className="bg-slate-800 w-full h-fit flex flex-col place-content-start items-start rounded-lg p-4">
               <div className="flex flex-row space-x-2">
                 <p>The score is an FC: </p>
                 {claimResults.isFC ? (
@@ -122,7 +122,7 @@ export default function BountyClaim({
             </div>
           ) : null}
 
-          <div className="bg-slate-800 w-full h-16 flex flex-row place-content-between items-center rounded-xl p-2 px-4">
+          <div className="bg-slate-800 w-full h-16 flex flex-row place-content-between items-center rounded-lg p-2 px-4">
             <BasicButton
               onClick={() =>
                 setBountyClaimModal({ ...bountyClaimModal, display: false })
