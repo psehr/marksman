@@ -47,6 +47,9 @@ export async function fetchAllBounties({
   return new Promise(async (resolve, reject) => {
     let baseRoute = API_URL + "/bounties";
 
+    !typeFilter ? (typeFilter = "Any") : null;
+    !bountyTierFilter ? (bountyTierFilter = "Any") : null;
+
     let formattedSortMethod = "sort=" + sortMethod;
     let formattedTypeFilter = "";
     let formattedModsFilter = "";

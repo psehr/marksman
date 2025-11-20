@@ -122,7 +122,7 @@ export type BountyTier =
   | "Uncommon"
   | "Rare"
   | "Epic"
-  | "Legendary";
+  | "Mythic";
 
 export type RecurringTask = {
   // ...

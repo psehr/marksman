@@ -4,6 +4,7 @@ import { BeatmapVersion } from "@/src/_models/beatmap";
 import Image from "next/image";
 import { useState } from "react";
 import { VersionPill } from "./version_pill";
+import { propagateServerField } from "next/dist/server/lib/render-server";
 
 export function difficultyColors(star_rating: number): {
   bg_color: string;
@@ -40,20 +41,25 @@ export function difficultyColors(star_rating: number): {
   return { bg_color, border_color };
 }
 
-export function DifficultyCircle({ version }: { version: BeatmapVersion }) {
+export function DifficultyCircle(props: {
+  version: BeatmapVersion;
+  size: number;
+}) {
   const star_rating =
-    version.attributes.star_rating < 9
-      ? version.attributes.star_rating.toFixed(1)
+    props.version.attributes.star_rating < 9
+      ? props.version.attributes.star_rating.toFixed(1)
       : "9.0";
 
+  let pixel_size = props.size;
+
   return (
-    <div className="flex w-3 sm:w-5">
+    <div className="flex">
       <Image
         src={`https://raw.githubusercontent.com/hiderikzki/osu-difficulty-icons/main/rendered/std/stars_${star_rating}@2x.png`}
         alt=""
-        width={24}
-        height={24}
-        onClick={() => window.open(version.url)}
+        width={pixel_size}
+        height={pixel_size}
+        onClick={() => window.open(props.version.url)}
         className="cursor-pointer"
       />
     </div>

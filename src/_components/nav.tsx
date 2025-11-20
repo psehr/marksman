@@ -33,7 +33,7 @@ export default function Nav() {
   }, [session.status]);
 
   return (
-    <div className="z-10 fixed flex flex-row w-screen h-24 place-content-center items-center bg-slate-800/70 backdrop-blur-sm">
+    <div className="z-50 fixed flex flex-row w-screen h-24 place-content-center items-center bg-slate-800/70 backdrop-blur-sm">
       <div className="w-fit absolute z-10 left-8 h-full flex flex-row space-x-4 place-content-center items-center">
         <BasicButton
           onClick={() => {
