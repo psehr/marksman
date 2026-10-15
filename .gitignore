@@ -23,7 +23,7 @@ npm-debug.log*
 Thumbs.db
 
 # Private project notes are maintained separately.
-/docs/
+/docs
 AGENTS.md
 .vscode/
 /private-docs/
