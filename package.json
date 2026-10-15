@@ -1,0 +1,19 @@
+{
+  "name": "marksman",
+  "version": "0.1.0",
+  "private": true,
+  "workspaces": [
+    "packages/contracts",
+    "marksman-api",
+    "marksman-web"
+  ],
+  "scripts": {
+    "build:contracts": "npm run build --workspace @marksman/contracts",
+    "dev:contracts": "npm run dev --workspace @marksman/contracts",
+    "dev:api": "npm run dev --workspace marksman-api",
+    "dev:web": "npm run dev --workspace marksman-web",
+    "build": "npm run build --workspace marksman-api && npm run build --workspace marksman-web",
+    "typecheck": "npm run typecheck --workspace marksman-api && npm run typecheck --workspace marksman-web",
+    "prepare": "npm run build:contracts"
+  }
+}

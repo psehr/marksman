@@ -1,0 +1,29 @@
+node_modules/
+dist/
+.next/
+coverage/
+playwright-report/
+test-results/
+*.tsbuildinfo
+npm-debug.log*
+
+# Local configuration and credentials; keep safe templates versioned.
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+
+# Local database backups (SQL migrations remain tracked).
+*.dump
+*.backup
+
+# Operating-system files
+.DS_Store
+Thumbs.db
+
+# Private project notes are maintained separately.
+/docs/
+AGENTS.md
+.vscode/
+/private-docs/

@@ -1,0 +1,18 @@
+@baseUrl = http://localhost:3001
+
+### Health check
+GET {{baseUrl}}/health
+
+### List users
+GET {{baseUrl}}/users
+
+### List bounties
+GET {{baseUrl}}/bounties
+
+### Create a user
+POST {{baseUrl}}/users
+Content-Type: application/json
+
+{
+  "osuUserId": 12345
+}

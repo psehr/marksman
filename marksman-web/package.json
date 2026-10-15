@@ -1,0 +1,33 @@
+{
+  "name": "marksman-web",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "test:e2e": "playwright test",
+    "typecheck": "tsc --noEmit",
+    "predev": "npm --prefix .. run build:contracts",
+    "prebuild": "npm --prefix .. run build:contracts",
+    "pretest:e2e": "npm --prefix .. run build:contracts",
+    "pretypecheck": "npm --prefix .. run build:contracts"
+  },
+  "dependencies": {
+    "@marksman/contracts": "0.1.0",
+    "date-fns": "^4.4.0",
+    "fuse.js": "^7.5.0",
+    "next": "16.3.5",
+    "react": "19.2.8",
+    "react-dom": "19.2.8"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.63.0",
+    "@tailwindcss/postcss": "^4",
+    "@types/node": "^20",
+    "@types/react": "^19",
+    "@types/react-dom": "^19",
+    "tailwindcss": "^4",
+    "typescript": "^5"
+  }
+}
