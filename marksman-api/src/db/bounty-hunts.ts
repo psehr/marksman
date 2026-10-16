@@ -1,6 +1,6 @@
-import { and, eq } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import { Transaction } from ".";
-import { bountyHunts } from "./schema";
+import { bounties, bountyHunts, users } from "./schema";
 import { Hunt } from "@marksman/contracts";
 
 export function toHunt(row: typeof bountyHunts.$inferSelect): Hunt {
@@ -129,4 +129,26 @@ export async function closeOngoingHuntsForBounty(
         eq(bountyHunts.status, "ongoing"),
       ),
     );
+}
+
+export async function findHuntsForScore(
+  connection: Transaction,
+  osuUserId: number,
+  beatmapId: number,
+  scoreEndedAt: Date,
+): Promise<Hunt[]> {
+  const rows = await connection
+    .select({ hunt: bountyHunts })
+    .from(bountyHunts)
+    .innerJoin(users, eq(bountyHunts.userId, users.id))
+    .innerJoin(bounties, eq(bountyHunts.bountyId, bounties.id))
+    .where(
+      and(
+        eq(users.osuUserId, osuUserId),
+        sql`(${bounties.goal}->>'beatmapId')::integer = ${beatmapId}`,
+        sql`(${bountyHunts.startedAt} < ${scoreEndedAt}) AND (${bountyHunts.endedAt} IS NULL OR ${scoreEndedAt} <= ${bountyHunts.endedAt})`,
+      ),
+    );
+
+  return rows.map(({ hunt }) => toHunt(hunt));
 }
