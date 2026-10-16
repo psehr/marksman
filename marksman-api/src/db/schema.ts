@@ -17,10 +17,14 @@ import {
   huntStatusEnum,
   ledgerEntryReasonSchema,
   type Bounty,
+  huntAttemptStatusEnum,
+  HuntAttemptScoreEvidence,
+  HuntAttemptVerificationResult,
 } from "@marksman/contracts";
 import { primaryKey } from "drizzle-orm/pg-core";
 import { date } from "drizzle-orm/pg-core";
 import { uniqueIndex } from "drizzle-orm/pg-core";
+import { unique } from "drizzle-orm/pg-core";
 
 export const bountyStatus = pgEnum("bounty_status", [
   "draft",
@@ -190,5 +194,45 @@ export const bountyHunts = pgTable(
     index("bounty_hunts_ongoing_hunts")
       .on(table.userId)
       .where(sql`${table.status} = 'ongoing'`),
+  ],
+);
+
+export const verificationStatusEnum = pgEnum(
+  "verification_status_enum",
+  huntAttemptStatusEnum.enum,
+);
+
+export const huntAttempts = pgTable(
+  "hunt_attempts",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    huntId: uuid("hunt_id")
+      .notNull()
+      .references(() => bountyHunts.id),
+    scoreId: bigint("score_id", { mode: "number" }).notNull(),
+    scoreEndedAt: timestamp("score_ended_at", { withTimezone: true }).notNull(),
+    discoveredAt: timestamp("discovered_at", { withTimezone: true }).notNull(),
+    scoreEvidence: jsonb("score_evidence")
+      .notNull()
+      .$type<HuntAttemptScoreEvidence>(),
+    verificationStatus: verificationStatusEnum("verification_status").notNull(),
+    verificationResult: jsonb(
+      "verification_result",
+    ).$type<HuntAttemptVerificationResult>(),
+    verifiedAt: timestamp("verified_at", { withTimezone: true }),
+  },
+  (table) => [
+    unique("hunt_attempts_hunt_id_score_id_unique").on(
+      table.huntId,
+      table.scoreId,
+    ),
+    check(
+      "hunt_attempts_verification_state_check",
+      sql`
+      (${table.verificationStatus} = 'pending' AND ${table.verificationResult} IS NULL AND ${table.verifiedAt} IS NULL)
+      OR
+      (${table.verificationStatus} IN ('valid', 'invalid') AND ${table.verificationResult} IS NOT NULL AND ${table.verifiedAt} IS NOT NULL)
+      `,
+    ),
   ],
 );

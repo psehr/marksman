@@ -6,3 +6,4 @@ export * from "./score";
 export * from "./ledger";
 export * from "./bounty-event";
 export * from "./hunt";
+export * from "./hunt-attempt";
