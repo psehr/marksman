@@ -1,4 +1,5 @@
 import { Router } from "express";
+import { db } from "../db";
 import { findBountyById, listBounties } from "../db/bounties";
 import {
   bountyCompletionRequestSchema,
@@ -53,7 +54,7 @@ bountiesRouter.get("/:id", async (req, res) => {
       .json({ code: "MALFORMED_BOUNTY_ID", error: "Malformed bounty ID" });
   }
 
-  const bounty = await findBountyById(parsed.data);
+  const bounty = await findBountyById(db, parsed.data);
   if (!bounty) {
     return res
       .status(404)

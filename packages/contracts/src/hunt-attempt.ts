@@ -45,3 +45,4 @@ export type HuntAttemptVerificationResult = z.infer<
 export type HuntAttemptScoreEvidence = z.infer<
   typeof huntAttemptScoreEvidenceSchema
 >;
+export type HuntAttemptStatus = z.infer<typeof huntAttemptStatusEnum>;

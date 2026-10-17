@@ -1,4 +1,5 @@
 import { BountyScoreCandidate, UserIdentity } from "@marksman/contracts";
+import { db } from "../db";
 import { findBountyById } from "../db/bounties";
 import { BeatmapMetadataUnavailableError, BountyNotFoundError } from "./errors";
 import { fetchRecentScores } from "../integrations/osu/scores";
@@ -9,7 +10,7 @@ export async function getBountyRecentScores(
   bountyId: string,
   user: UserIdentity,
 ): Promise<BountyScoreCandidate[]> {
-  const bounty = await findBountyById(bountyId);
+  const bounty = await findBountyById(db, bountyId);
 
   if (!bounty) throw new BountyNotFoundError();
 

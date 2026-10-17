@@ -40,7 +40,7 @@ export async function attemptBountyCompletion(
 
   if (!parsedBountyId.success) throw new Error("Invalid/malformed bounty uuid");
 
-  const bounty = await findBountyById(bountyId);
+  const bounty = await findBountyById(db, bountyId);
 
   if (!bounty) throw new BountyNotFoundError();
   if (bounty.status !== "open") throw new BountyNotOpenError();

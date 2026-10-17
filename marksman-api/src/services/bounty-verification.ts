@@ -5,6 +5,9 @@ import {
   OsuGrade,
   ScoreResponse,
   UserIdentity,
+  HuntAttemptScoreEvidence,
+  HuntAttemptVerificationResult,
+  HuntAttemptStatus,
 } from "@marksman/contracts";
 import { InvalidBeatmapMetadataError } from "./errors";
 
@@ -25,6 +28,69 @@ export function isBountyCompletionValid(
 ): boolean {
   return Object.values(bountyCompletionValidity).every(
     (value) => value === undefined || value === true,
+  );
+}
+
+export function checkHuntAttemptValidity(
+  verificationResult: HuntAttemptVerificationResult,
+): Exclude<HuntAttemptStatus, "pending"> {
+  const valid = Object.values(verificationResult).every(
+    (value) => value === undefined || value === true,
+  );
+
+  return valid ? "valid" : "invalid";
+}
+
+export function evaluateHuntAttempt(
+  scoreEvidence: HuntAttemptScoreEvidence,
+  bounty: Bounty,
+  identity: UserIdentity,
+  huntStartedAt: Date,
+  huntEndedAt: Date | null,
+  beatmapMaxCombo?: number,
+): HuntAttemptVerificationResult {
+  const result: HuntAttemptVerificationResult = {
+    playerIsClaimant: isPlayerClaimant(scoreEvidence, identity),
+    playerIsNotOwner: isPlayerNotBountyOwner(scoreEvidence, bounty),
+    beatmapIsCorrect: isCorrectBeatmap(scoreEvidence, bounty),
+    rulesetIsCorrect: isCorrectRuleset(scoreEvidence),
+    scoreIsPassed: isPassed(scoreEvidence),
+    modsAreCorrect: isCorrectMods(scoreEvidence, bounty),
+    scoreAccuracyIsSatisfied:
+      bounty.goal.minimumAccuracy !== undefined
+        ? isAccuracySatisfied(scoreEvidence, bounty)
+        : undefined,
+    gradeIsSatisfied:
+      bounty.goal.type === "minimum_grade"
+        ? isGradeSatisfied(scoreEvidence, bounty)
+        : undefined,
+    fcIsSatisfied:
+      bounty.goal.type === "full_combo"
+        ? isConsideredAnFc(
+            scoreEvidence,
+            bounty.goal.minimumComboRatio,
+            beatmapMaxCombo,
+          )
+        : undefined,
+    scoreIsWithinHuntPeriod: isScoreWithinHuntPeriod(
+      scoreEvidence,
+      huntStartedAt,
+      huntEndedAt,
+    ),
+  };
+
+  return result;
+}
+
+function isScoreWithinHuntPeriod(
+  score: HuntAttemptScoreEvidence,
+  huntStartedAt: Date,
+  huntEndedAt: Date | null,
+): boolean {
+  return (
+    Date.parse(score.ended_at) > huntStartedAt.getTime() &&
+    (huntEndedAt === null ||
+      Date.parse(score.ended_at) <= huntEndedAt.getTime())
   );
 }
 
@@ -75,7 +141,7 @@ export function evaluateBountyCompletion(
 }
 
 function isConsideredAnFc(
-  score: ScoreResponse,
+  score: HuntAttemptScoreEvidence,
   minimumComboRatio?: number,
   beatmapMaxCombo?: number,
 ): boolean {
@@ -104,7 +170,7 @@ function isConsideredAnFc(
 }
 
 function isPlayerClaimant(
-  score: ScoreResponse,
+  score: HuntAttemptScoreEvidence,
   identity: UserIdentity,
 ): boolean {
   return score.user_id === identity.osuUserId;
@@ -114,37 +180,49 @@ function isBountyClaimable(bounty: Bounty): boolean {
   return bounty.status === "open";
 }
 
-function isPlayerNotBountyOwner(score: ScoreResponse, bounty: Bounty): boolean {
+function isPlayerNotBountyOwner(
+  score: HuntAttemptScoreEvidence,
+  bounty: Bounty,
+): boolean {
   return score.user_id !== bounty.creatorOsuUserId;
 }
 
-function isCorrectBeatmap(score: ScoreResponse, bounty: Bounty): boolean {
+function isCorrectBeatmap(
+  score: HuntAttemptScoreEvidence,
+  bounty: Bounty,
+): boolean {
   return score.beatmap_id === bounty.goal.beatmapId;
 }
 
-function isCorrectRuleset(score: ScoreResponse): boolean {
+function isCorrectRuleset(score: HuntAttemptScoreEvidence): boolean {
   // "0" is the ruleset id for osu! standard
   return score.ruleset_id === 0;
 }
 
 function isScoreSetAfterBountyCreation(
-  score: ScoreResponse,
+  score: HuntAttemptScoreEvidence,
   bounty: Bounty,
 ): boolean {
   return Date.parse(score.ended_at) > Date.parse(bounty.createdAt);
 }
 
-function isPassed(score: ScoreResponse): boolean {
+function isPassed(score: HuntAttemptScoreEvidence): boolean {
   return score.passed;
 }
 
-function isAccuracySatisfied(score: ScoreResponse, bounty: Bounty): boolean {
+function isAccuracySatisfied(
+  score: HuntAttemptScoreEvidence,
+  bounty: Bounty,
+): boolean {
   const minimumAccuracy = bounty.goal.minimumAccuracy ?? 0;
 
   return score.accuracy >= minimumAccuracy / 100;
 }
 
-function isCorrectMods(score: ScoreResponse, bounty: Bounty): boolean {
+function isCorrectMods(
+  score: HuntAttemptScoreEvidence,
+  bounty: Bounty,
+): boolean {
   const modsAcronyms = score.mods.map((mod) => {
     return mod.acronym;
   });
@@ -169,7 +247,10 @@ function isCorrectMods(score: ScoreResponse, bounty: Bounty): boolean {
   }
 }
 
-function isGradeSatisfied(score: ScoreResponse, bounty: Bounty): boolean {
+function isGradeSatisfied(
+  score: HuntAttemptScoreEvidence,
+  bounty: Bounty,
+): boolean {
   if (bounty.goal.type !== "minimum_grade") return true;
 
   const achievedGrade = score.rank;

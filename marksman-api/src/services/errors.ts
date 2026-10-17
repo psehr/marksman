@@ -122,3 +122,9 @@ export class HuntExpiredError extends Error {
     super("Hunt has already expired");
   }
 }
+
+export class HuntAttemptNotFoundError extends Error {
+  constructor() {
+    super("Hunt attempt not found");
+  }
+}

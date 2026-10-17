@@ -38,8 +38,8 @@ export async function listBounties(): Promise<Bounty[]> {
 }
 
 export async function findBountyById(
+  connection: Transaction | typeof db,
   id: string,
-  connection: typeof db | Transaction = db,
 ): Promise<Bounty | undefined> {
   const [row] = await connection
     .select()

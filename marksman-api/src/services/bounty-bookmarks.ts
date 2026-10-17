@@ -29,7 +29,7 @@ export async function bookmarkBounty(
 }
 
 export async function unbookmarkBounty(userId: string, bountyId: string) {
-  const bounty = await findBountyById(bountyId);
+  const bounty = await findBountyById(db, bountyId);
 
   if (!bounty) throw new BountyNotFoundError();
 

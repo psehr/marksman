@@ -1,5 +1,5 @@
 import { and, eq, sql } from "drizzle-orm";
-import { Transaction } from ".";
+import { db, Transaction } from ".";
 import { bounties, bountyHunts, users } from "./schema";
 import { Hunt } from "@marksman/contracts";
 
@@ -75,7 +75,7 @@ export async function insertHunt(
 }
 
 export async function findHuntById(
-  connection: Transaction,
+  connection: Transaction | typeof db,
   huntId: string,
 ): Promise<Hunt | undefined> {
   const [row] = await connection
