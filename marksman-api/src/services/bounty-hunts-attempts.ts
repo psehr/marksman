@@ -8,6 +8,7 @@ import {
   findHuntAttemptById,
   insertHuntAttempt,
   saveHuntAttemptVerification,
+  scheduleHuntAttemptRetry,
 } from "../db/bounty-hunts-attempts";
 import {
   checkHuntAttemptValidity,
@@ -20,6 +21,8 @@ import {
   BountyNotFoundError,
   HuntAttemptNotFoundError,
   HuntNotFoundError,
+  InvalidBeatmapMetadataError,
+  OsuApiError,
   UserNotFoundError,
 } from "./errors";
 
@@ -42,6 +45,25 @@ export async function recordDiscoveredScore(
   });
 }
 
+function calcRetryDelay(now: Date, attemptNumber: number): Date {
+  if (attemptNumber === 0) {
+    // 5 seconds
+    const DELAY = 5 * 1000;
+    return new Date(now.getTime() + DELAY);
+  } else if (attemptNumber === 1) {
+    // 15 seconds
+    const DELAY = 15 * 1000;
+    return new Date(now.getTime() + DELAY);
+  } else if (attemptNumber === 2) {
+    // 1 minute
+    const DELAY = 60 * 1000;
+    return new Date(now.getTime() + DELAY);
+  }
+  // 5 minutes
+  const DELAY = 5 * 60 * 1000;
+  return new Date(now.getTime() + DELAY);
+}
+
 export async function verifyHuntAttempt(attemptId: string) {
   const attempt = await findHuntAttemptById(db, attemptId);
   if (!attempt) throw new HuntAttemptNotFoundError();
@@ -62,31 +84,55 @@ export async function verifyHuntAttempt(attemptId: string) {
 
   let beatmap: OsuBeatmapMetadata | undefined;
   if (clientType === "stable" && bounty.goal.type === "full_combo") {
-    beatmap = await getBeatmap(bounty.goal.beatmapId);
+    try {
+      beatmap = await getBeatmap(bounty.goal.beatmapId);
+    } catch (error) {
+      if (error instanceof OsuApiError) {
+        await scheduleHuntAttemptRetry(
+          db,
+          attemptId,
+          "OSU_API_ERROR",
+          calcRetryDelay(new Date(), attempt.verificationAttempts),
+        );
+      }
+      throw error;
+    }
   }
 
-  return db.transaction(async (tx) => {
-    const now = new Date();
+  try {
+    return await db.transaction(async (tx) => {
+      const now = new Date();
 
-    const verificationResult = evaluateHuntAttempt(
-      attempt.scoreEvidence,
-      bounty,
-      identity,
-      new Date(hunt.startedAt),
-      hunt.endedAt ? new Date(hunt.endedAt) : null,
-      beatmap?.max_combo,
-    );
+      const verificationResult = evaluateHuntAttempt(
+        attempt.scoreEvidence,
+        bounty,
+        identity,
+        new Date(hunt.startedAt),
+        hunt.endedAt ? new Date(hunt.endedAt) : null,
+        beatmap?.max_combo,
+      );
 
-    const validity = checkHuntAttemptValidity(verificationResult);
+      const validity = checkHuntAttemptValidity(verificationResult);
 
-    const verifiedAttempt = await saveHuntAttemptVerification(
-      tx,
-      attemptId,
-      verificationResult,
-      validity,
-      now,
-    );
+      const verifiedAttempt = await saveHuntAttemptVerification(
+        tx,
+        attemptId,
+        verificationResult,
+        validity,
+        now,
+      );
 
-    return verifiedAttempt;
-  });
+      return verifiedAttempt;
+    });
+  } catch (error) {
+    if (error instanceof InvalidBeatmapMetadataError) {
+      await scheduleHuntAttemptRetry(
+        db,
+        attemptId,
+        "INVALID_BEATMAP_METADATA_ERROR",
+        calcRetryDelay(new Date(), attempt.verificationAttempts),
+      );
+    }
+    throw error;
+  }
 }

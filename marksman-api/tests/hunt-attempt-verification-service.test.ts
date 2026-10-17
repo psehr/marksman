@@ -20,7 +20,7 @@ const originalBeatmapExports = require(beatmapModulePath);
 const beatmaps = { ...originalBeatmapExports } as typeof import("../src/integrations/osu/beatmaps");
 require.cache[beatmapModulePath]!.exports = beatmaps;
 const { verifyHuntAttempt } = require("../src/services/bounty-hunts-attempts") as typeof import("../src/services/bounty-hunts-attempts");
-const { HuntAttemptNotFoundError, InvalidBeatmapMetadataError } = require("../src/services/errors") as typeof import("../src/services/errors");
+const { HuntAttemptNotFoundError, InvalidBeatmapMetadataError, OsuApiError, BeatmapNotFoundError } = require("../src/services/errors") as typeof import("../src/services/errors");
 const testDatabase = createTestDatabase(db);
 const start = new Date("2026-09-21T12:00:00Z");
 const end = new Date("2026-09-21T12:02:00Z");
@@ -40,7 +40,7 @@ beforeEach(async () => {
   const [hunt] = await db.insert(bountyHunts).values({ userId: user.id, bountyId, startedAt: start, status: "ongoing" }).returning();
   huntId = hunt.id;
   const scoreEvidence = huntAttemptScoreEvidenceSchema.parse(qualifyingScore());
-  const [attempt] = await db.insert(huntAttempts).values({ huntId, scoreId: scoreEvidence.id, scoreEndedAt: new Date(scoreEvidence.ended_at), scoreEvidence, discoveredAt: now, verificationStatus: "pending" }).returning();
+  const [attempt] = await db.insert(huntAttempts).values({ huntId, scoreId: scoreEvidence.id, scoreEndedAt: new Date(scoreEvidence.ended_at), scoreEvidence, discoveredAt: now, verificationStatus: "pending", nextVerificationAt: now }).returning();
   attemptId = attempt.id;
   mock.timers.enable({ apis: ["Date"], now });
 });
@@ -64,12 +64,16 @@ for (const valid of [true, false]) {
       const row = await stored();
       await db.update(huntAttempts).set({ scoreEvidence: { ...row.scoreEvidence, statistics: { miss: 1 } } }).where(eq(huntAttempts.id, attemptId));
     }
+    await db.update(huntAttempts).set({ verificationAttempts: 2, lastVerificationError: "OSU_API_ERROR" }).where(eq(huntAttempts.id, attemptId));
     const lookup = mock.method(beatmaps, "getBeatmap", async () => { throw new Error("Unexpected metadata request"); });
     const result = await verifyHuntAttempt(attemptId);
     assert.ok(result);
     assert.equal(result.verificationStatus, valid ? "valid" : "invalid");
     assert.equal(result.verificationResult?.fcIsSatisfied, valid);
     assert.equal(result.verifiedAt, now.toISOString());
+    assert.equal(result.verificationAttempts, 3);
+    assert.equal(result.nextVerificationAt, null);
+    assert.equal(result.lastVerificationError, null);
     const original = await stored();
     assert.deepEqual(original.verifiedAt, now);
     assert.equal(original.verificationStatus, result.verificationStatus);
@@ -108,18 +112,81 @@ test("stable FC fetches metadata outside a transaction", async () => {
 });
 
 for (const failure of ["lookup", "invalid metadata"] as const) {
-  test(`${failure} leaves pending evidence unchanged; retry succeeds`, async () => {
+  test(`${failure} schedules increasing retries, then clears retry state on recovery`, async () => {
     await stable();
     const original = await stored();
-    const error = new Error("Temporary upstream failure");
+    const error = new OsuApiError();
     const lookup = mock.method(beatmaps, "getBeatmap", async () => {
       if (failure === "lookup") throw error;
       return { ...metadata, max_combo: 0 };
     });
-    await assert.rejects(verifyHuntAttempt(attemptId), failure === "lookup" ? (caught: unknown) => caught === error : InvalidBeatmapMetadataError);
-    assert.deepEqual(await stored(), original);
+    let currentTime = now.getTime();
+    const delays = [5000, 15000, 60000, 300000, 300000];
+    for (const [index, delay] of delays.entries()) {
+      await assert.rejects(verifyHuntAttempt(attemptId), failure === "lookup" ? (caught: unknown) => caught === error : InvalidBeatmapMetadataError);
+      assert.deepEqual(await stored(), {
+        ...original,
+        verificationAttempts: index + 1,
+        nextVerificationAt: new Date(currentTime + delay),
+        lastVerificationError: failure === "lookup" ? "OSU_API_ERROR" : "INVALID_BEATMAP_METADATA_ERROR",
+      });
+      currentTime += delay;
+      mock.timers.setTime(currentTime);
+    }
     lookup.mock.mockImplementation(async () => metadata);
-    assert.equal((await verifyHuntAttempt(attemptId))?.verificationStatus, "valid");
+    const result = await verifyHuntAttempt(attemptId);
+    assert.equal(result?.verificationStatus, "valid");
+    assert.equal(result?.verificationAttempts, delays.length + 1);
+    assert.equal(result?.nextVerificationAt, null);
+    assert.equal(result?.lastVerificationError, null);
+    assert.equal(result?.verifiedAt, new Date(currentTime).toISOString());
+    const completed = await stored();
+    assert.equal(completed.verificationAttempts, delays.length + 1);
+    assert.equal(completed.nextVerificationAt, null);
+    assert.equal(completed.lastVerificationError, null);
+    assert.deepEqual(await verifyHuntAttempt(attemptId), result);
+    assert.deepEqual(await stored(), completed);
+  });
+}
+
+for (const error of [new BeatmapNotFoundError(), new Error("Unexpected failure")]) {
+  test(`${error.constructor.name} propagates without scheduling a metadata retry`, async () => {
+    await stable();
+    const original = await stored();
+    mock.method(beatmaps, "getBeatmap", async () => { throw error; });
+    await assert.rejects(verifyHuntAttempt(attemptId), (caught: unknown) => caught === error);
+    assert.deepEqual(await stored(), original);
+  });
+}
+
+for (const failure of ["lookup", "invalid metadata"] as const) {
+  test(`late ${failure} failure cannot schedule a retry over a completed result`, async () => {
+    await stable();
+    let release!: () => void;
+    let arrived!: () => void;
+    const gate = new Promise<void>(resolve => { release = resolve; });
+    const reached = new Promise<void>(resolve => { arrived = resolve; });
+    let calls = 0;
+    const error = new OsuApiError();
+    mock.method(beatmaps, "getBeatmap", async () => {
+      if (++calls === 1) {
+        arrived();
+        await gate;
+        if (failure === "lookup") throw error;
+        return { ...metadata, max_combo: 0 };
+      }
+      return metadata;
+    });
+    const delayed = assert.rejects(verifyHuntAttempt(attemptId), failure === "lookup" ? (caught: unknown) => caught === error : InvalidBeatmapMetadataError);
+    try {
+      await reached;
+      assert.equal((await verifyHuntAttempt(attemptId))?.verificationStatus, "valid");
+      const completed = await stored();
+      assert.equal(completed.verificationAttempts, 1);
+      release();
+      await delayed;
+      assert.deepEqual(await stored(), completed);
+    } finally { release(); await delayed; }
   });
 }
 

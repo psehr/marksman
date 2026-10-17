@@ -220,6 +220,11 @@ export const huntAttempts = pgTable(
       "verification_result",
     ).$type<HuntAttemptVerificationResult>(),
     verifiedAt: timestamp("verified_at", { withTimezone: true }),
+    verificationAttempts: integer("verification_attempts").notNull().default(0),
+    nextVerificationAt: timestamp("next_verification_at", {
+      withTimezone: true,
+    }),
+    lastVerificationError: text("last_verification_error"),
   },
   (table) => [
     unique("hunt_attempts_hunt_id_score_id_unique").on(

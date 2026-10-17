@@ -6,7 +6,7 @@ import {
 } from "@marksman/contracts";
 import { db, Transaction } from ".";
 import { huntAttempts } from "./schema";
-import { and, eq } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 
 function toHuntAttempt(row: typeof huntAttempts.$inferSelect): HuntAttempt {
   return {
@@ -19,6 +19,11 @@ function toHuntAttempt(row: typeof huntAttempts.$inferSelect): HuntAttempt {
     verificationStatus: row.verificationStatus,
     verificationResult: row.verificationResult,
     verifiedAt: row.verifiedAt ? row.verifiedAt.toISOString() : null,
+    verificationAttempts: row.verificationAttempts,
+    nextVerificationAt: row.nextVerificationAt
+      ? row.nextVerificationAt.toISOString()
+      : null,
+    lastVerificationError: row.lastVerificationError,
   };
 }
 
@@ -51,6 +56,8 @@ export async function insertHuntAttempt(
       verificationStatus: "pending",
       verificationResult: null,
       verifiedAt: null,
+      verificationAttempts: 0,
+      nextVerificationAt: now,
     })
     .onConflictDoNothing({
       target: [huntAttempts.huntId, huntAttempts.scoreId],
@@ -70,6 +77,33 @@ export async function saveHuntAttemptVerification(
       verificationResult,
       verificationStatus: verificationValidity,
       verifiedAt: now,
+      verificationAttempts: sql`${huntAttempts.verificationAttempts} + 1`,
+      nextVerificationAt: null,
+      lastVerificationError: null,
+    })
+    .where(
+      and(
+        eq(huntAttempts.id, attemptId),
+        eq(huntAttempts.verificationStatus, "pending"),
+      ),
+    )
+    .returning();
+
+  return row ? toHuntAttempt(row) : undefined;
+}
+
+export async function scheduleHuntAttemptRetry(
+  connection: Transaction | typeof db,
+  attemptId: string,
+  errorCode: string,
+  nextRetry: Date,
+) {
+  const [row] = await connection
+    .update(huntAttempts)
+    .set({
+      verificationAttempts: sql`${huntAttempts.verificationAttempts} + 1`,
+      nextVerificationAt: nextRetry,
+      lastVerificationError: errorCode,
     })
     .where(
       and(

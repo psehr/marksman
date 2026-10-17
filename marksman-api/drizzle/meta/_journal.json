@@ -113,6 +113,13 @@
       "when": 1792182410140,
       "tag": "0015_equal_inhumans",
       "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1792272224533,
+      "tag": "0016_living_blacklash",
+      "breakpoints": true
     }
   ]
 }

@@ -36,6 +36,9 @@ export const huntAttemptSchema = z.object({
   verificationStatus: huntAttemptStatusEnum,
   verificationResult: huntAttemptVerificationResultSchema.nullable(),
   verifiedAt: z.iso.datetime().nullable(),
+  verificationAttempts: z.number().int().nonnegative(),
+  nextVerificationAt: z.iso.datetime().nullable(),
+  lastVerificationError: z.string().nullable(),
 });
 
 export type HuntAttempt = z.infer<typeof huntAttemptSchema>;
