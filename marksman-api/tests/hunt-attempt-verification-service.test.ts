@@ -19,7 +19,7 @@ const beatmapModulePath = require.resolve("../src/integrations/osu/beatmaps");
 const originalBeatmapExports = require(beatmapModulePath);
 const beatmaps = { ...originalBeatmapExports } as typeof import("../src/integrations/osu/beatmaps");
 require.cache[beatmapModulePath]!.exports = beatmaps;
-const { verifyHuntAttempt } = require("../src/services/bounty-hunts-attempts") as typeof import("../src/services/bounty-hunts-attempts");
+const { verifyHuntAttempt, verifyDueHuntAttempts } = require("../src/services/bounty-hunts-attempts") as typeof import("../src/services/bounty-hunts-attempts");
 const { HuntAttemptNotFoundError, InvalidBeatmapMetadataError, OsuApiError, BeatmapNotFoundError } = require("../src/services/errors") as typeof import("../src/services/errors");
 const testDatabase = createTestDatabase(db);
 const start = new Date("2026-09-21T12:00:00Z");
@@ -224,4 +224,94 @@ test("concurrent workers save once without overwriting the winning result", asyn
 
 test("missing attempt produces a specific error", async () => {
   await assert.rejects(verifyHuntAttempt("00000000-0000-4000-8000-000000000000"), HuntAttemptNotFoundError);
+});
+
+async function secondDueAttempt() {
+  const first = await stored();
+  const { id: _id, ...values } = first;
+  const scoreId = first.scoreId + 1;
+  const [second] = await db.insert(huntAttempts).values({
+    ...values, scoreId, scoreEvidence: { ...first.scoreEvidence, id: scoreId },
+    nextVerificationAt: now,
+  }).returning();
+  // Ensure the original attempt is selected first, independent of random UUIDs.
+  await db.update(huntAttempts).set({ nextVerificationAt: new Date(now.getTime() - 1) })
+    .where(eq(huntAttempts.id, attemptId));
+  return second;
+}
+
+test("batch returns no failures when no attempts are due", async () => {
+  await db.update(huntAttempts).set({ nextVerificationAt: new Date(now.getTime() + 1) });
+  assert.deepEqual(await verifyDueHuntAttempts(10), []);
+  assert.equal((await stored()).verificationStatus, "pending");
+});
+
+test("batch respects its limit and persists success before returning", async () => {
+  const second = await secondDueAttempt();
+  assert.deepEqual(await verifyDueHuntAttempts(1), []);
+  assert.equal((await stored()).verificationStatus, "valid");
+  const [untouched] = await db.select().from(huntAttempts).where(eq(huntAttempts.id, second.id));
+  assert.equal(untouched.verificationStatus, "pending");
+});
+
+for (const error of [new OsuApiError(), new BeatmapNotFoundError(), new Error("Unexpected batch failure")]) {
+  test(`batch records ${error.constructor.name} and completes the following attempt`, async () => {
+    const second = await secondDueAttempt();
+    await stable();
+    mock.method(beatmaps, "getBeatmap", async () => { throw error; });
+    const failures = await verifyDueHuntAttempts(10);
+    assert.equal(failures.length, 1);
+    assert.equal(failures[0].attemptId, attemptId);
+    assert.equal(failures[0].error, error);
+    const first = await stored();
+    assert.equal(first.verificationStatus, "pending");
+    if (error instanceof OsuApiError) {
+      assert.equal(first.verificationAttempts, 1);
+      assert.deepEqual(first.nextVerificationAt, new Date(now.getTime() + 5000));
+    } else {
+      assert.equal(first.verificationAttempts, 0);
+    }
+    const [completed] = await db.select().from(huntAttempts).where(eq(huntAttempts.id, second.id));
+    assert.equal(completed.verificationStatus, "valid");
+  });
+}
+
+test("batch verifies sequentially and waits for the final attempt", { timeout: 5000 }, async () => {
+  await stable();
+  const second = await secondDueAttempt();
+  let release!: () => void;
+  let arrived!: () => void;
+  const gate = new Promise<void>(resolve => { release = resolve; });
+  const reached = new Promise<void>(resolve => { arrived = resolve; });
+  let calls = 0;
+  let firstStatusAtSecondLookup: string | undefined;
+  mock.method(beatmaps, "getBeatmap", async () => {
+    if (++calls === 2) {
+      firstStatusAtSecondLookup = (await stored()).verificationStatus;
+      arrived();
+      await gate;
+    }
+    return metadata;
+  });
+  let finished = false;
+  const batch = verifyDueHuntAttempts(10).then(result => { finished = true; return result; });
+  try {
+    await reached;
+    assert.equal(firstStatusAtSecondLookup, "valid");
+    assert.equal(finished, false);
+    release();
+    assert.deepEqual(await batch, []);
+    const [completed] = await db.select().from(huntAttempts).where(eq(huntAttempts.id, second.id));
+    assert.equal(completed.verificationStatus, "valid");
+    assert.equal(calls, 2);
+  } finally { release(); await batch; }
+});
+
+test("batch propagates an initial query failure", async () => {
+  const error = new Error("Database query failed");
+  const select = mock.method(db, "select", () => { throw error; });
+  await assert.rejects(verifyDueHuntAttempts(10), (caught: unknown) => caught === error);
+  assert.equal(select.mock.callCount(), 1);
+  select.mock.restore();
+  assert.equal((await stored()).verificationStatus, "pending");
 });

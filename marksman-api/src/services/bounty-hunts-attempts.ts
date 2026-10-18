@@ -1,10 +1,12 @@
 import {
+  HuntAttempt,
   HuntAttemptScoreEvidence,
   OsuBeatmapMetadata,
 } from "@marksman/contracts";
 import { findHuntById, findHuntsForScore } from "../db/bounty-hunts";
 import { db } from "../db";
 import {
+  findDueHuntAttempts,
   findHuntAttemptById,
   insertHuntAttempt,
   saveHuntAttemptVerification,
@@ -64,7 +66,9 @@ function calcRetryDelay(now: Date, attemptNumber: number): Date {
   return new Date(now.getTime() + DELAY);
 }
 
-export async function verifyHuntAttempt(attemptId: string) {
+export async function verifyHuntAttempt(
+  attemptId: string,
+): Promise<HuntAttempt | undefined> {
   const attempt = await findHuntAttemptById(db, attemptId);
   if (!attempt) throw new HuntAttemptNotFoundError();
 
@@ -135,4 +139,20 @@ export async function verifyHuntAttempt(attemptId: string) {
     }
     throw error;
   }
+}
+
+export async function verifyDueHuntAttempts(limit: number) {
+  const dueAttempts = await findDueHuntAttempts(db, new Date(), limit);
+
+  const failuresArray: { attemptId: string; error: unknown }[] = [];
+
+  for (const attempt of dueAttempts) {
+    try {
+      await verifyHuntAttempt(attempt.id);
+    } catch (error) {
+      failuresArray.push({ attemptId: attempt.id, error });
+    }
+  }
+
+  return failuresArray;
 }
