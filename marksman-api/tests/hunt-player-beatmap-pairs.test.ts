@@ -2,6 +2,7 @@ import assert from "node:assert/strict";
 import { after, before, beforeEach, test } from "node:test";
 import { bounties, bountyHunts, users } from "../src/db/schema";
 import { createTestDatabase } from "./fixtures/test-database";
+import { qualifyingScore } from "./fixtures/completion";
 
 Object.assign(process.env, {
   DATABASE_URL: "postgresql://marksman_test:marksman_test@127.0.0.1:5433/marksman_test",
@@ -11,6 +12,7 @@ Object.assign(process.env, {
 });
 const { db } = require("../src/db") as typeof import("../src/db");
 const { findHuntPlayerBeatmapPairs } = require("../src/db/bounty-hunts") as typeof import("../src/db/bounty-hunts");
+const { filterScoresForHunts } = require("../src/services/bounty-hunts-attempts") as typeof import("../src/services/bounty-hunts-attempts");
 const testDatabase = createTestDatabase(db);
 let playerIds: string[];
 const start = new Date("2026-10-18T12:00:00Z");
@@ -105,4 +107,49 @@ test("accepts a transaction connection", async () => {
   await seedHunt(playerIds[0], await seedBounty(123));
   const pairs = await db.transaction(tx => findHuntPlayerBeatmapPairs(tx, [102], [123]));
   assert.deepEqual(pairs, [{ osuUserId: 102, beatmapId: 123 }]);
+});
+
+function score(id: number, userId: number, beatmapId: number) {
+  const { beatmap, beatmapset, ...evidence } = qualifyingScore();
+  return { ...evidence, id, user_id: userId, beatmap_id: beatmapId };
+}
+
+test("batch filter keeps exact pairs in input order and rejects crossed combinations", async () => {
+  await seedHunt(playerIds[0], await seedBounty(123));
+  await seedHunt(playerIds[1], await seedBounty(456));
+  const scores = [
+    score(1, 103, 456), score(2, 102, 456), score(3, 103, 123),
+    score(4, 102, 123), score(5, 999, 123), score(6, 102, 999),
+  ];
+  const original = structuredClone(scores);
+  assert.deepEqual(await filterScoresForHunts(scores), [scores[0], scores[3]]);
+  assert.deepEqual(scores, original);
+});
+
+test("batch filter preserves multiple scores and duplicate evidence for a matching pair", async () => {
+  await seedHunt(playerIds[0], await seedBounty(123));
+  const first = score(1, 102, 123);
+  const second = score(2, 102, 123);
+  assert.deepEqual(await filterScoresForHunts([first, second, first]), [first, second, first]);
+});
+
+test("batch filter retains historical pairs without applying time or requirement checks", async () => {
+  await seedHunt(playerIds[0], await seedBounty(123), "stopped");
+  await seedHunt(playerIds[1], await seedBounty(456, "completed"), "closed");
+  const scores = [
+    { ...score(1, 102, 123), ended_at: "2026-10-18T12:00:30Z", rank: "D" as const },
+    { ...score(2, 103, 456), ended_at: "2026-10-18T12:00:30Z" },
+    { ...score(3, 102, 123), ended_at: "2026-10-18T13:00:00Z" },
+  ];
+  // Exact period and eligibility checks belong to later discovery/verification.
+  assert.deepEqual(await filterScoresForHunts(scores), scores);
+});
+
+test("batch filter returns no scores when no exact pair matches", async () => {
+  await seedHunt(playerIds[0], await seedBounty(123));
+  assert.deepEqual(await filterScoresForHunts([score(1, 103, 123), score(2, 102, 456)]), []);
+});
+
+test("batch filter accepts an empty batch", async () => {
+  assert.deepEqual(await filterScoresForHunts([]), []);
 });

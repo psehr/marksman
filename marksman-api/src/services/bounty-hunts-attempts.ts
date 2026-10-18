@@ -3,7 +3,11 @@ import {
   HuntAttemptScoreEvidence,
   OsuBeatmapMetadata,
 } from "@marksman/contracts";
-import { findHuntById, findHuntsForScore } from "../db/bounty-hunts";
+import {
+  findHuntById,
+  findHuntPlayerBeatmapPairs,
+  findHuntsForScore,
+} from "../db/bounty-hunts";
 import { db } from "../db";
 import {
   findDueHuntAttempts,
@@ -166,4 +170,26 @@ export async function verifyDueHuntAttempts(limit: number) {
   }
 
   return failuresArray;
+}
+
+export async function filterScoresForHunts(
+  scores: HuntAttemptScoreEvidence[],
+): Promise<HuntAttemptScoreEvidence[]> {
+  // deduplicating inputs
+  const osuUserIds = [...new Set(scores.map((score) => score.user_id))];
+  const beatmapIds = [...new Set(scores.map((score) => score.beatmap_id))];
+
+  const filteredPairs = await findHuntPlayerBeatmapPairs(
+    db,
+    osuUserIds,
+    beatmapIds,
+  );
+
+  const pairKeys = new Set(
+    filteredPairs.map((pair) => `${pair.osuUserId}:${pair.beatmapId}`),
+  );
+
+  return scores.filter((score) => {
+    return pairKeys.has(`${score.user_id}:${score.beatmap_id}`);
+  });
 }
