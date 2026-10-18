@@ -1,4 +1,4 @@
-import { and, eq, sql } from "drizzle-orm";
+import { and, eq, inArray, sql } from "drizzle-orm";
 import { db, Transaction } from ".";
 import { bounties, bountyHunts, users } from "./schema";
 import { Hunt } from "@marksman/contracts";
@@ -151,4 +151,32 @@ export async function findHuntsForScore(
     );
 
   return rows.map(({ hunt }) => toHunt(hunt));
+}
+
+export async function findHuntPlayerBeatmapPairs(
+  connection: Transaction | typeof db,
+  osuUserIds: number[],
+  beatmapIds: number[],
+): Promise<{ osuUserId: number; beatmapId: number }[]> {
+  if (osuUserIds.length === 0 || beatmapIds.length === 0) return [];
+
+  const existingPairs = await connection
+    .selectDistinct({
+      osuUserId: users.osuUserId,
+      beatmapId: sql<number>`(${bounties.goal}->>'beatmapId')::integer`,
+    })
+    .from(bountyHunts)
+    .innerJoin(users, eq(bountyHunts.userId, users.id))
+    .innerJoin(bounties, eq(bountyHunts.bountyId, bounties.id))
+    .where(
+      and(
+        inArray(users.osuUserId, osuUserIds),
+        inArray(
+          sql<number>`(${bounties.goal}->>'beatmapId')::integer`,
+          beatmapIds,
+        ),
+      ),
+    );
+
+  return existingPairs;
 }
