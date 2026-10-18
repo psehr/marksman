@@ -6,7 +6,7 @@ import {
 } from "@marksman/contracts";
 import { db, Transaction } from ".";
 import { huntAttempts } from "./schema";
-import { and, eq, sql } from "drizzle-orm";
+import { and, asc, eq, lte, sql } from "drizzle-orm";
 
 function toHuntAttempt(row: typeof huntAttempts.$inferSelect): HuntAttempt {
   return {
@@ -114,4 +114,26 @@ export async function scheduleHuntAttemptRetry(
     .returning();
 
   return row ? toHuntAttempt(row) : undefined;
+}
+
+export async function findDueHuntAttempts(
+  connection: Transaction | typeof db,
+  now: Date,
+  limit: number,
+): Promise<HuntAttempt[]> {
+  const rows = await connection
+    .select()
+    .from(huntAttempts)
+    .where(
+      and(
+        eq(huntAttempts.verificationStatus, "pending"),
+        lte(huntAttempts.nextVerificationAt, now),
+      ),
+    )
+    .orderBy(asc(huntAttempts.nextVerificationAt), asc(huntAttempts.id))
+    .limit(limit);
+
+  return rows.map((row) => {
+    return toHuntAttempt(row);
+  });
 }
