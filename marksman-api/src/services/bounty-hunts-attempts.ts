@@ -20,6 +20,7 @@ import { findBountyById } from "../db/bounties";
 import { findUserById } from "../db/users";
 import { getBeatmap } from "../integrations/osu/beatmaps";
 import {
+  BeatmapNotFoundError,
   BountyNotFoundError,
   HuntAttemptNotFoundError,
   HuntNotFoundError,
@@ -60,50 +61,54 @@ function calcRetryDelay(now: Date, attemptNumber: number): Date {
     // 1 minute
     const DELAY = 60 * 1000;
     return new Date(now.getTime() + DELAY);
+  } else {
+    // 5 minutes
+    const DELAY = 5 * 60 * 1000;
+    return new Date(now.getTime() + DELAY);
   }
-  // 5 minutes
-  const DELAY = 5 * 60 * 1000;
-  return new Date(now.getTime() + DELAY);
+}
+
+function getVerificationErrorCode(error: unknown): string {
+  if (error instanceof OsuApiError) return "OSU_API_ERROR";
+  if (error instanceof InvalidBeatmapMetadataError)
+    return "INVALID_BEATMAP_METADATA_ERROR";
+  if (error instanceof BeatmapNotFoundError) return "BEATMAP_NOT_FOUND";
+  if (error instanceof HuntNotFoundError) return "HUNT_NOT_FOUND";
+  if (error instanceof BountyNotFoundError) return "BOUNTY_NOT_FOUND";
+  if (error instanceof UserNotFoundError) return "USER_NOT_FOUND";
+  return "UNEXPECTED_ERROR";
 }
 
 export async function verifyHuntAttempt(
   attemptId: string,
 ): Promise<HuntAttempt | undefined> {
+  // default 5 min retry delay for unexpected errors in the verification, only osu! API related errors schedule increasingly
+  const DEFAULT_RETRY_DELAY_MS = 5 * 60 * 1000;
+
   const attempt = await findHuntAttemptById(db, attemptId);
   if (!attempt) throw new HuntAttemptNotFoundError();
 
   if (attempt.verificationStatus !== "pending") return attempt;
 
-  const hunt = await findHuntById(db, attempt.huntId);
-  if (!hunt) throw new HuntNotFoundError();
-
-  const bounty = await findBountyById(db, hunt.bountyId);
-  if (!bounty) throw new BountyNotFoundError();
-
-  const user = await findUserById(hunt.userId);
-  if (!user) throw new UserNotFoundError();
-  const identity = user.identity;
-
-  const clientType = attempt.scoreEvidence.legacy_score_id ? "stable" : "lazer";
-
-  let beatmap: OsuBeatmapMetadata | undefined;
-  if (clientType === "stable" && bounty.goal.type === "full_combo") {
-    try {
-      beatmap = await getBeatmap(bounty.goal.beatmapId);
-    } catch (error) {
-      if (error instanceof OsuApiError) {
-        await scheduleHuntAttemptRetry(
-          db,
-          attemptId,
-          "OSU_API_ERROR",
-          calcRetryDelay(new Date(), attempt.verificationAttempts),
-        );
-      }
-      throw error;
-    }
-  }
-
   try {
+    const hunt = await findHuntById(db, attempt.huntId);
+    if (!hunt) throw new HuntNotFoundError();
+
+    const bounty = await findBountyById(db, hunt.bountyId);
+    if (!bounty) throw new BountyNotFoundError();
+
+    const user = await findUserById(hunt.userId);
+    if (!user) throw new UserNotFoundError();
+    const identity = user.identity;
+
+    const clientType = attempt.scoreEvidence.legacy_score_id
+      ? "stable"
+      : "lazer";
+    let beatmap: OsuBeatmapMetadata | undefined;
+    if (clientType === "stable" && bounty.goal.type === "full_combo") {
+      beatmap = await getBeatmap(bounty.goal.beatmapId);
+    }
+
     return await db.transaction(async (tx) => {
       const now = new Date();
 
@@ -129,14 +134,20 @@ export async function verifyHuntAttempt(
       return verifiedAttempt;
     });
   } catch (error) {
-    if (error instanceof InvalidBeatmapMetadataError) {
-      await scheduleHuntAttemptRetry(
-        db,
-        attemptId,
-        "INVALID_BEATMAP_METADATA_ERROR",
-        calcRetryDelay(new Date(), attempt.verificationAttempts),
-      );
-    }
+    const now = new Date();
+    const usesBackoff =
+      error instanceof OsuApiError ||
+      error instanceof InvalidBeatmapMetadataError;
+    const nextRetry = usesBackoff
+      ? calcRetryDelay(now, attempt.verificationAttempts)
+      : new Date(now.getTime() + DEFAULT_RETRY_DELAY_MS);
+
+    await scheduleHuntAttemptRetry(
+      db,
+      attemptId,
+      getVerificationErrorCode(error),
+      nextRetry,
+    );
     throw error;
   }
 }

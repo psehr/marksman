@@ -150,12 +150,17 @@ for (const failure of ["lookup", "invalid metadata"] as const) {
 }
 
 for (const error of [new BeatmapNotFoundError(), new Error("Unexpected failure")]) {
-  test(`${error.constructor.name} propagates without scheduling a metadata retry`, async () => {
+  test(`${error.constructor.name} schedules one five-minute retry and propagates`, async () => {
     await stable();
     const original = await stored();
     mock.method(beatmaps, "getBeatmap", async () => { throw error; });
     await assert.rejects(verifyHuntAttempt(attemptId), (caught: unknown) => caught === error);
-    assert.deepEqual(await stored(), original);
+    assert.deepEqual(await stored(), {
+      ...original,
+      verificationAttempts: 1,
+      nextVerificationAt: new Date(now.getTime() + 300000),
+      lastVerificationError: error instanceof BeatmapNotFoundError ? "BEATMAP_NOT_FOUND" : "UNEXPECTED_ERROR",
+    });
   });
 }
 
@@ -269,7 +274,8 @@ for (const error of [new OsuApiError(), new BeatmapNotFoundError(), new Error("U
       assert.equal(first.verificationAttempts, 1);
       assert.deepEqual(first.nextVerificationAt, new Date(now.getTime() + 5000));
     } else {
-      assert.equal(first.verificationAttempts, 0);
+      assert.equal(first.verificationAttempts, 1);
+      assert.deepEqual(first.nextVerificationAt, new Date(now.getTime() + 300000));
     }
     const [completed] = await db.select().from(huntAttempts).where(eq(huntAttempts.id, second.id));
     assert.equal(completed.verificationStatus, "valid");
@@ -314,4 +320,42 @@ test("batch propagates an initial query failure", async () => {
   assert.equal(select.mock.callCount(), 1);
   select.mock.restore();
   assert.equal((await stored()).verificationStatus, "pending");
+});
+
+test("unexpected record-loading failure schedules one fallback retry", async () => {
+  const error = new Error("Hunt lookup failed");
+  const originalSelect = db.select.bind(db);
+  let calls = 0;
+  const select = mock.method(db, "select", (...args: Parameters<typeof db.select>) => {
+    if (++calls === 2) throw error;
+    return originalSelect(...args);
+  });
+  await assert.rejects(verifyHuntAttempt(attemptId), (caught: unknown) => caught === error);
+  select.mock.restore();
+  const row = await stored();
+  assert.equal(row.verificationStatus, "pending");
+  assert.equal(row.verificationAttempts, 1);
+  assert.equal(row.lastVerificationError, "UNEXPECTED_ERROR");
+  assert.deepEqual(row.nextVerificationAt, new Date(now.getTime() + 300000));
+});
+
+test("transaction rejection schedules a fallback retry", async () => {
+  const error = new Error("Transaction failed");
+  mock.method(db, "transaction", async () => { throw error; });
+  await assert.rejects(verifyHuntAttempt(attemptId), (caught: unknown) => caught === error);
+  const row = await stored();
+  assert.equal(row.verificationStatus, "pending");
+  assert.equal(row.verificationAttempts, 1);
+  assert.equal(row.lastVerificationError, "UNEXPECTED_ERROR");
+  assert.deepEqual(row.nextVerificationAt, new Date(now.getTime() + 300000));
+});
+
+test("retry-write failure propagates without attempting to schedule again", async () => {
+  await stable();
+  mock.method(beatmaps, "getBeatmap", async () => { throw new OsuApiError(); });
+  const error = new Error("Retry write failed");
+  const update = mock.method(db, "update", () => { throw error; });
+  await assert.rejects(verifyHuntAttempt(attemptId), (caught: unknown) => caught === error);
+  assert.equal(update.mock.callCount(), 1);
+  assert.equal((await stored()).verificationAttempts, 0);
 });
