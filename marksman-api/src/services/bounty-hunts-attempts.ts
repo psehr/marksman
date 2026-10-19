@@ -52,6 +52,23 @@ export async function recordDiscoveredScore(
   });
 }
 
+export async function recordDiscoveredScores(
+  scores: HuntAttemptScoreEvidence[],
+) {
+  const filteredScores = await filterScoresForHunts(scores);
+  const failuresArray: { scoreId: number; error: unknown }[] = [];
+
+  for (const score of filteredScores) {
+    try {
+      await recordDiscoveredScore(score);
+    } catch (error) {
+      failuresArray.push({ scoreId: score.id, error });
+    }
+  }
+
+  return failuresArray;
+}
+
 function calcRetryDelay(now: Date, attemptNumber: number): Date {
   if (attemptNumber === 0) {
     // 5 seconds

@@ -12,7 +12,7 @@ Object.assign(process.env, {
   SESSION_SECRET: "fixture-session-secret-at-least-32-characters",
 });
 const { db } = require("../src/db") as typeof import("../src/db");
-const { recordDiscoveredScore } = require("../src/services/bounty-hunts-attempts") as typeof import("../src/services/bounty-hunts-attempts");
+const { recordDiscoveredScore, recordDiscoveredScores } = require("../src/services/bounty-hunts-attempts") as typeof import("../src/services/bounty-hunts-attempts");
 const testDatabase = createTestDatabase(db);
 const start = new Date("2026-10-16T12:00:00Z");
 const end = new Date("2026-10-16T12:02:00Z");
@@ -42,6 +42,72 @@ async function seedHunt(overrides: Partial<typeof bountyHunts.$inferInsert> = {}
   return row;
 }
 const attempts = () => db.select().from(huntAttempts).orderBy(huntAttempts.huntId);
+
+test("batch records matching scores, preserves historical periods and deduplicates rediscovery", async () => {
+  const hunt = await seedHunt({ status: "stopped", endedAt: end });
+  const second = { ...evidence, id: evidence.id + 1 };
+  const scores = [
+    evidence, second, evidence,
+    { ...evidence, id: evidence.id + 2, user_id: 999 },
+    { ...evidence, id: evidence.id + 3, beatmap_id: 999 },
+    { ...evidence, id: evidence.id + 4, ended_at: "2026-10-16T12:03:00Z" },
+  ];
+  assert.deepEqual(await recordDiscoveredScores(scores), []);
+  const rows = await attempts();
+  assert.deepEqual(rows.map(row => row.scoreId).sort(), [evidence.id, second.id]);
+  for (const row of rows) {
+    assert.equal(row.huntId, hunt.id);
+    assert.equal(row.verificationStatus, "pending");
+    assert.deepEqual(row.scoreEvidence, scores.find(score => score.id === row.scoreId));
+  }
+});
+
+test("batch collects score failures and still records later scores", async () => {
+  await seedHunt();
+  const error = new Error("Forced discovery transaction failure");
+  const originalTransaction = db.transaction.bind(db);
+  let calls = 0;
+  const transaction = mock.method(db, "transaction", (...args: Parameters<typeof db.transaction>) => {
+    calls++;
+    if (calls === 2 || calls === 3) return Promise.reject(error);
+    return originalTransaction(...args);
+  });
+  try {
+    const scores = [0, 1, 2, 3].map(offset => ({ ...evidence, id: evidence.id + offset }));
+    assert.deepEqual(await recordDiscoveredScores(scores), [
+      { scoreId: scores[1].id, error }, { scoreId: scores[2].id, error },
+    ]);
+    assert.equal(calls, 4);
+    assert.deepEqual((await attempts()).map(row => row.scoreId).sort(), [scores[0].id, scores[3].id]);
+  } finally { transaction.mock.restore(); }
+});
+
+test("batch propagates filter query failure before starting score transactions", async () => {
+  const error = new Error("Forced pair lookup failure");
+  const select = mock.method(db, "selectDistinct", () => { throw error; });
+  const transaction = mock.method(db, "transaction", () => { throw new Error("Unexpected transaction"); });
+  try {
+    await assert.rejects(recordDiscoveredScores([evidence]), (caught: unknown) => caught === error);
+    assert.equal(select.mock.callCount(), 1);
+    assert.equal(transaction.mock.callCount(), 0);
+  } finally { select.mock.restore(); transaction.mock.restore(); }
+});
+
+test("empty batch returns no failures without database access", async () => {
+  const select = mock.method(db, "selectDistinct", () => { throw new Error("Unexpected query"); });
+  const transaction = mock.method(db, "transaction", () => { throw new Error("Unexpected transaction"); });
+  try {
+    assert.deepEqual(await recordDiscoveredScores([]), []);
+    assert.equal(select.mock.callCount(), 0);
+    assert.equal(transaction.mock.callCount(), 0);
+  } finally { select.mock.restore(); transaction.mock.restore(); }
+});
+
+test("unmatched batch returns no failures or attempts", async () => {
+  await seedHunt();
+  assert.deepEqual(await recordDiscoveredScores([{ ...evidence, user_id: 999 }]), []);
+  assert.deepEqual(await attempts(), []);
+});
 
 before(async () => {
   mock.method(globalThis, "fetch", async () => {
