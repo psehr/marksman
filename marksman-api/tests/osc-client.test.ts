@@ -7,14 +7,21 @@ class FakeSocket {
   emitted: unknown[][] = [];
   connectedWithHandlers: string[][] = [];
   disconnects = 0;
+  connected = false;
   on(event: string, handler: (payload?: unknown) => void) {
     this.handlers.set(event, [...(this.handlers.get(event) ?? []), handler]);
     return this;
   }
   emit(...args: unknown[]) { this.emitted.push(args); return this; }
   connect() { this.connectedWithHandlers.push([...this.handlers.keys()]); return this; }
-  disconnect() { this.disconnects++; return this; }
+  disconnect() {
+    this.disconnects++;
+    if (this.connected) this.receive("disconnect", "io client disconnect");
+    return this;
+  }
   receive(event: string, payload?: unknown) {
+    if (event === "connect") this.connected = true;
+    if (event === "disconnect") this.connected = false;
     for (const handler of this.handlers.get(event) ?? []) handler(payload);
   }
 }
@@ -39,7 +46,11 @@ function deferred() {
 }
 const flush = () => new Promise<void>(done => setImmediate(done));
 
-beforeEach(() => { socket = new FakeSocket(); ioCalls = []; });
+beforeEach(() => {
+  socket = new FakeSocket(); ioCalls = [];
+  mock.method(console, "info", () => {});
+  mock.method(console, "warn", () => {});
+});
 afterEach(async () => { await stop?.(); stop = undefined; mock.restoreAll(); });
 after(() => {
   if (originalModule) require.cache[clientPath] = originalModule;
@@ -52,16 +63,21 @@ test("import is inert and startup registers handlers before connecting with oSC 
   assert.deepEqual(ioCalls, [["https://osc.kaysting.dev", {
     path: "/ws", transports: ["websocket"], autoConnect: false,
   }]]);
-  assert.deepEqual(socket.connectedWithHandlers, [["connect", "scores"]]);
+  assert.deepEqual(socket.connectedWithHandlers, [["connect", "scores", "connect_error", "disconnect"]]);
   assert.deepEqual(socket.emitted, []);
 });
 
 test("each connection subscribes without duplicating the scores listener", async () => {
+  const log = mock.method(console, "info", () => {});
   const received: unknown[] = [];
   stop = startOscClient(async payload => { received.push(payload); });
   socket.receive("connect");
   socket.receive("connect");
   assert.deepEqual(socket.emitted, [["subscribe", "scores"], ["subscribe", "scores"]]);
+  assert.equal(log.mock.callCount(), 2);
+  for (const call of log.mock.calls) {
+    assert.match(call.arguments[0], /\[INFO\] \[osc-scores-socket\] connection established and subscription sent/);
+  }
   socket.receive("scores", [1]);
   await flush();
   assert.deepEqual(received, [[1]]);
@@ -102,7 +118,8 @@ for (const synchronous of [false, true]) {
     socket.receive("scores", "good");
     await flush();
     assert.deepEqual(received, ["bad", "good"]);
-    assert.deepEqual(log.mock.calls.map(call => call.arguments), [[error]]);
+    assert.equal(log.mock.callCount(), 1);
+    assert.match(log.mock.calls[0].arguments[0], /\[ERROR\] \[osc-scores-socket\] score batch processing failed error="Discovery failed"/);
   });
 }
 
@@ -137,4 +154,34 @@ test("stop disconnects immediately, rejects new events and drains all accepted w
     await stop();
     assert.deepEqual(received, ["first", "second"]);
   } finally { first.resolve(); second.resolve(); await stopping; }
+});
+
+test("connection errors log their cause without starting another connection", () => {
+  const log = mock.method(console, "error", () => {});
+  stop = startOscClient(async () => {});
+  socket.receive("connect_error", new Error("Transport unavailable"));
+  assert.equal(log.mock.callCount(), 1);
+  assert.match(log.mock.calls[0].arguments[0], /\[ERROR\] \[osc-scores-socket\] connection attempt failed error="Transport unavailable"/);
+  assert.equal(socket.connectedWithHandlers.length, 1);
+  assert.deepEqual(socket.emitted, []);
+});
+
+test("unexpected disconnect logs a warning with its reason", () => {
+  const log = mock.method(console, "warn", () => {});
+  stop = startOscClient(async () => {});
+  socket.receive("connect");
+  socket.receive("disconnect", "transport close");
+  assert.equal(log.mock.callCount(), 1);
+  assert.match(log.mock.calls[0].arguments[0], /\[WARN\] \[osc-scores-socket\] connection lost reason="transport close"/);
+});
+
+test("intentional shutdown logs at info level without a connection-loss warning", async () => {
+  const info = mock.method(console, "info", () => {});
+  const warn = mock.method(console, "warn", () => {});
+  stop = startOscClient(async () => {});
+  socket.receive("connect");
+  await stop();
+  assert.equal(warn.mock.callCount(), 0);
+  assert.equal(info.mock.callCount(), 2);
+  assert.match(info.mock.calls[1].arguments[0], /\[INFO\] \[osc-scores-socket\] socket disconnected/);
 });
