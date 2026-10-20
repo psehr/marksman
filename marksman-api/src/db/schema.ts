@@ -241,3 +241,11 @@ export const huntAttempts = pgTable(
     ),
   ],
 );
+
+export const scoreDiscoveryCursors = pgTable("score_discovery_cursors", {
+  stream: text("stream").primaryKey(),
+  cursor: text("cursor").notNull(),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
+});

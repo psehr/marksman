@@ -120,6 +120,13 @@
       "when": 1792272224533,
       "tag": "0016_living_blacklash",
       "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1792526442415,
+      "tag": "0017_curved_wraith",
+      "breakpoints": true
     }
   ]
 }
