@@ -1,9 +1,9 @@
 import { eq } from "drizzle-orm";
-import { Transaction } from ".";
+import { db, Transaction } from ".";
 import { scoreDiscoveryCursors } from "./schema";
 
 export async function upsertCursor(
-  connection: Transaction,
+  connection: Transaction | typeof db,
   stream: string,
   cursor: string,
 ) {
@@ -22,7 +22,7 @@ export async function upsertCursor(
 }
 
 export async function findCursorByStream(
-  connection: Transaction,
+  connection: Transaction | typeof db,
   stream: string,
 ): Promise<string | undefined> {
   const [row] = await connection
