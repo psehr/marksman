@@ -227,6 +227,124 @@ test("score fetcher stops when obtaining a token fails", async () => {
 
 afterEach(() => mock.restoreAll());
 
+function mockScoresBatchResponse(makeResponse: () => Response | Promise<Response>) {
+  return mock.method(
+    globalThis,
+    "fetch",
+    async (input: Parameters<typeof fetch>[0], init?: RequestInit) => {
+      if (input === tokenUrl) return Response.json(tokenBody);
+      const url = new URL(input instanceof Request ? input.url : String(input));
+      assert.equal(url.origin, "https://osu.ppy.sh");
+      assert.equal(url.pathname, "/api/v2/scores");
+      assert.equal(url.searchParams.get("ruleset"), "osu");
+      assert.equal(init?.method ?? "GET", "GET");
+      const headers = new Headers(init?.headers);
+      assert.equal(headers.get("Authorization"), "Bearer fixture-token");
+      assert.equal(headers.get("Accept"), "application/json");
+      assert.equal(headers.get("x-api-version"), "20220705");
+      assert.ok(init?.signal instanceof AbortSignal);
+      return makeResponse();
+    },
+  );
+}
+
+test("score batch fetcher omits the initial cursor and preserves scores for per-item parsing", async () => {
+  // Individual invalid items must reach the parser rather than reject the envelope.
+  const body = { scores: [scoreBody, null, { id: "malformed" }], cursor_string: "next" };
+  const fetchMock = mockScoresBatchResponse(() => Response.json(body));
+  assert.deepEqual(await scores.fetchScoresBatch(), body);
+  assert.equal(fetchMock.mock.callCount(), 2);
+  const url = new URL(String(fetchMock.mock.calls[1].arguments[0]));
+  assert.deepEqual([...url.searchParams], [["ruleset", "osu"]]);
+});
+
+test("score batch fetcher encodes an opaque cursor and returns the next cursor", async () => {
+  const cursor = "opaque+/=&?# %cursor";
+  const body = { scores: [scoreBody], cursor_string: "next-cursor" };
+  const fetchMock = mockScoresBatchResponse(() => Response.json(body));
+  assert.deepEqual(await scores.fetchScoresBatch(cursor), body);
+  const url = new URL(String(fetchMock.mock.calls[1].arguments[0]));
+  assert.deepEqual([...url.searchParams], [["ruleset", "osu"], ["cursor_string", cursor]]);
+  assert.equal(url.hash, "");
+});
+
+test("score batch fetcher accepts an empty batch with an unchanged cursor", async () => {
+  const body = { scores: [], cursor_string: "unchanged" };
+  mockScoresBatchResponse(() => Response.json(body));
+  assert.deepEqual(await scores.fetchScoresBatch("unchanged"), body);
+});
+
+for (const status of [401, 404, 429, 500]) {
+  test(`score batch fetcher wraps HTTP ${status} without parsing the body`, async () => {
+    const response = Response.json({ scores: [], cursor_string: "next" }, { status });
+    const jsonMock = mock.method(response, "json");
+    mockScoresBatchResponse(() => response);
+    await assert.rejects(scores.fetchScoresBatch(), OsuApiError);
+    assert.equal(jsonMock.mock.callCount(), 0);
+  });
+}
+
+for (const [name, body] of [
+  ["null envelope", null],
+  ["missing scores", { cursor_string: "next" }],
+  ["non-array scores", { scores: {}, cursor_string: "next" }],
+  ["missing cursor", { scores: [] }],
+  ["null cursor", { scores: [], cursor_string: null }],
+  ["numeric cursor", { scores: [], cursor_string: 123 }],
+  ["empty cursor", { scores: [], cursor_string: "" }],
+] as const) {
+  test(`score batch fetcher wraps invalid envelope: ${name}`, async () => {
+    mockScoresBatchResponse(() => Response.json(body));
+    await assert.rejects(scores.fetchScoresBatch(), OsuApiError);
+  });
+}
+
+test("score batch fetcher wraps invalid JSON", async () => {
+  mockScoresBatchResponse(() => new Response("not JSON"));
+  await assert.rejects(scores.fetchScoresBatch(), OsuApiError);
+});
+
+for (const error of [
+  new TypeError("Network unavailable"),
+  new DOMException("Fixture timeout", "TimeoutError"),
+]) {
+  test(`score batch fetcher wraps ${error.name} and allows retry with the same cursor`, async () => {
+    let fail = true;
+    const body = { scores: [], cursor_string: "next" };
+    const fetchMock = mockScoresBatchResponse(() => {
+      if (fail) throw error;
+      return Response.json(body);
+    });
+    await assert.rejects(scores.fetchScoresBatch("retry-cursor"), OsuApiError);
+    fail = false;
+    assert.deepEqual(await scores.fetchScoresBatch("retry-cursor"), body);
+    assert.equal(fetchMock.mock.callCount(), 3);
+    for (const call of fetchMock.mock.calls.slice(1)) {
+      assert.equal(new URL(String(call.arguments[0])).searchParams.get("cursor_string"), "retry-cursor");
+    }
+  });
+}
+
+test("score batch fetcher configures a ten-second timeout", async () => {
+  const signal = new AbortController().signal;
+  const timeoutMock = mock.method(AbortSignal, "timeout", () => signal);
+  const fetchMock = mockScoresBatchResponse(() => Response.json({ scores: [], cursor_string: "next" }));
+  await auth.getOsuAccessToken();
+  timeoutMock.mock.resetCalls();
+  await scores.fetchScoresBatch();
+  assert.deepEqual(timeoutMock.mock.calls.map(call => call.arguments), [[10_000]]);
+  assert.equal(fetchMock.mock.calls[1].arguments[1]?.signal, signal);
+});
+
+test("score batch fetcher stops when token acquisition fails", async () => {
+  const fetchMock = mock.method(globalThis, "fetch", async (input: Parameters<typeof fetch>[0]) => {
+    assert.equal(input, tokenUrl);
+    return Response.json({ error: "invalid_client" }, { status: 401 });
+  });
+  await assert.rejects(scores.fetchScoresBatch(), OsuApiError);
+  assert.equal(fetchMock.mock.callCount(), 1);
+});
+
 function deferred<T>() {
   let resolve!: (value: T) => void;
   let reject!: (reason: Error) => void;
