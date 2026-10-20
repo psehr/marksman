@@ -4,7 +4,7 @@ import { createWorkerLogger } from "../utils/worker-logger";
 export function startHuntVerificationWorker() {
   const logger = createWorkerLogger("hunt-verification");
 
-  // 1 sec timeout
+  // 1 sec timeout between cycles
   const TIMEOUT = 1000;
 
   let stopped = false;
