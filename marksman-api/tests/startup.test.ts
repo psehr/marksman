@@ -48,7 +48,7 @@ afterEach(() => {
   mock.restoreAll();
 });
 
-function loadStartup() {
+function loadStartup(initialization?: ReturnType<typeof deferred>) {
   const events: string[] = [];
   const worker = deferred();
   let onListening!: () => void;
@@ -65,6 +65,9 @@ function loadStartup() {
   });
   const stopWorker = mock.fn(() => { events.push("worker-stop"); return worker.promise; });
   const startWorker = mock.fn(() => stopWorker);
+  const discover = mock.fn(() => initialization?.promise ?? Promise.resolve());
+  const stopDiscovery = mock.fn(async () => {});
+  const startDiscovery = mock.fn(() => stopDiscovery);
   const sessionClose = mock.fn(() => { events.push("sessions-close"); });
   const poolEnd = mock.fn(async () => { events.push("pool-end"); });
   const errors = mock.method(console, "error", (..._args: unknown[]) => {});
@@ -74,6 +77,8 @@ function loadStartup() {
   stub("../src/workers/hunt-verification", { startHuntVerificationWorker: startWorker });
   stub("../src/db", { pool: { end: poolEnd } });
   stub("../src/db/session-store", { sessionStore: { close: sessionClose } });
+  stub("../src/services/hunt-discovery", { discoverScores: discover });
+  stub("../src/workers/score-discovery", { startScoreDiscoveryWorker: startDiscovery });
   require(entryPath);
   function signal(name: typeof signals[number]) {
     const handlers = process.listeners(name).filter(listener => !originalListeners.get(name)!.includes(listener));
@@ -82,26 +87,30 @@ function loadStartup() {
     handlers[0](name);
   }
   return {
-    events, worker, listen, startWorker, stopWorker, server, sessionClose, poolEnd, errors, signal,
+    discover, startDiscovery, stopDiscovery, events, worker, listen, startWorker, stopWorker, server, sessionClose, poolEnd, errors, signal,
     listening: () => onListening(),
     closed: (error?: Error) => onClosed(error),
   };
 }
 
-test("starts one worker only after the HTTP listening callback", () => {
+test("starts both workers only after the HTTP listening callback", async () => {
   const app = loadStartup();
+  await flush();
   assert.equal(app.listen.mock.callCount(), 1);
   assert.equal(app.listen.mock.calls[0].arguments[0], 3001);
   assert.equal(app.startWorker.mock.callCount(), 0);
   app.listening();
   assert.equal(app.startWorker.mock.callCount(), 1);
+  assert.equal(app.startDiscovery.mock.callCount(), 1);
 });
 
 for (const first of ["http", "worker"] as const) {
   test(`shutdown waits for both operations when ${first} finishes first`, async () => {
     const app = loadStartup();
+  await flush();
     app.listening();
     app.signal(first === "http" ? "SIGINT" : "SIGTERM");
+    await flush();
     assert.deepEqual(app.events, ["http-stop", "worker-stop"]);
     if (first === "http") app.closed();
     else app.worker.resolve();
@@ -119,14 +128,19 @@ for (const first of ["http", "worker"] as const) {
 
 test("repeated signals do not repeat shutdown or resource cleanup", async () => {
   const app = loadStartup();
+  await flush();
   app.listening();
   app.signal("SIGINT");
+  await flush();
   app.signal("SIGTERM");
+  await flush();
   app.signal("SIGINT");
+  await flush();
   app.closed();
   app.worker.resolve();
   await flush();
   app.signal("SIGTERM");
+  await flush();
   await flush();
   assert.equal(app.server.close.mock.callCount(), 1);
   assert.equal(app.stopWorker.mock.callCount(), 1);
@@ -137,9 +151,11 @@ test("repeated signals do not repeat shutdown or resource cleanup", async () => 
 for (const failing of ["http", "worker"] as const) {
   test(`${failing} shutdown failure still waits for the other operation and cleans up`, async () => {
     const app = loadStartup();
+  await flush();
     const error = new Error(`${failing} stop failed`);
     app.listening();
     app.signal("SIGTERM");
+    await flush();
     if (failing === "http") app.closed(error);
     else app.worker.reject(error);
     await flush();
@@ -157,14 +173,140 @@ for (const failing of ["http", "worker"] as const) {
 
 test("pool cleanup failure is reported by the signal handler", async () => {
   const app = loadStartup();
+  await flush();
   const error = new Error("pool cleanup failed");
   app.poolEnd.mock.mockImplementation(async () => { throw error; });
   app.listening();
   app.signal("SIGINT");
+  await flush();
   app.closed();
   app.worker.resolve();
   await flush();
   assert.equal(app.sessionClose.mock.callCount(), 1);
   assert.deepEqual(app.errors.mock.calls[0].arguments, ["Shutdown failed:", error]);
   assert.equal(process.exitCode, 1);
+});
+
+
+test("initial discovery is awaited before HTTP or workers start", async () => {
+  const initial = deferred();
+  const app = loadStartup(initial);
+  try {
+    assert.equal(app.discover.mock.callCount(), 1);
+    assert.equal(app.listen.mock.callCount(), 0);
+    assert.equal(app.startWorker.mock.callCount(), 0);
+    assert.equal(app.startDiscovery.mock.callCount(), 0);
+  } finally { initial.resolve(); await flush(); }
+  assert.equal(app.listen.mock.callCount(), 1);
+  app.listening();
+  assert.equal(app.startWorker.mock.callCount(), 1);
+  assert.equal(app.startDiscovery.mock.callCount(), 1);
+});
+
+test("failed initial discovery cleans resources without accepting traffic", async () => {
+  const initial = deferred();
+  const app = loadStartup(initial);
+  // Attach a test observer too, so a missing application subscription cannot
+  // turn this regression into an unhandled rejection in the test runner.
+  void initial.promise.catch(() => {});
+  initial.reject(new Error("Initial discovery unavailable"));
+  await flush();
+  assert.equal(app.listen.mock.callCount(), 0);
+  assert.equal(app.startWorker.mock.callCount(), 0);
+  assert.equal(app.startDiscovery.mock.callCount(), 0);
+  assert.equal(app.sessionClose.mock.callCount(), 1);
+  assert.equal(app.poolEnd.mock.callCount(), 1);
+  assert.equal(process.exitCode, 1);
+  assert.ok(app.errors.mock.callCount() > 0);
+});
+
+for (const fails of [false, true]) {
+  test(`shutdown drains discovery before closing pool (failure=${fails})`, async () => {
+    const app = loadStartup();
+  await flush();
+    await flush();
+    const discovery = deferred();
+    app.stopDiscovery.mock.mockImplementation(() => discovery.promise);
+    app.listening();
+    app.signal("SIGTERM");
+    await flush();
+    app.signal("SIGINT");
+    await flush();
+    app.closed();
+    app.worker.resolve();
+    try {
+      await flush();
+      assert.equal(app.stopDiscovery.mock.callCount(), 1);
+      assert.equal(app.poolEnd.mock.callCount(), 0);
+      assert.equal(app.sessionClose.mock.callCount(), 0);
+    } finally {
+      if (fails) discovery.reject(new Error("Discovery shutdown failed"));
+      else discovery.resolve();
+      await flush();
+    }
+    assert.equal(app.poolEnd.mock.callCount(), 1);
+    assert.equal(app.sessionClose.mock.callCount(), 1);
+    assert.equal(process.exitCode, fails ? 1 : undefined);
+  });
+}
+
+for (const signal of ["SIGINT", "SIGTERM"] as const) {
+  test(`${signal} during initialization drains discovery and prevents listening`, async () => {
+    const initial = deferred();
+    const app = loadStartup(initial);
+    app.signal(signal);
+    await flush();
+    await flush();
+    const closedWhileDiscovering = app.poolEnd.mock.callCount();
+    initial.resolve();
+    await flush();
+    assert.equal(closedWhileDiscovering, 0);
+    assert.equal(app.listen.mock.callCount(), 0);
+    assert.equal(app.startWorker.mock.callCount(), 0);
+    assert.equal(app.startDiscovery.mock.callCount(), 0);
+    assert.equal(app.sessionClose.mock.callCount(), 1);
+    assert.equal(app.poolEnd.mock.callCount(), 1);
+    assert.equal(app.errors.mock.callCount(), 0);
+  });
+}
+
+test("startup cleanup failure is logged instead of becoming an unhandled rejection", async () => {
+  const initial = deferred();
+  const app = loadStartup(initial);
+  const cleanupError = new Error("Startup pool cleanup failed");
+  app.poolEnd.mock.mockImplementation(async () => { throw cleanupError; });
+  initial.reject(new Error("Initial discovery failed"));
+  await flush();
+  assert.equal(app.listen.mock.callCount(), 0);
+  assert.equal(process.exitCode, 1);
+  assert.ok(app.errors.mock.calls.some(call => call.arguments.includes(cleanupError)));
+});
+
+test("signal during failed initialization still closes resources exactly once", async () => {
+  const initial = deferred();
+  const app = loadStartup(initial);
+  app.signal("SIGTERM");
+  await flush();
+  app.signal("SIGINT");
+  await flush();
+  initial.reject(new Error("Discovery unavailable during shutdown"));
+  await flush();
+  assert.equal(app.listen.mock.callCount(), 0);
+  assert.equal(app.sessionClose.mock.callCount(), 1);
+  assert.equal(app.poolEnd.mock.callCount(), 1);
+  assert.equal(process.exitCode, 1);
+});
+
+test("a late listening callback cannot start workers after shutdown begins", async () => {
+  const app = loadStartup();
+  await flush();
+  app.signal("SIGTERM");
+  await flush();
+  app.listening();
+  app.worker.resolve();
+  app.closed();
+  await flush();
+  assert.equal(app.startWorker.mock.callCount(), 0);
+  assert.equal(app.startDiscovery.mock.callCount(), 0);
+  assert.equal(app.poolEnd.mock.callCount(), 1);
 });
