@@ -1,7 +1,7 @@
-import { parseDiscoveredScores } from "../integrations/osc/scores";
+import { parseDiscoveredScores } from "../integrations/osu/score-parser";
 import { recordDiscoveredScores } from "./bounty-hunts-attempts";
 
-export async function processOscScores(payload: unknown) {
+export async function processDiscoveredScores(payload: unknown) {
   const parsedScores = parseDiscoveredScores(payload);
 
   const failures = await recordDiscoveredScores(parsedScores.scores);
