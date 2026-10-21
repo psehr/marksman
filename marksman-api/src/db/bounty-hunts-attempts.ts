@@ -5,8 +5,8 @@ import {
   HuntAttemptVerificationResult,
 } from "@marksman/contracts";
 import { db, Transaction } from ".";
-import { huntAttempts } from "./schema";
-import { and, asc, eq, lte, sql } from "drizzle-orm";
+import { bountyHunts, huntAttempts } from "./schema";
+import { and, asc, eq, inArray, lte, sql } from "drizzle-orm";
 
 function toHuntAttempt(row: typeof huntAttempts.$inferSelect): HuntAttempt {
   return {
@@ -136,4 +136,24 @@ export async function findDueHuntAttempts(
   return rows.map((row) => {
     return toHuntAttempt(row);
   });
+}
+
+export async function findLeadingHuntAttempt(
+  connection: Transaction | typeof db,
+  bountyId: string,
+) {
+  const [row] = await connection
+    .select({ huntAttempts })
+    .from(huntAttempts)
+    .innerJoin(bountyHunts, eq(bountyHunts.id, huntAttempts.huntId))
+    .where(
+      and(
+        inArray(huntAttempts.verificationStatus, ["valid", "pending"]),
+        eq(bountyHunts.bountyId, bountyId),
+      ),
+    )
+    .orderBy(asc(huntAttempts.scoreEndedAt), asc(huntAttempts.scoreId))
+    .limit(1);
+
+  return row ? toHuntAttempt(row.huntAttempts) : undefined;
 }
