@@ -5,6 +5,7 @@ import { Pool } from "pg";
 import { drizzle } from "drizzle-orm/node-postgres";
 import * as schema from "../src/db/schema";
 import { createTestDatabase } from "./fixtures/test-database";
+import { ensureBountySettlement, findDueBountySettlements } from "../src/db/bounty-settlements";
 
 const pool = new Pool({
   connectionString: "postgresql://marksman_test:marksman_test@127.0.0.1:5433/marksman_test",
@@ -31,6 +32,109 @@ after(async () => {
 });
 
 const settlement = () => ({ bountyId, openedAt, settleAfter, nextAttemptAt: settleAfter });
+
+test("due query includes exact deadlines and supports a transaction connection", async () => {
+  await ensureBountySettlement(db, bountyId, openedAt);
+  assert.deepEqual(await findDueBountySettlements(db, new Date(settleAfter.getTime() - 1), 10), []);
+  const rows = await db.transaction(tx => findDueBountySettlements(tx, settleAfter, 10));
+  assert.equal(rows.length, 1);
+  assert.equal(rows[0].bountySettlements.bountyId, bountyId);
+  assert.deepEqual(Object.keys(rows[0]), ["bountySettlements"]);
+});
+
+for (const column of ["settleAfter", "nextAttemptAt"] as const) {
+  test(`due query independently respects ${column}`, async () => {
+    await db.insert(schema.bountySettlements).values({
+      ...settlement(), [column]: new Date(settleAfter.getTime() + 1),
+    });
+    assert.deepEqual(await findDueBountySettlements(db, settleAfter, 10), []);
+  });
+}
+
+test("due query excludes settled rows", async () => {
+  await db.insert(schema.bountySettlements).values({ ...settlement(), settledAt: settleAfter });
+  assert.deepEqual(await findDueBountySettlements(db, settleAfter, 10), []);
+});
+
+for (const status of ["draft", "cancelled", "completed"] as const) {
+  test(`due query excludes ${status} bounties`, async () => {
+    await ensureBountySettlement(db, bountyId, openedAt);
+    await pool.query("UPDATE bounties SET status = $1 WHERE id = $2", [status, bountyId]);
+    assert.deepEqual(await findDueBountySettlements(db, settleAfter, 10), []);
+  });
+}
+
+test("due query orders by retry time then bounty ID before applying its limit", async () => {
+  const ids = [3, 2, 1].map(n => `00000000-0000-4000-8000-${String(n).padStart(12, "0")}`);
+  for (const [index, id] of ids.entries()) {
+    await pool.query("INSERT INTO bounties (id, status, reward_bp, goal, creator_osu_user_id) SELECT $1, status, reward_bp, goal, creator_osu_user_id FROM bounties WHERE id = $2", [id, bountyId]);
+    await db.insert(schema.bountySettlements).values({
+      ...settlement(), bountyId: id,
+      nextAttemptAt: new Date(settleAfter.getTime() + (index === 0 ? 0 : 1)),
+    });
+  }
+  const now = new Date(settleAfter.getTime() + 1);
+  const rows = await findDueBountySettlements(db, now, 2);
+  assert.deepEqual(rows.map(row => row.bountySettlements.bountyId), [ids[0], ids[2]]);
+  assert.equal((await findDueBountySettlements(db, now, 10)).length, 3);
+  assert.deepEqual(await findDueBountySettlements(db, now, 0), []);
+});
+
+test("due query returns an empty list when no settlements exist", async () => {
+  assert.deepEqual(await findDueBountySettlements(db, settleAfter, 10), []);
+});
+
+test("ensure creates a settlement with a 30-second window", async () => {
+  await ensureBountySettlement(db, bountyId, openedAt);
+  assert.deepEqual(await db.select().from(schema.bountySettlements), [
+    { ...settlement(), attempts: 0, lastError: null, settledAt: null },
+  ]);
+  assert.equal(openedAt.toISOString(), "2026-10-21T12:00:00.000Z");
+});
+
+test("repeated ensure preserves the original deadline and processing state", async () => {
+  const original = { ...settlement(), attempts: 3, lastError: "retry",
+    nextAttemptAt: new Date("2026-10-21T12:05:00Z"), settledAt: null };
+  await db.insert(schema.bountySettlements).values(original);
+  await ensureBountySettlement(db, bountyId, new Date("2026-10-21T13:00:00Z"));
+  assert.deepEqual(await db.select().from(schema.bountySettlements), [original]);
+});
+
+test("ensure does not reopen an already settled row", async () => {
+  const original = { ...settlement(), attempts: 1, lastError: null, settledAt: settleAfter };
+  await db.insert(schema.bountySettlements).values(original);
+  await ensureBountySettlement(db, bountyId, new Date("2026-10-21T13:00:00Z"));
+  assert.deepEqual(await db.select().from(schema.bountySettlements), [original]);
+});
+
+test("ensure participates in the caller's transaction and rolls back", async () => {
+  const failure = new Error("rollback");
+  await assert.rejects(db.transaction(async tx => {
+    await ensureBountySettlement(tx, bountyId, openedAt);
+    assert.equal((await tx.select().from(schema.bountySettlements)).length, 1);
+    throw failure;
+  }), error => error === failure);
+  assert.deepEqual(await db.select().from(schema.bountySettlements), []);
+});
+
+test("concurrent ensure calls preserve one complete window", async () => {
+  const later = new Date(openedAt.getTime() + 10_000);
+  await Promise.all([
+    ensureBountySettlement(db, bountyId, openedAt),
+    ensureBountySettlement(db, bountyId, later),
+  ]);
+  const rows = await db.select().from(schema.bountySettlements);
+  assert.equal(rows.length, 1);
+  const [row] = rows;
+  assert.ok([openedAt.getTime(), later.getTime()].includes(row.openedAt.getTime()));
+  assert.equal(row.settleAfter.getTime(), row.openedAt.getTime() + 30_000);
+  assert.deepEqual(row.nextAttemptAt, row.settleAfter);
+});
+
+test("ensure propagates foreign key errors", async () => {
+  await assert.rejects(ensureBountySettlement(db, randomUUID(), openedAt), pgError("23503"));
+});
+
 function pgError(code: string) {
   return (error: unknown) => {
     const outer = error as { cause?: unknown };

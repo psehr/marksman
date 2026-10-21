@@ -20,7 +20,7 @@ import {
   checkHuntAttemptValidity,
   evaluateHuntAttempt,
 } from "./bounty-verification";
-import { findBountyById } from "../db/bounties";
+import { findBountyById, findBountyByIdForUpdate } from "../db/bounties";
 import { findUserById } from "../db/users";
 import { getBeatmap } from "../integrations/osu/beatmaps";
 import {
@@ -32,6 +32,7 @@ import {
   OsuApiError,
   UserNotFoundError,
 } from "./errors";
+import { ensureBountySettlement } from "../db/bounty-settlements";
 
 export async function recordDiscoveredScore(
   scoreEvidence: HuntAttemptScoreEvidence,
@@ -131,8 +132,6 @@ export async function verifyHuntAttempt(
     }
 
     return await db.transaction(async (tx) => {
-      const now = new Date();
-
       const verificationResult = evaluateHuntAttempt(
         attempt.scoreEvidence,
         bounty,
@@ -144,6 +143,12 @@ export async function verifyHuntAttempt(
 
       const validity = checkHuntAttemptValidity(verificationResult);
 
+      const bountyLocked = await findBountyByIdForUpdate(tx, bounty.id);
+
+      if (!bountyLocked) throw new BountyNotFoundError();
+
+      const now = new Date();
+
       const verifiedAttempt = await saveHuntAttemptVerification(
         tx,
         attemptId,
@@ -151,6 +156,13 @@ export async function verifyHuntAttempt(
         validity,
         now,
       );
+
+      if (
+        verifiedAttempt?.verificationStatus === "valid" &&
+        bountyLocked.status === "open"
+      ) {
+        await ensureBountySettlement(tx, bountyLocked.id, now);
+      }
 
       return verifiedAttempt;
     });

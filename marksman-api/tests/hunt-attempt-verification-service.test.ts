@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { after, afterEach, before, beforeEach, mock, test } from "node:test";
 import { eq } from "drizzle-orm";
 import { huntAttemptScoreEvidenceSchema } from "@marksman/contracts";
-import { bounties, bountyHunts, huntAttempts, users } from "../src/db/schema";
+import { bounties, bountyHunts, huntAttempts, users, bountySettlements } from "../src/db/schema";
 import { createTestDatabase } from "./fixtures/test-database";
 import { hunter, metadata, qualifyingBounty, qualifyingScore } from "./fixtures/completion";
 
@@ -82,6 +82,13 @@ for (const valid of [true, false]) {
     assert.deepEqual(await verifyHuntAttempt(attemptId), result);
     assert.deepEqual(await stored(), original);
     assert.equal(lookup.mock.callCount(), 0);
+    const settlements = await db.select().from(bountySettlements);
+    assert.deepEqual(settlements, valid ? [{
+      bountyId, openedAt: now,
+      settleAfter: new Date(now.getTime() + 30_000),
+      nextAttemptAt: new Date(now.getTime() + 30_000),
+      attempts: 0, lastError: null, settledAt: null,
+    }] : []);
   });
 }
 
@@ -200,8 +207,20 @@ for (const [huntStatus, bountyStatus] of [["stopped", "open"], ["closed", "compl
     await db.update(bountyHunts).set({ status: huntStatus, endedAt: end }).where(eq(bountyHunts.id, huntId));
     await db.update(bounties).set({ status: bountyStatus }).where(eq(bounties.id, bountyId));
     assert.equal((await verifyHuntAttempt(attemptId))?.verificationStatus, "valid");
+    assert.equal((await db.select().from(bountySettlements)).length, bountyStatus === "open" ? 1 : 0);
   });
 }
+
+test("closure during metadata lookup does not open a settlement", async () => {
+  await stable();
+  mock.method(beatmaps, "getBeatmap", async () => {
+    await db.update(bounties).set({ status: "cancelled" }).where(eq(bounties.id, bountyId));
+    await db.update(bountyHunts).set({ status: "closed", endedAt: end }).where(eq(bountyHunts.id, huntId));
+    return metadata;
+  });
+  assert.equal((await verifyHuntAttempt(attemptId))?.verificationStatus, "valid");
+  assert.deepEqual(await db.select().from(bountySettlements), []);
+});
 
 test("concurrent workers save once without overwriting the winning result", async () => {
   await stable();
