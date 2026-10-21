@@ -12,11 +12,11 @@ export function createTestDatabase(db: TestDb, includeSessions = false) {
   async function clear() {
     if (includeSessions) {
       await db.execute(
-        sql`TRUNCATE TABLE sessions, daily_claims, ledger_entries, bounty_bookmarks, bounties, users, bounty_hunts, hunt_attempts, score_discovery_cursors`,
+        sql`TRUNCATE TABLE sessions, daily_claims, ledger_entries, bounty_bookmarks, bounties, users, bounty_hunts, hunt_attempts, score_discovery_cursors, bounty_settlements`,
       );
     } else {
       await db.execute(
-        sql`TRUNCATE TABLE daily_claims, ledger_entries, bounty_bookmarks, bounties, users, bounty_hunts, hunt_attempts, score_discovery_cursors`,
+        sql`TRUNCATE TABLE daily_claims, ledger_entries, bounty_bookmarks, bounties, users, bounty_hunts, hunt_attempts, score_discovery_cursors, bounty_settlements`,
       );
     }
   }

@@ -249,3 +249,16 @@ export const scoreDiscoveryCursors = pgTable("score_discovery_cursors", {
     .notNull()
     .defaultNow(),
 });
+
+export const bountySettlements = pgTable("bounty_settlements", {
+  bountyId: uuid("bounty_id")
+    .notNull()
+    .primaryKey()
+    .references(() => bounties.id),
+  openedAt: timestamp("opened_at", { withTimezone: true }).notNull(),
+  settleAfter: timestamp("settle_after", { withTimezone: true }).notNull(),
+  nextAttemptAt: timestamp("next_attempt_at", { withTimezone: true }).notNull(),
+  attempts: integer("attempts").default(0).notNull(),
+  lastError: text("last_error"),
+  settledAt: timestamp("settled_at", { withTimezone: true }),
+});
