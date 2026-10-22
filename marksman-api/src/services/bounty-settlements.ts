@@ -8,6 +8,7 @@ import { findLeadingHuntAttempt } from "../db/bounty-hunts-attempts";
 import {
   completeSettlementByBountyId,
   findBountySettlementByBountyId,
+  postponeSettlement,
   scheduleSettlementRetry,
 } from "../db/bounty-settlements";
 import {
@@ -40,8 +41,13 @@ export async function settleBounty(bountyId: string) {
         return;
 
       const leadingAttempt = await findLeadingHuntAttempt(tx, bountyId);
-      if (!leadingAttempt || leadingAttempt.verificationStatus === "pending")
+      if (!leadingAttempt) return;
+      if (leadingAttempt.verificationStatus === "pending") {
+        const nextAttemptAt = new Date(now.getTime() + 5_000);
+        await postponeSettlement(tx, bountyId, nextAttemptAt);
+
         return;
+      }
 
       await payoutBounty(tx, bounty, leadingAttempt, now);
     });

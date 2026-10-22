@@ -120,11 +120,21 @@ test("concurrent settlement calls pay exactly once", async () => {
   await Promise.all(Array.from({ length: 5 }, () => settleBounty(bounty.id)));
   await assertPaid();
 });
-test("an earlier pending attempt blocks a later valid attempt without writes", async () => {
+test("an earlier pending attempt postpones payout five seconds without recording a failure", async () => {
   await addAttempt(stoppedHuntId, 987653, "pending", "2026-09-21T12:00:59Z");
+  await db.update(schema.bountySettlements).set({ attempts: 2, lastError: "PREVIOUS_ERROR" });
   const original = await snapshot();
+  const started = Date.now();
   await settleBounty(bounty.id);
-  assert.deepEqual(await snapshot(), original);
+  const postponed = await snapshot();
+  const next = postponed.settlements[0].nextAttemptAt;
+  assert.ok(next.getTime() >= started + 5000);
+  assert.ok(next.getTime() <= Date.now() + 5000);
+  assert.deepEqual(postponed, {
+    ...original, settlements: [{ ...original.settlements[0], nextAttemptAt: next }],
+  });
+  await settleBounty(bounty.id);
+  assert.deepEqual(await snapshot(), postponed, "Not-yet-due settlement must remain unchanged");
 });
 test("a later pending attempt does not block the valid leader", async () => {
   await addAttempt(stoppedHuntId, 987655, "pending", "2026-09-21T12:01:01Z");

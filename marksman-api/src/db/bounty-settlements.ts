@@ -92,3 +92,19 @@ export async function scheduleSettlementRetry(
 
   return row ?? undefined;
 }
+
+export async function postponeSettlement(
+  connection: Transaction | typeof db,
+  bountyId: string,
+  nextAttemptAt: Date,
+) {
+  await connection
+    .update(bountySettlements)
+    .set({ nextAttemptAt })
+    .where(
+      and(
+        eq(bountySettlements.bountyId, bountyId),
+        isNull(bountySettlements.settledAt),
+      ),
+    );
+}

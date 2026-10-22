@@ -5,7 +5,7 @@ import { Pool } from "pg";
 import { drizzle } from "drizzle-orm/node-postgres";
 import * as schema from "../src/db/schema";
 import { createTestDatabase } from "./fixtures/test-database";
-import { ensureBountySettlement, findDueBountySettlements, scheduleSettlementRetry } from "../src/db/bounty-settlements";
+import { ensureBountySettlement, findDueBountySettlements, scheduleSettlementRetry, postponeSettlement } from "../src/db/bounty-settlements";
 
 const pool = new Pool({
   connectionString: "postgresql://marksman_test:marksman_test@127.0.0.1:5433/marksman_test",
@@ -32,6 +32,37 @@ after(async () => {
 });
 
 const settlement = () => ({ bountyId, openedAt, settleAfter, nextAttemptAt: settleAfter });
+
+test("postponement changes only nextAttemptAt and supports transactions", async () => {
+  const original = { ...settlement(), attempts: 2, lastError: "PREVIOUS_ERROR", settledAt: null };
+  await db.insert(schema.bountySettlements).values(original);
+  const next = new Date(settleAfter.getTime() + 5000);
+  await db.transaction(tx => postponeSettlement(tx, bountyId, next));
+  assert.deepEqual(await db.select().from(schema.bountySettlements), [{ ...original, nextAttemptAt: next }]);
+});
+
+test("postponement cannot change a settled row", async () => {
+  const original = { ...settlement(), attempts: 2, lastError: null, settledAt: settleAfter };
+  await db.insert(schema.bountySettlements).values(original);
+  await postponeSettlement(db, bountyId, new Date());
+  assert.deepEqual(await db.select().from(schema.bountySettlements), [original]);
+});
+
+test("postponement of a missing row does not create a settlement", async () => {
+  await postponeSettlement(db, bountyId, settleAfter);
+  assert.deepEqual(await db.select().from(schema.bountySettlements), []);
+});
+
+test("postponement rolls back with the enclosing transaction", async () => {
+  await ensureBountySettlement(db, bountyId, openedAt);
+  const original = await db.select().from(schema.bountySettlements);
+  const failure = new Error("rollback postponement");
+  await assert.rejects(db.transaction(async tx => {
+    await postponeSettlement(tx, bountyId, new Date());
+    throw failure;
+  }), error => error === failure);
+  assert.deepEqual(await db.select().from(schema.bountySettlements), original);
+});
 
 test("retry updates scheduling and increments attempts while preserving the window", async () => {
   await db.insert(schema.bountySettlements).values({ ...settlement(), attempts: 2 });
