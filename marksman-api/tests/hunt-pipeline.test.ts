@@ -2,7 +2,7 @@ import assert from "node:assert/strict";
 import { after, afterEach, before, beforeEach, mock, test } from "node:test";
 import { eq } from "drizzle-orm";
 import { huntAttemptScoreEvidenceSchema } from "@marksman/contracts";
-import { bounties, bountyHunts, huntAttempts, users, scoreDiscoveryCursors, ledgerEntries } from "../src/db/schema";
+import { bounties, bountyHunts, huntAttempts, users, scoreDiscoveryCursors, ledgerEntries, bountySettlements } from "../src/db/schema";
 import { createTestDatabase } from "./fixtures/test-database";
 import { hunter, metadata, qualifyingBounty, qualifyingScore } from "./fixtures/completion";
 
@@ -15,7 +15,9 @@ Object.assign(process.env, {
 // Only HTTP is mocked: use the real fetcher, parser, discovery, DB queries,
 // transactions, due-attempt selection, verifier, and result persistence.
 const { db } = require("../src/db") as typeof import("../src/db");
-const { discoverScores } = require("../src/services/hunt-discovery") as typeof import("../src/services/hunt-discovery");
+const { discoverScores, isDiscoveryHealthy } = require("../src/services/hunt-discovery") as typeof import("../src/services/hunt-discovery");
+const { startHunt } = require("../src/services/bounty-hunts") as typeof import("../src/services/bounty-hunts");
+const { settleDueBounties } = require("../src/services/bounty-settlements") as typeof import("../src/services/bounty-settlements");
 const { verifyDueHuntAttempts } = require("../src/services/bounty-hunts-attempts") as typeof import("../src/services/bounty-hunts-attempts");
 const fixture = createTestDatabase(db);
 let payload: unknown[];
@@ -25,12 +27,14 @@ let bountyId: string;
 let huntId: string;
 let userId: string;
 let originalBalance: number;
+let feedUnavailable = false;
 const score = qualifyingScore();
 
 before(() => fixture.prepare());
 beforeEach(async () => {
   await fixture.clear();
   payload = []; cursors = []; metadataCalls = 0;
+  feedUnavailable = false;
   mock.method(globalThis, "fetch", async (input: Parameters<typeof fetch>[0], init?: RequestInit) => {
     const url = new URL(input instanceof Request ? input.url : String(input));
     assert.equal(url.origin, "https://osu.ppy.sh");
@@ -39,6 +43,7 @@ beforeEach(async () => {
     }
     assert.equal(new Headers(init?.headers).get("Authorization"), "Bearer pipeline-fixture-token");
     if (url.pathname === "/api/v2/scores") {
+      if (feedUnavailable) return new Response(null, { status: 503 });
       assert.equal(url.searchParams.get("ruleset"), "osu");
       const cursor = url.searchParams.get("cursor_string");
       cursors.push(cursor);
@@ -53,13 +58,13 @@ beforeEach(async () => {
     throw new Error(`Unexpected mocked request: ${url.pathname}`);
   });
 });
-afterEach(() => mock.restoreAll());
+afterEach(() => { mock.timers.reset(); mock.restoreAll(); });
 after(async () => {
   try { await fixture.clearIfMigrated(); }
   finally { await db.$client.end(); }
 });
 
-async function seedHunt() {
+async function seedHunt(useService = false) {
   const [user] = await db.insert(users).values({ osuUserId: hunter.osuUserId, username: hunter.username }).returning();
   userId = user.id; originalBalance = user.bpBalance;
   const [bounty] = await db.insert(bounties).values({
@@ -67,6 +72,11 @@ async function seedHunt() {
     createdAt: new Date("2026-09-21T11:59:00Z"),
   }).returning();
   bountyId = bounty.id;
+  if (useService) {
+    const hunt = await startHunt({ ...hunter, id: userId }, bountyId);
+    huntId = hunt.id;
+    return;
+  }
   const [hunt] = await db.insert(bountyHunts).values({
     userId, bountyId, startedAt: new Date("2026-09-21T12:00:00Z"), status: "ongoing",
   }).returning();
@@ -127,6 +137,85 @@ test("HTTP discovery persists matching attempts, verifies stable/lazer evidence,
   assert.deepEqual(await attempts(), verified);
   await assertNoSettlement();
 });
+
+async function prepareAutomaticFlow(stable = false) {
+  mock.timers.enable({ apis: ["Date"], now: new Date("2026-09-21T12:00:00Z") });
+  await discoverScores();
+  await seedHunt(true);
+  mock.timers.setTime(Date.parse("2026-09-21T12:01:01Z"));
+  payload = [{ ...score, legacy_score_id: stable ? 123 : null }];
+  await discoverScores();
+  assert.equal((await attempts())[0].verificationStatus, "pending");
+  assert.deepEqual(await settleDueBounties(20), []);
+  await assertNoSettlement();
+  assert.deepEqual(await db.select().from(bountySettlements), []);
+  assert.deepEqual(await verifyDueHuntAttempts(20), []);
+  assert.equal((await attempts())[0].verificationStatus, "valid");
+  const [settlement] = await db.select().from(bountySettlements);
+  assert.equal(settlement.settleAfter.getTime(), Date.now() + 30000);
+  assert.equal(settlement.settledAt, null);
+  return settlement;
+}
+
+async function assertAutomaticPayout() {
+  const [bounty] = await db.select().from(bounties).where(eq(bounties.id, bountyId));
+  assert.equal(bounty.status, "completed");
+  assert.equal(bounty.completedByOsuUserId, hunter.osuUserId);
+  assert.equal(bounty.completionScoreId, score.id);
+  assert.equal(bounty.completedAt?.getTime(), Date.now());
+  const [user] = await db.select().from(users).where(eq(users.id, userId));
+  assert.equal(user.bpBalance, originalBalance + 30);
+  const ledger = await db.select().from(ledgerEntries);
+  assert.equal(ledger.length, 1);
+  assert.deepEqual([ledger[0].reason, ledger[0].userId, ledger[0].bountyId, ledger[0].amount],
+    ["bounty_reward", userId, bountyId, 30]);
+  const [hunt] = await db.select().from(bountyHunts).where(eq(bountyHunts.id, huntId));
+  assert.equal(hunt.status, "closed");
+  assert.deepEqual(hunt.endedAt, bounty.completedAt);
+  const [settlement] = await db.select().from(bountySettlements);
+  assert.equal(settlement.settledAt?.getTime(), Date.now());
+  assert.equal(settlement.attempts, 0);
+  assert.equal(settlement.lastError, null);
+}
+
+for (const stable of [false, true]) {
+  test(`automatic ${stable ? "stable" : "lazer"} flow waits 30 seconds, pays and tolerates replay`, async () => {
+    const settlement = await prepareAutomaticFlow(stable);
+    mock.timers.setTime(settlement.settleAfter.getTime() - 1);
+    assert.deepEqual(await settleDueBounties(20), []);
+    await assertNoSettlement();
+    mock.timers.setTime(settlement.settleAfter.getTime());
+    assert.deepEqual(await settleDueBounties(20), []);
+    await assertAutomaticPayout();
+    await discoverScores();
+    assert.deepEqual(await verifyDueHuntAttempts(20), []);
+    assert.deepEqual(await settleDueBounties(20), []);
+    assert.equal((await attempts()).length, 1);
+    await assertAutomaticPayout();
+  });
+}
+
+for (const failure of ["HTTP failure", "malformed batch"] as const) {
+  test(`${failure} pauses due settlement; discovery recovery permits overdue payout`, async () => {
+    const settlement = await prepareAutomaticFlow();
+    mock.timers.setTime(settlement.settleAfter.getTime() + 10000);
+    feedUnavailable = failure === "HTTP failure";
+    if (failure === "malformed batch") payload = [score, null];
+    await assert.rejects(discoverScores());
+    assert.equal(isDiscoveryHealthy(), false);
+    assert.deepEqual(await settleDueBounties(20), []);
+    await assertNoSettlement();
+    assert.deepEqual(await db.select().from(bountySettlements), [settlement]);
+    feedUnavailable = false;
+    payload = [score];
+    await discoverScores();
+    assert.equal(isDiscoveryHealthy(), true);
+    assert.deepEqual(await verifyDueHuntAttempts(20), []);
+    assert.deepEqual(await settleDueBounties(20), []);
+    await assertAutomaticPayout();
+    assert.equal((await db.select().from(bountySettlements))[0].settleAfter.getTime(), settlement.settleAfter.getTime());
+  });
+}
 
 test("malformed batch keeps cursor; retry deduplicates persisted evidence and reaches verification", async () => {
   await db.insert(scoreDiscoveryCursors).values({ stream: "osu-standard", cursor: "boundary" });
