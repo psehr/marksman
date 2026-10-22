@@ -7,9 +7,11 @@ import { sessionStore } from "./db/session-store";
 import { discoverScores } from "./services/hunt-discovery";
 import { startScoreDiscoveryWorker } from "./workers/score-discovery";
 import { Server } from "http";
+import { startBountySettlementWorker } from "./workers/bounty-settlement";
 
 let stopHuntVerificationWorker: (() => Promise<void>) | undefined;
 let stopScoreDiscoveryWorker: (() => Promise<void>) | undefined;
+let stopBountySettlementWorker: (() => Promise<void>) | undefined;
 
 void startupSequence().catch(async (error) => {
   console.error(error);
@@ -38,6 +40,7 @@ async function startupSequence() {
 
     stopHuntVerificationWorker = startHuntVerificationWorker();
     stopScoreDiscoveryWorker = startScoreDiscoveryWorker();
+    stopBountySettlementWorker = startBountySettlementWorker();
   });
 
   function stopServer(): Promise<void> {
@@ -63,6 +66,7 @@ async function startupSequence() {
       stopServer(),
       stopHuntVerificationWorker?.(),
       stopScoreDiscoveryWorker?.(),
+      stopBountySettlementWorker?.(),
     ]);
 
     for (const result of results) {

@@ -68,6 +68,8 @@ function loadStartup(initialization?: ReturnType<typeof deferred>) {
   const discover = mock.fn(() => initialization?.promise ?? Promise.resolve());
   const stopDiscovery = mock.fn(async () => {});
   const startDiscovery = mock.fn(() => stopDiscovery);
+  const stopSettlement = mock.fn(async () => {});
+  const startSettlement = mock.fn(() => stopSettlement);
   const sessionClose = mock.fn(() => { events.push("sessions-close"); });
   const poolEnd = mock.fn(async () => { events.push("pool-end"); });
   const errors = mock.method(console, "error", (..._args: unknown[]) => {});
@@ -79,6 +81,7 @@ function loadStartup(initialization?: ReturnType<typeof deferred>) {
   stub("../src/db/session-store", { sessionStore: { close: sessionClose } });
   stub("../src/services/hunt-discovery", { discoverScores: discover });
   stub("../src/workers/score-discovery", { startScoreDiscoveryWorker: startDiscovery });
+  stub("../src/workers/bounty-settlement", { startBountySettlementWorker: startSettlement });
   require(entryPath);
   function signal(name: typeof signals[number]) {
     const handlers = process.listeners(name).filter(listener => !originalListeners.get(name)!.includes(listener));
@@ -87,13 +90,13 @@ function loadStartup(initialization?: ReturnType<typeof deferred>) {
     handlers[0](name);
   }
   return {
-    discover, startDiscovery, stopDiscovery, events, worker, listen, startWorker, stopWorker, server, sessionClose, poolEnd, errors, signal,
+    startSettlement, stopSettlement, discover, startDiscovery, stopDiscovery, events, worker, listen, startWorker, stopWorker, server, sessionClose, poolEnd, errors, signal,
     listening: () => onListening(),
     closed: (error?: Error) => onClosed(error),
   };
 }
 
-test("starts both workers only after the HTTP listening callback", async () => {
+test("starts all three workers only after the HTTP listening callback", async () => {
   const app = loadStartup();
   await flush();
   assert.equal(app.listen.mock.callCount(), 1);
@@ -102,6 +105,7 @@ test("starts both workers only after the HTTP listening callback", async () => {
   app.listening();
   assert.equal(app.startWorker.mock.callCount(), 1);
   assert.equal(app.startDiscovery.mock.callCount(), 1);
+  assert.equal(app.startSettlement.mock.callCount(), 1);
 });
 
 for (const first of ["http", "worker"] as const) {
@@ -144,6 +148,7 @@ test("repeated signals do not repeat shutdown or resource cleanup", async () => 
   await flush();
   assert.equal(app.server.close.mock.callCount(), 1);
   assert.equal(app.stopWorker.mock.callCount(), 1);
+  assert.equal(app.stopSettlement.mock.callCount(), 1);
   assert.equal(app.sessionClose.mock.callCount(), 1);
   assert.equal(app.poolEnd.mock.callCount(), 1);
 });
@@ -196,11 +201,13 @@ test("initial discovery is awaited before HTTP or workers start", async () => {
     assert.equal(app.listen.mock.callCount(), 0);
     assert.equal(app.startWorker.mock.callCount(), 0);
     assert.equal(app.startDiscovery.mock.callCount(), 0);
+  assert.equal(app.startSettlement.mock.callCount(), 0);
   } finally { initial.resolve(); await flush(); }
   assert.equal(app.listen.mock.callCount(), 1);
   app.listening();
   assert.equal(app.startWorker.mock.callCount(), 1);
   assert.equal(app.startDiscovery.mock.callCount(), 1);
+  assert.equal(app.startSettlement.mock.callCount(), 1);
 });
 
 test("failed initial discovery cleans resources without accepting traffic", async () => {
@@ -214,6 +221,7 @@ test("failed initial discovery cleans resources without accepting traffic", asyn
   assert.equal(app.listen.mock.callCount(), 0);
   assert.equal(app.startWorker.mock.callCount(), 0);
   assert.equal(app.startDiscovery.mock.callCount(), 0);
+  assert.equal(app.startSettlement.mock.callCount(), 0);
   assert.equal(app.sessionClose.mock.callCount(), 1);
   assert.equal(app.poolEnd.mock.callCount(), 1);
   assert.equal(process.exitCode, 1);
@@ -264,6 +272,7 @@ for (const signal of ["SIGINT", "SIGTERM"] as const) {
     assert.equal(app.listen.mock.callCount(), 0);
     assert.equal(app.startWorker.mock.callCount(), 0);
     assert.equal(app.startDiscovery.mock.callCount(), 0);
+  assert.equal(app.startSettlement.mock.callCount(), 0);
     assert.equal(app.sessionClose.mock.callCount(), 1);
     assert.equal(app.poolEnd.mock.callCount(), 1);
     assert.equal(app.errors.mock.callCount(), 0);
@@ -308,5 +317,36 @@ test("a late listening callback cannot start workers after shutdown begins", asy
   await flush();
   assert.equal(app.startWorker.mock.callCount(), 0);
   assert.equal(app.startDiscovery.mock.callCount(), 0);
+  assert.equal(app.startSettlement.mock.callCount(), 0);
   assert.equal(app.poolEnd.mock.callCount(), 1);
 });
+
+for (const fails of [false, true]) {
+  test(`shutdown drains settlement before closing resources (failure=${fails})`, async () => {
+    const app = loadStartup();
+    await flush();
+    const settlement = deferred();
+    app.stopSettlement.mock.mockImplementation(() => settlement.promise);
+    app.listening();
+    app.signal("SIGTERM");
+    await flush();
+    app.signal("SIGINT");
+    app.closed();
+    app.worker.resolve();
+    const failure = new Error("Settlement shutdown failed");
+    try {
+      await flush();
+      assert.equal(app.stopSettlement.mock.callCount(), 1);
+      assert.equal(app.sessionClose.mock.callCount(), 0);
+      assert.equal(app.poolEnd.mock.callCount(), 0);
+    } finally {
+      if (fails) settlement.reject(failure);
+      else settlement.resolve();
+      await flush();
+    }
+    assert.equal(app.sessionClose.mock.callCount(), 1);
+    assert.equal(app.poolEnd.mock.callCount(), 1);
+    assert.equal(process.exitCode, fails ? 1 : undefined);
+    if (fails) assert.ok(app.errors.mock.calls.some(call => call.arguments.includes(failure)));
+  });
+}
