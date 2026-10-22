@@ -45,3 +45,26 @@ export async function findDueBountySettlements(
 
   return rows;
 }
+
+export async function findBountySettlementByBountyId(
+  connection: Transaction | typeof db,
+  bountyId: string,
+) {
+  const [row] = await connection
+    .select()
+    .from(bountySettlements)
+    .where(eq(bountySettlements.bountyId, bountyId));
+
+  return row;
+}
+
+export async function completeSettlementByBountyId(
+  connection: Transaction | typeof db,
+  bountyId: string,
+  now: Date,
+) {
+  await connection
+    .update(bountySettlements)
+    .set({ settledAt: now })
+    .where(eq(bountySettlements.bountyId, bountyId));
+}
