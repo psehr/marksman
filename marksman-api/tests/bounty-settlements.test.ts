@@ -5,7 +5,7 @@ import { Pool } from "pg";
 import { drizzle } from "drizzle-orm/node-postgres";
 import * as schema from "../src/db/schema";
 import { createTestDatabase } from "./fixtures/test-database";
-import { ensureBountySettlement, findDueBountySettlements } from "../src/db/bounty-settlements";
+import { ensureBountySettlement, findDueBountySettlements, scheduleSettlementRetry } from "../src/db/bounty-settlements";
 
 const pool = new Pool({
   connectionString: "postgresql://marksman_test:marksman_test@127.0.0.1:5433/marksman_test",
@@ -32,6 +32,45 @@ after(async () => {
 });
 
 const settlement = () => ({ bountyId, openedAt, settleAfter, nextAttemptAt: settleAfter });
+
+test("retry updates scheduling and increments attempts while preserving the window", async () => {
+  await db.insert(schema.bountySettlements).values({ ...settlement(), attempts: 2 });
+  const next = new Date(settleAfter.getTime() + 60000);
+  const row = await db.transaction(tx => scheduleSettlementRetry(tx, bountyId, next, "TEST_ERROR"));
+  assert.deepEqual(row, { ...settlement(), nextAttemptAt: next, attempts: 3, lastError: "TEST_ERROR", settledAt: null });
+  assert.deepEqual(await db.select().from(schema.bountySettlements), [row]);
+});
+
+test("retry leaves successfully settled rows untouched", async () => {
+  const original = { ...settlement(), settledAt: settleAfter, attempts: 2, lastError: null };
+  await db.insert(schema.bountySettlements).values(original);
+  assert.equal(await scheduleSettlementRetry(db, bountyId, new Date(), "LATE_ERROR"), undefined);
+  assert.deepEqual(await db.select().from(schema.bountySettlements), [original]);
+});
+
+test("retry returns undefined for a missing settlement", async () => {
+  assert.equal(await scheduleSettlementRetry(db, bountyId, settleAfter, "ERROR"), undefined);
+  assert.deepEqual(await db.select().from(schema.bountySettlements), []);
+});
+
+test("concurrent retries increment the counter without lost updates", async () => {
+  await ensureBountySettlement(db, bountyId, openedAt);
+  await Promise.all(Array.from({ length: 5 }, () => scheduleSettlementRetry(db, bountyId, settleAfter, "ERROR")));
+  const [row] = await db.select().from(schema.bountySettlements);
+  assert.equal(row.attempts, 5);
+  assert.deepEqual(row.settleAfter, settleAfter);
+});
+
+test("retry rolls back with its caller's transaction", async () => {
+  await ensureBountySettlement(db, bountyId, openedAt);
+  const original = await db.select().from(schema.bountySettlements);
+  const failure = new Error("rollback retry");
+  await assert.rejects(db.transaction(async tx => {
+    await scheduleSettlementRetry(tx, bountyId, new Date(), "ERROR");
+    throw failure;
+  }), error => error === failure);
+  assert.deepEqual(await db.select().from(schema.bountySettlements), original);
+});
 
 test("due query includes exact deadlines and supports a transaction connection", async () => {
   await ensureBountySettlement(db, bountyId, openedAt);

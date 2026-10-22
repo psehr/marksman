@@ -8,6 +8,7 @@ import { findLeadingHuntAttempt } from "../db/bounty-hunts-attempts";
 import {
   completeSettlementByBountyId,
   findBountySettlementByBountyId,
+  scheduleSettlementRetry,
 } from "../db/bounty-settlements";
 import {
   BountyNotFoundError,
@@ -21,28 +22,37 @@ import { creditUserBp, findUserByIdForUpdate } from "../db/users";
 import { createBountyRewardLedgerEntry } from "../db/ledger";
 
 export async function settleBounty(bountyId: string) {
-  return db.transaction(async (tx) => {
-    const bounty = await findBountyByIdForUpdate(tx, bountyId);
-    if (!bounty) throw new BountyNotFoundError();
-    if (bounty.status !== "open") return;
+  try {
+    return await db.transaction(async (tx) => {
+      const bounty = await findBountyByIdForUpdate(tx, bountyId);
+      if (!bounty) throw new BountyNotFoundError();
+      if (bounty.status !== "open") return;
 
-    const now = new Date();
+      const now = new Date();
 
-    const settlement = await findBountySettlementByBountyId(tx, bountyId);
-    if (!settlement) return;
-    if (
-      settlement.settledAt !== null ||
-      settlement.settleAfter > now ||
-      settlement.nextAttemptAt > now
-    )
-      return;
+      const settlement = await findBountySettlementByBountyId(tx, bountyId);
+      if (!settlement) return;
+      if (
+        settlement.settledAt !== null ||
+        settlement.settleAfter > now ||
+        settlement.nextAttemptAt > now
+      )
+        return;
 
-    const leadingAttempt = await findLeadingHuntAttempt(tx, bountyId);
-    if (!leadingAttempt || leadingAttempt.verificationStatus === "pending")
-      return;
+      const leadingAttempt = await findLeadingHuntAttempt(tx, bountyId);
+      if (!leadingAttempt || leadingAttempt.verificationStatus === "pending")
+        return;
 
-    await payoutBounty(tx, bounty, leadingAttempt, now);
-  });
+      await payoutBounty(tx, bounty, leadingAttempt, now);
+    });
+  } catch (error) {
+    const nextAttemptAt = new Date(Date.now() + 5 * 60_000);
+    const errorCode = "SETTLEMENT_FAILED";
+
+    await scheduleSettlementRetry(db, bountyId, nextAttemptAt, errorCode);
+
+    throw error;
+  }
 }
 
 export async function payoutBounty(

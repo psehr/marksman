@@ -1,4 +1,4 @@
-import { eq, and, isNull, lte, asc } from "drizzle-orm";
+import { eq, and, isNull, lte, asc, sql } from "drizzle-orm";
 import { db, Transaction } from ".";
 import { bounties, bountySettlements } from "./schema";
 
@@ -67,4 +67,28 @@ export async function completeSettlementByBountyId(
     .update(bountySettlements)
     .set({ settledAt: now })
     .where(eq(bountySettlements.bountyId, bountyId));
+}
+
+export async function scheduleSettlementRetry(
+  connection: Transaction | typeof db,
+  bountyId: string,
+  nextAttemptAt: Date,
+  errorCode: string,
+) {
+  const [row] = await connection
+    .update(bountySettlements)
+    .set({
+      nextAttemptAt,
+      lastError: errorCode,
+      attempts: sql`${bountySettlements.attempts} + 1`,
+    })
+    .where(
+      and(
+        eq(bountySettlements.bountyId, bountyId),
+        isNull(bountySettlements.settledAt),
+      ),
+    )
+    .returning();
+
+  return row ?? undefined;
 }

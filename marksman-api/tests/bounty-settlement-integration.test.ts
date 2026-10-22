@@ -146,15 +146,30 @@ for (const table of ["ledger_entries", "bounty_settlements"] as const) {
     await pool.query(`ALTER TABLE ${table} ADD CONSTRAINT settlement_test_failure CHECK (${expression})`);
     try {
       const original = await snapshot();
+      const started = Date.now();
       await assert.rejects(settleBounty(bounty.id), (error: unknown) => {
         const outer = error as { cause?: { code?: string }; code?: string };
         assert.equal(outer.cause?.code ?? outer.code, "23514");
         return true;
       });
-      assert.deepEqual(await snapshot(), original);
+      const failed = await snapshot();
+      const retry = failed.settlements[0];
+      assert.equal(retry.attempts, 1);
+      assert.equal(retry.lastError, "SETTLEMENT_FAILED");
+      assert.ok(retry.nextAttemptAt.getTime() >= started + 300000);
+      assert.ok(retry.nextAttemptAt.getTime() <= Date.now() + 300000);
+      assert.deepEqual(failed, {
+        ...original,
+        settlements: [{ ...original.settlements[0], attempts: 1,
+          lastError: "SETTLEMENT_FAILED", nextAttemptAt: retry.nextAttemptAt }],
+      });
+      await settleBounty(bounty.id);
+      assert.deepEqual(await snapshot(), failed, "Cooldown must prevent an immediate retry");
     } finally {
       await pool.query(`ALTER TABLE ${table} DROP CONSTRAINT settlement_test_failure`);
     }
+    // Make the retry due without waiting five minutes.
+    await db.update(schema.bountySettlements).set({ nextAttemptAt: deadline });
     await settleBounty(bounty.id);
     await assertPaid();
   });

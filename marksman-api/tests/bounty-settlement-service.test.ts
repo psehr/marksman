@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import Module from "node:module";
-import { after, test } from "node:test";
+import { after, mock, test } from "node:test";
 import { HuntNotFoundError, UserNotFoundError } from "../src/services/errors";
 
 const tx = {};
@@ -54,6 +54,35 @@ for (const [path, exports] of [
   require.cache[id] = stub;
 }
 const { settleBounty, payoutBounty } = require("../src/services/bounty-settlements") as typeof import("../src/services/bounty-settlements");
+test("transaction rejection schedules a five-minute retry after rollback and propagates the error", async () => {
+  const { db } = require("../src/db");
+  const helpers = require("../src/db/bounty-settlements");
+  const failure = new Error("transaction failed");
+  const events: string[] = [];
+  const transaction = mock.method(db, "transaction", async () => {
+    await Promise.resolve();
+    events.push("rollback");
+    throw failure;
+  });
+  const calls: unknown[][] = [];
+  helpers.scheduleSettlementRetry = async (...args: unknown[]) => {
+    events.push("retry");
+    calls.push(args);
+  };
+  const started = Date.now();
+  try {
+    await assert.rejects(settleBounty("bounty"), error => error === failure);
+    assert.deepEqual(events, ["rollback", "retry"]);
+    assert.equal(calls[0][0], db);
+    assert.equal(calls[0][1], "bounty");
+    assert.ok((calls[0][2] as Date).getTime() >= started + 300000);
+    assert.ok((calls[0][2] as Date).getTime() <= Date.now() + 300000);
+    assert.notEqual(calls[0][3], "PENDING_LEADER");
+  } finally {
+    transaction.mock.restore();
+    delete helpers.scheduleSettlementRetry;
+  }
+});
 after(() => {
   for (const [id, original] of originals) {
     if (original) require.cache[id] = original;
