@@ -8,6 +8,7 @@ import { findLeadingHuntAttempt } from "../db/bounty-hunts-attempts";
 import {
   completeSettlementByBountyId,
   findBountySettlementByBountyId,
+  findDueBountySettlements,
   postponeSettlement,
   scheduleSettlementRetry,
 } from "../db/bounty-settlements";
@@ -21,6 +22,7 @@ import {
 import { closeOngoingHuntsForBounty, findHuntById } from "../db/bounty-hunts";
 import { creditUserBp, findUserByIdForUpdate } from "../db/users";
 import { createBountyRewardLedgerEntry } from "../db/ledger";
+import { isDiscoveryHealthy } from "./hunt-discovery";
 
 export async function settleBounty(bountyId: string) {
   try {
@@ -107,4 +109,28 @@ export async function payoutBounty(
   );
 
   await completeSettlementByBountyId(tx, bounty.id, now);
+}
+
+export async function settleDueBounties(limit: number) {
+  const dueBountySettlements = await findDueBountySettlements(
+    db,
+    new Date(),
+    limit,
+  );
+
+  const failuresArray: { bountyId: string; error: unknown }[] = [];
+
+  for (const dueSettlement of dueBountySettlements) {
+    try {
+      if (!isDiscoveryHealthy()) break;
+      await settleBounty(dueSettlement.bountySettlements.bountyId);
+    } catch (error) {
+      failuresArray.push({
+        bountyId: dueSettlement.bountySettlements.bountyId,
+        error,
+      });
+    }
+  }
+
+  return failuresArray;
 }

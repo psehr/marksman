@@ -34,7 +34,7 @@ for (const [path, exports] of [
   stub.loaded = true;
   require.cache[id] = stub;
 }
-const { processDiscoveredScores, discoverScores } =
+const { processDiscoveredScores, discoverScores, isDiscoveryHealthy } =
   require("../src/services/hunt-discovery") as typeof import("../src/services/hunt-discovery");
 
 beforeEach(() => {
@@ -46,6 +46,47 @@ after(() => {
     if (original) require.cache[id] = original;
     else delete require.cache[id];
   }
+});
+
+test("discovery starts unhealthy and becomes healthy only after saving its cursor", async () => {
+  assert.equal(isDiscoveryHealthy(), false);
+  const save = mock.method(cursors, "upsertCursor", async () => {
+    assert.equal(isDiscoveryHealthy(), false);
+  });
+  await discoverScores();
+  assert.equal(save.mock.callCount(), 1);
+  assert.equal(isDiscoveryHealthy(), true);
+});
+
+for (const stage of ["cursor read", "fetch", "processing", "cursor save"] as const) {
+  test(`discovery becomes unhealthy after ${stage} throws and recovers on success`, async () => {
+    await discoverScores();
+    assert.equal(isDiscoveryHealthy(), true);
+    const failure = new Error(stage);
+    const reject = async (): Promise<never> => { throw failure; };
+    const stub = stage === "cursor read" ? mock.method(cursors, "findCursorByStream", reject)
+      : stage === "fetch" ? mock.method(upstream, "fetchScoresBatch", reject)
+      : stage === "processing" ? mock.method(service, "recordDiscoveredScores", reject)
+      : mock.method(cursors, "upsertCursor", reject);
+    await assert.rejects(discoverScores(), error => error === failure);
+    assert.equal(isDiscoveryHealthy(), false);
+    stub.mock.restore();
+    await discoverScores();
+    assert.equal(isDiscoveryHealthy(), true);
+  });
+}
+
+test("a running successful poll retains the preceding healthy status", async () => {
+  await discoverScores();
+  mock.method(upstream, "fetchScoresBatch", async () => {
+    assert.equal(isDiscoveryHealthy(), true);
+    return { scores: [], cursor_string: "next" };
+  });
+  mock.method(cursors, "upsertCursor", async () => {
+    assert.equal(isDiscoveryHealthy(), true);
+  });
+  await discoverScores();
+  assert.equal(isDiscoveryHealthy(), true);
 });
 
 test("passes parsed evidence in order and separates rejected items from discovery failures", async () => {

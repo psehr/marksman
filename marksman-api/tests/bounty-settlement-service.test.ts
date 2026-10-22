@@ -4,6 +4,7 @@ import { after, mock, test } from "node:test";
 import { HuntNotFoundError, UserNotFoundError } from "../src/services/errors";
 
 const tx = {};
+let discoveryHealthy = true;
 let status = "open";
 let settlement: { settledAt: Date | null; settleAfter: Date; nextAttemptAt: Date } | undefined;
 let leaderReads = 0;
@@ -19,6 +20,7 @@ function write(name: string, connection: unknown, args: unknown[]) {
 const completedAt = "2026-10-22T12:00:00.000Z";
 const originals = new Map<string, NodeModule | undefined>();
 for (const [path, exports] of [
+  ["../src/services/hunt-discovery", { isDiscoveryHealthy: () => discoveryHealthy }],
   ["../src/db/bounty-hunts", {
     findHuntById: async (connection: unknown) => { assert.equal(connection, tx); return huntExists ? { userId: "winner" } : undefined; },
     closeOngoingHuntsForBounty: async (connection: unknown, ...args: unknown[]) => write("close", connection, args),
@@ -143,6 +145,64 @@ for (const failure of ["", "credit", "ledger", "close", "settle"]) {
         { name: "close", args: ["bounty", new Date(completedAt)] },
         { name: "settle", args: ["bounty", now] },
       ]);
+    }
+  });
+}
+
+for (const scenario of ["empty", "success", "item failure", "query failure", "unhealthy", "health lost"] as const) {
+  test(`settlement batch: ${scenario}`, async () => {
+    const { db } = require("../src/db");
+    const helpers = require("../src/db/bounty-settlements");
+    const bounties = require("../src/db/bounties");
+    const { settleDueBounties } = require("../src/services/bounty-settlements") as typeof import("../src/services/bounty-settlements");
+    const failure = new Error(scenario);
+    discoveryHealthy = scenario !== "unhealthy";
+    const ids = scenario === "empty" ? [] : ["first", "second", "third"];
+    const seen: string[] = [];
+    const retries: string[] = [];
+    let active = 0;
+    let maxActive = 0;
+    let queryCount = 0;
+    const beforeQuery = Date.now();
+    helpers.findDueBountySettlements = async (connection: unknown, now: Date, limit: number) => {
+      queryCount++;
+      assert.equal(connection, db);
+      assert.equal(limit, 3);
+      assert.ok(now.getTime() >= beforeQuery && now.getTime() <= Date.now());
+      if (scenario === "query failure") throw failure;
+      return ids.map(bountyId => ({ bountySettlements: { bountyId } }));
+    };
+    helpers.scheduleSettlementRetry = async (connection: unknown, bountyId: string) => {
+      assert.equal(connection, db);
+      retries.push(bountyId);
+    };
+    const lookup = mock.method(bounties, "findBountyByIdForUpdate", async (connection: unknown, bountyId: string) => {
+      assert.equal(connection, tx);
+      seen.push(bountyId);
+      active++;
+      maxActive = Math.max(maxActive, active);
+      await new Promise(resolve => setImmediate(resolve));
+      active--;
+      if (scenario === "health lost") discoveryHealthy = false;
+      if (scenario === "item failure" && bountyId === "second") throw failure;
+      return { status: "completed" };
+    });
+    try {
+      if (scenario === "query failure") {
+        await assert.rejects(settleDueBounties(3), error => error === failure);
+        assert.deepEqual(seen, []);
+      } else {
+        assert.deepEqual(await settleDueBounties(3), scenario === "item failure" ? [{ bountyId: "second", error: failure }] : []);
+        assert.deepEqual(seen, scenario === "unhealthy" ? [] : scenario === "health lost" ? ["first"] : ids);
+        assert.equal(maxActive, ids.length && scenario !== "unhealthy" ? 1 : 0);
+      }
+      assert.equal(queryCount, 1);
+      assert.deepEqual(retries, scenario === "item failure" ? ["second"] : []);
+    } finally {
+      discoveryHealthy = true;
+      lookup.mock.restore();
+      delete helpers.findDueBountySettlements;
+      delete helpers.scheduleSettlementRetry;
     }
   });
 }
