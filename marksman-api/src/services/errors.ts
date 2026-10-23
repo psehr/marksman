@@ -128,3 +128,9 @@ export class HuntAttemptNotFoundError extends Error {
     super("Hunt attempt not found");
   }
 }
+
+export class OsuCursorExpiredError extends Error {
+  constructor() {
+    super("Expired osu! score feed cursor");
+  }
+}

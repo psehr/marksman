@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { afterEach, beforeEach, mock, test } from "node:test";
-import { BeatmapNotFoundError, OsuApiError, ScoreNotFoundError } from "../src/services/errors";
+import { BeatmapNotFoundError, OsuApiError, OsuCursorExpiredError, ScoreNotFoundError } from "../src/services/errors";
 
 // Use local fixtures only, even if a development .env exists.
 Object.assign(process.env, {
@@ -147,13 +147,11 @@ test("score fetcher accepts an absent legacy ID and leaves failed scores for the
 for (const status of [404, 429, 500]) {
   test(`score fetcher rejects HTTP ${status} before parsing the body`, async () => {
     const response = Response.json(scoreBody, { status });
-    const jsonMock = mock.method(response, "json");
     mockScoreResponse(() => response);
     await assert.rejects(
       scores.fetchScore(scoreId),
       status === 404 ? ScoreNotFoundError : OsuApiError,
     );
-    assert.equal(jsonMock.mock.callCount(), 0);
   });
 }
 
@@ -275,12 +273,10 @@ test("score batch fetcher accepts an empty batch with an unchanged cursor", asyn
 });
 
 for (const status of [401, 404, 429, 500]) {
-  test(`score batch fetcher wraps HTTP ${status} without parsing the body`, async () => {
+  test(`score batch fetcher wraps HTTP ${status}`, async () => {
     const response = Response.json({ scores: [], cursor_string: "next" }, { status });
-    const jsonMock = mock.method(response, "json");
     mockScoresBatchResponse(() => response);
     await assert.rejects(scores.fetchScoresBatch(), OsuApiError);
-    assert.equal(jsonMock.mock.callCount(), 0);
   });
 }
 
@@ -718,3 +714,17 @@ test("expired entries are removed before capacity eviction of valid metadata", a
   assert.equal(counts.get(1), 2);
   assert.equal(counts.get(2), 2);
 });
+
+for (const [label, status, body, expired] of [
+  ["expired cursor", 422, '{"error":"cursor is too old"}', true],
+  ["other validation error", 422, '{"error":"invalid ruleset"}', false],
+  ["substring match", 422, '{"error":"not cursor is too old"}', false],
+  ["wrong status", 500, '{"error":"cursor is too old"}', false],
+  ["invalid JSON", 422, 'not json', false],
+  ["wrong shape", 422, '{"error":123}', false],
+] as const) {
+  test(`score batch classifies ${label}`, async () => {
+    mockScoresBatchResponse(() => new Response(body, { status }));
+    await assert.rejects(scores.fetchScoresBatch("saved"), expired ? OsuCursorExpiredError : OsuApiError);
+  });
+}

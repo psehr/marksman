@@ -1,6 +1,7 @@
 import assert from "node:assert/strict";
 import Module from "node:module";
 import { after, afterEach, beforeEach, mock, test } from "node:test";
+import { OsuApiError, OsuCursorExpiredError } from "../src/services/errors";
 import { qualifyingScore } from "./fixtures/completion";
 
 type RecordBatch =
@@ -304,4 +305,53 @@ test("cursor advancement waits for asynchronous persistence", async () => {
     assert.equal(observed.save.mock.callCount(), 0);
   } finally { release(); await cycle; }
   assert.equal(observed.save.mock.callCount(), 1);
+});
+
+test("expired cursor resets once, skips the boundary batch and processes the next batch", async () => {
+  const observed = observeCycle();
+  const log = mock.method(console, "error", () => {});
+  const events: string[] = [];
+  observed.fetch.mock.mockImplementation(async cursor => {
+    events.push(`fetch:${cursor}`);
+    if (cursor === "saved") throw new OsuCursorExpiredError();
+    return cursor === undefined
+      ? { scores: [null], cursor_string: "fresh" }
+      : { scores: [], cursor_string: "next" };
+  });
+  observed.save.mock.mockImplementation(async (_db, _stream, cursor) => { events.push(`save:${cursor}`); });
+  await discoverScores();
+  assert.deepEqual(events, ["fetch:saved", "fetch:undefined", "save:fresh", "fetch:fresh", "save:next"]);
+  assert.deepEqual(observed.record.mock.calls.map(call => call.arguments), [[[]]]);
+  assert.equal(isDiscoveryHealthy(), true);
+  assert.equal(log.mock.callCount(), 1);
+});
+
+for (const stage of ["initialize", "save boundary", "retry"] as const) {
+  test(`expired cursor recovery failure at ${stage} propagates without looping`, async () => {
+    await discoverScores();
+    const observed = observeCycle();
+    mock.method(console, "error", () => {});
+    const failure = new OsuCursorExpiredError();
+    observed.fetch.mock.mockImplementation(async cursor => {
+      if (cursor === "saved") throw new OsuCursorExpiredError();
+      if (stage === "initialize" || cursor === "fresh") throw failure;
+      return { scores: [], cursor_string: "fresh" };
+    });
+    if (stage === "save boundary") observed.save.mock.mockImplementation(async () => { throw failure; });
+    await assert.rejects(discoverScores(), error => error === failure);
+    assert.equal(isDiscoveryHealthy(), false);
+    assert.equal(observed.fetch.mock.callCount(), stage === "retry" ? 3 : 2);
+    assert.equal(observed.record.mock.callCount(), 0);
+    assert.equal(observed.save.mock.callCount(), stage === "initialize" ? 0 : 1);
+  });
+}
+
+test("ordinary upstream errors never reset the cursor", async () => {
+  const observed = observeCycle();
+  const failure = new OsuApiError();
+  observed.fetch.mock.mockImplementation(async () => { throw failure; });
+  await assert.rejects(discoverScores(), error => error === failure);
+  assert.equal(observed.fetch.mock.callCount(), 1);
+  assert.equal(observed.save.mock.callCount(), 0);
+  assert.equal(isDiscoveryHealthy(), false);
 });

@@ -1,6 +1,10 @@
 import { ScoreResponse, scoreResponseSchema } from "@marksman/contracts";
 import { getOsuAccessToken } from "./auth";
-import { OsuApiError, ScoreNotFoundError } from "../../services/errors";
+import {
+  OsuApiError,
+  OsuCursorExpiredError,
+  ScoreNotFoundError,
+} from "../../services/errors";
 import z from "zod";
 
 export async function fetchScore(scoreId: number): Promise<ScoreResponse> {
@@ -97,7 +101,20 @@ export async function fetchScoresBatch(cursor?: string) {
     throw new OsuApiError();
   });
 
-  if (!response.ok) throw new OsuApiError();
+  if (!response.ok) {
+    const body: unknown = await response.json().catch(() => null);
+    const parsed = z.object({ error: z.string() }).safeParse(body);
+
+    if (
+      response.status === 422 &&
+      parsed.success &&
+      parsed.data.error === "cursor is too old"
+    ) {
+      throw new OsuCursorExpiredError();
+    }
+
+    throw new OsuApiError();
+  }
 
   const parsed = scoresBatchResponseSchema.safeParse(
     await response.json().catch(() => {

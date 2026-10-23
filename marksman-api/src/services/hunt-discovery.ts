@@ -6,6 +6,7 @@ import {
 import { parseDiscoveredScores } from "../integrations/osu/score-parser";
 import { fetchScoresBatch } from "../integrations/osu/scores";
 import { recordDiscoveredScores } from "./bounty-hunts-attempts";
+import { OsuCursorExpiredError } from "./errors";
 
 let isHealthy = false;
 
@@ -17,20 +18,34 @@ export async function processDiscoveredScores(payload: unknown) {
   return { rejectedCount: parsedScores.rejectedCount, failures };
 }
 
+async function initializeCursor(): Promise<string> {
+  const { cursor_string } = await fetchScoresBatch();
+
+  await upsertCursor(db, "osu-standard", cursor_string);
+
+  return cursor_string;
+}
+
 export async function discoverScores() {
   try {
     let cursor = await findCursorByStream(db, "osu-standard");
 
     // cursor initialization
-    if (!cursor) {
-      const initialBatch = await fetchScoresBatch();
+    if (!cursor) cursor = await initializeCursor();
 
-      await upsertCursor(db, "osu-standard", initialBatch.cursor_string);
+    let batch;
 
-      cursor = initialBatch.cursor_string;
+    try {
+      batch = await fetchScoresBatch(cursor);
+    } catch (error) {
+      if (!(error instanceof OsuCursorExpiredError)) throw error;
+
+      cursor = await initializeCursor();
+      batch = await fetchScoresBatch(cursor);
+      console.error(
+        "Outdated cursor skipped interval in score submission feed",
+      );
     }
-
-    const batch = await fetchScoresBatch(cursor);
 
     const result = await processDiscoveredScores(batch.scores);
 
