@@ -13,7 +13,7 @@ import { ReactNode, useEffect, useState } from "react";
 
 type AvailableActions = {
   canCancel: boolean;
-  canClaim: boolean;
+  canHunt: boolean;
   canBookmark: boolean;
   canUnbookmark: boolean;
 };
@@ -246,7 +246,7 @@ export default function BountyDetailsPage() {
 
   const availableActions: AvailableActions = {
     canCancel: isAuthenticated && isOpen && isOwner,
-    canClaim: isAuthenticated && !isOwner && isOpen,
+    canHunt: isAuthenticated && !isOwner && isOpen,
     canBookmark: isAuthenticated && !isOwner && isOpen && !isBookmarked,
     canUnbookmark: isAuthenticated && !isOwner && isBookmarked,
   };
@@ -286,7 +286,7 @@ export default function BountyDetailsPage() {
                   </InfoSection>
                 </div>
 
-                {availableActions.canClaim ? (
+                {availableActions.canHunt ? (
                   <div className="col-span-full">
                     <InfoSection title="Claim Wizard">
                       <ClaimWizard

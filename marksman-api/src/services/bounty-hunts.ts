@@ -20,6 +20,7 @@ import {
   findHuntByIdForUpdate,
   insertHunt,
   isUserHuntingBounty,
+  getUserOngoingHunts,
 } from "../db/bounty-hunts";
 
 export async function startHunt(
@@ -86,4 +87,10 @@ export async function stopHunt(
   });
 
   return result;
+}
+
+export async function getOngoingHuntsForUser(userId: string): Promise<Hunt[]> {
+  const hunts = await getUserOngoingHunts(db, userId);
+
+  return hunts;
 }

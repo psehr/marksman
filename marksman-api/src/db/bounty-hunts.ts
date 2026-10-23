@@ -180,3 +180,17 @@ export async function findHuntPlayerBeatmapPairs(
 
   return existingPairs;
 }
+
+export async function getUserOngoingHunts(
+  connection: Transaction | typeof db,
+  userId: string,
+): Promise<Hunt[]> {
+  const rows = await connection
+    .select()
+    .from(bountyHunts)
+    .where(
+      and(eq(bountyHunts.userId, userId), eq(bountyHunts.status, "ongoing")),
+    );
+
+  return rows.map((row) => toHunt(row));
+}

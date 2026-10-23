@@ -113,6 +113,51 @@ async function unchangedError(options: Parameters<typeof request>[0], status: nu
   assert.deepEqual(await snapshot(), original);
 }
 
+async function requestOngoingHunts(userId: string | null = hunter.id, query = "") {
+  const headers: Record<string, string> = {};
+  if (userId) headers.Cookie = await cookieFor(userId);
+  return httpFetch(`${baseUrl}/users/me/hunts${query}`, { headers });
+}
+
+test("ongoing hunts requires authentication", async () => {
+  await expectError(await requestOngoingHunts(null), 401, "NOT_LOGGED_IN", "Not logged in");
+});
+
+test("ongoing hunts returns an empty array when the user has none", async () => {
+  const response = await requestOngoingHunts();
+  assert.equal(response.status, 200);
+  assert.deepEqual(await response.json(), []);
+});
+
+test("ongoing hunts returns only the session user's active hunts with serialized dates", async () => {
+  const startedAt = new Date("2026-10-01T12:00:00.000Z");
+  const endedAt = new Date("2026-10-01T13:00:00.000Z");
+  const [secondBounty] = await db.insert(bounties).values({
+    creatorOsuUserId: 999, rewardBp: 25, status: "open",
+    goal: { type: "minimum_grade", beatmapId: 456, minimumGradeRequirement: "A", beatmapChecksum: null, modRequirement: { rule: "any" } },
+  }).returning();
+  const rows = await db.insert(bountyHunts).values([
+    { userId: hunter.id, bountyId, status: "ongoing", startedAt },
+    { userId: hunter.id, bountyId: secondBounty.id, status: "ongoing", startedAt },
+    { userId: hunter.id, bountyId, status: "stopped", startedAt, endedAt },
+    { userId: hunter.id, bountyId, status: "closed", startedAt, endedAt },
+    { userId: other.id, bountyId, status: "ongoing", startedAt },
+  ]).returning();
+  const original = await snapshot();
+  const response = await requestOngoingHunts(hunter.id, `?userId=${other.id}`);
+  assert.equal(response.status, 200);
+  assert.match(response.headers.get("content-type") ?? "", /application\/json/);
+  const body = await response.json();
+  assert.deepEqual(huntSchema.array().parse(body), body);
+  const expected = rows.slice(0, 2).map(row => ({
+    id: row.id, userId: hunter.id, bountyId: row.bountyId,
+    status: "ongoing", startedAt: startedAt.toISOString(), endedAt: null,
+  }));
+  const byId = (a: { id: string }, b: { id: string }) => a.id.localeCompare(b.id);
+  assert.deepEqual(body.sort(byId), expected.sort(byId));
+  assert.deepEqual(await snapshot(), original);
+});
+
 test("requires authentication", () => unchangedError({ userId: null }, 401, "NOT_LOGGED_IN", "Not logged in"));
 test("rejects a session for a deleted user", () => unchangedError({ userId: randomUUID() }, 401, "NOT_LOGGED_IN", "Not logged in"));
 for (const origin of [null, "null", "https://attacker.example", "http://localhost:3000.attacker.example"]) {

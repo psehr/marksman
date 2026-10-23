@@ -6,6 +6,7 @@ import { getBookmarkedBounties } from "../services/bounty-bookmarks";
 import { fetchLedgerHistory } from "../services/ledger";
 import { getUserBountyEvents } from "../services/bounty-events";
 import { UserNotFoundError } from "../services/errors";
+import { getOngoingHuntsForUser } from "../services/bounty-hunts";
 
 export const usersRouter = Router();
 
@@ -53,6 +54,14 @@ usersRouter.get("/me/ledger", requireAuth, async (req, res) => {
   const entries = await fetchLedgerHistory(userId, pageParse.data);
 
   return res.json(entries);
+});
+
+usersRouter.get("/me/hunts", requireAuth, async (req, res) => {
+  const userId = res.locals.user.identity.id;
+
+  const ongoingHunts = await getOngoingHuntsForUser(userId);
+
+  return res.json(ongoingHunts);
 });
 
 usersRouter.get("/:id/bounty-events", async (req, res) => {
