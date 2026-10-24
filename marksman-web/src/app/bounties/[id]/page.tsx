@@ -6,6 +6,7 @@ import CancelBountyButton from "@/components/buttons/CancelBounty";
 import BookmarkBountyButton from "@/components/buttons/BookmarkBounty";
 import LoginButton from "@/components/buttons/Login";
 import ClaimWizard from "@/components/ClaimWizard";
+import BountyHunt from "@/components/BountyHunt";
 import { ExtendedBounty } from "@marksman/contracts";
 import Link from "next/link";
 import { useParams, notFound } from "next/navigation";
@@ -285,6 +286,14 @@ export default function BountyDetailsPage() {
                     {displayBeatmapRequirement(bounty)}
                   </InfoSection>
                 </div>
+
+                {availableActions.canHunt ? (
+                  <div className="col-span-full">
+                    <InfoSection title="Hunting">
+                      <BountyHunt bounty={bounty} />
+                    </InfoSection>
+                  </div>
+                ) : null}
 
                 {availableActions.canHunt ? (
                   <div className="col-span-full">
