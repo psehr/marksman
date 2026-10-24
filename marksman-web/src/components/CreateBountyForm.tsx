@@ -1,9 +1,10 @@
 "use client";
 
 import { useBeatmapMetadata } from "@/hooks/useBeatmapMetadata";
-import { createBountySchema, userSchema, type User } from "@marksman/contracts";
+import { createBountySchema } from "@marksman/contracts";
 import Link from "next/link";
-import { useEffect, useRef, useState, type FormEvent } from "react";
+import { useRef, useState, type FormEvent } from "react";
+import { useAuth } from "./AuthProvider";
 
 const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 const mods = ["EZ", "HD", "HR", "DT", "HT", "FL", "NF", "SO"] as const;
@@ -14,9 +15,6 @@ const gradeLabels: Record<string, string> = {
   XH: "Silver SS",
 };
 type ModRule = "any" | "exact" | "includes" | "excludes";
-type Account =
-  | { status: "loading" | "logged-out" | "error" }
-  | { status: "ready"; user: User };
 
 function beatmapIdFromInput(input: string): number | undefined {
   const value = input.trim();
@@ -43,8 +41,6 @@ export default function CreateBountyForm() {
   const FEE_PERCENTAGE = 10;
   const FEE_MULT = FEE_PERCENTAGE / 100;
 
-  const [account, setAccount] = useState<Account>({ status: "loading" });
-  const [accountAttempt, setAccountAttempt] = useState(0);
   const [beatmap, setBeatmap] = useState("");
   const [goalType, setGoalType] = useState("minimum_grade");
   const [grade, setGrade] = useState("A");
@@ -69,30 +65,12 @@ export default function CreateBountyForm() {
 
   const submitting = useRef(false);
 
-  useEffect(() => {
-    const controller = new AbortController();
-    async function loadAccount() {
-      setAccount({ status: "loading" });
-      try {
-        const response = await fetch(`${apiUrl}/auth/me`, {
-          credentials: "include",
-          cache: "no-store",
-          signal: controller.signal,
-        });
-        if (response.status === 401) {
-          setAccount({ status: "logged-out" });
-          return;
-        }
-        if (!response.ok) throw new Error("Account unavailable");
-        const user = userSchema.parse(await response.json());
-        setAccount({ status: "ready", user });
-      } catch {
-        if (!controller.signal.aborted) setAccount({ status: "error" });
-      }
-    }
-    void loadAccount();
-    return () => controller.abort();
-  }, [accountAttempt]);
+  const {
+    user,
+    loading: accountLoading,
+    error: accountError,
+    refreshUser,
+  } = useAuth();
 
   const result = createBountySchema.safeParse({
     rewardBp: reward.trim() ? Number(reward) : undefined,
@@ -124,7 +102,7 @@ export default function CreateBountyForm() {
     issues.push("Enter the minimum combo percentage.");
 
   const balance =
-    account.status === "ready" ? account.user.stats.bpBalance : null;
+    !accountLoading && user !== null ? user.stats.bpBalance : null;
 
   const fee = result.success ? Math.ceil(result.data.rewardBp * FEE_MULT) : 0;
 
@@ -149,12 +127,7 @@ export default function CreateBountyForm() {
     if (submitting.current || created) return;
     setSubmitted(true);
     setError(null);
-    if (
-      !result.success ||
-      issues.length ||
-      insufficient ||
-      account.status !== "ready"
-    )
+    if (!result.success || issues.length || insufficient || accountLoading || user === null)
       return;
     submitting.current = true;
     setPending(true);
@@ -166,10 +139,10 @@ export default function CreateBountyForm() {
         body: JSON.stringify(result.data),
       });
       if (response.status === 401) {
-        setAccount({ status: "logged-out" });
         setError(
           "Your session expired. Log in again before creating the bounty.",
         );
+        await refreshUser();
         return;
       }
       if (!response.ok) {
@@ -178,7 +151,7 @@ export default function CreateBountyForm() {
           setError(
             "You no longer have enough BP for this reward / fee. Your balance is being refreshed.",
           );
-          setAccountAttempt((attempt) => attempt + 1);
+          await refreshUser();
         } else {
           setError(
             response.status === 403
@@ -189,7 +162,7 @@ export default function CreateBountyForm() {
         return;
       }
       setCreated(true);
-      setAccountAttempt((attempt) => attempt + 1);
+      await refreshUser();
     } catch {
       setError(
         "Could not confirm creation. Check your bounties before retrying, because the request may have succeeded.",
@@ -204,14 +177,14 @@ export default function CreateBountyForm() {
 
   return (
     <div className="space-y-6">
-      {account.status === "loading" && <p role="status">Loading account…</p>}
-      {account.status === "ready" && (
+      {accountLoading && <p role="status">Loading account…</p>}
+      {!accountLoading && user !== null && (
         <p>
-          Signed-in as {account.user.identity.username} · Available balance:{" "}
-          {balance} BP
+          Signed-in as {user.identity.username} · Available balance: {balance}{" "}
+          BP
         </p>
       )}
-      {account.status === "logged-out" && (
+      {!accountLoading && !accountError && user === null && (
         <p>
           Log in to create a bounty.{" "}
           <a className="underline" href={`${apiUrl}/auth/osu`}>
@@ -219,13 +192,13 @@ export default function CreateBountyForm() {
           </a>
         </p>
       )}
-      {account.status === "error" && (
+      {!accountLoading && accountError !== null && (
         <p role="alert">
           Could not load your balance.{" "}
           <button
             type="button"
             className="underline"
-            onClick={() => setAccountAttempt((attempt) => attempt + 1)}
+            onClick={() => refreshUser()}
           >
             Retry account lookup
           </button>
@@ -421,8 +394,8 @@ export default function CreateBountyForm() {
                 </a>
               </p>
             ) : null}
-            {account.status === "ready" && (
-              <p>Created by {account.user.identity.username}</p>
+            {!accountLoading && user !== null && (
+              <p>Created by {user.identity.username}</p>
             )}
             <p>
               {goalType === "minimum_grade"
@@ -470,9 +443,7 @@ export default function CreateBountyForm() {
         )}
         <button
           type="submit"
-          disabled={
-            pending || created || account.status !== "ready" || insufficient
-          }
+          disabled={pending || created || accountLoading || user === null || insufficient}
           className="rounded bg-sky-700 px-4 py-2 text-white disabled:opacity-50"
         >
           {pending

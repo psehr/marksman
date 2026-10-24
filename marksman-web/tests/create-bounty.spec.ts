@@ -215,9 +215,12 @@ test("requires login and handles a session expiring before submission", async ({
   ).toBeDisabled();
   await page.unroute("**/auth/me");
   await mockAccount(page);
-  await page.route("**/bounties", (route) =>
-    route.fulfill({ status: 401, json: { error: "Not logged in" } }),
-  );
+  await page.route("**/bounties", async (route) => {
+    await page.route("**/auth/me", authRoute =>
+      authRoute.fulfill({ status: 401, json: { error: "Not logged in" } }),
+    );
+    await route.fulfill({ status: 401, json: { error: "Not logged in" } });
+  });
   await page.reload();
   await fillBasic(page);
   await page.getByRole("button", { name: "Create bounty · 330 BP" }).click();
@@ -293,4 +296,56 @@ test("metadata ignores a late response for the previous ID and clears on invalid
   await input.fill("invalid");
   await expect(preview.getByText("Choose a beatmap")).toBeVisible();
   await expect(preview.getByRole("link")).toHaveCount(0);
+});
+
+for (const failure of ["http", "network"] as const) {
+  test(`failed ${failure} account refresh clears stale identity and balance, retry restores them`, async ({ page }) => {
+    let failRefresh = false;
+    await page.route("**/auth/me", route => {
+      if (failRefresh) {
+        return failure === "network" ? route.abort("failed")
+          : route.fulfill({ status: 503, json: { error: "Unavailable" } });
+      }
+      return route.fulfill({ json: user });
+    });
+    let posts = 0;
+    await page.route("**/bounties", route => {
+      posts++;
+      failRefresh = true;
+      return route.fulfill({ status: 409, json: { code: "INSUFFICIENT_BP" } });
+    });
+    await page.goto("/bounties/new");
+    await fillBasic(page);
+    await expect(page.getByRole("link", { name: "Profile", exact: true })).toBeVisible();
+    const submit = page.getByRole("button", { name: "Create bounty · 330 BP" });
+    await submit.click();
+    await expect(page.getByRole("button", { name: "Retry account lookup" })).toBeVisible();
+    await expect(page.getByText(/Signed-in as creator/)).toHaveCount(0);
+    await expect(page.getByRole("link", { name: "Profile", exact: true })).toHaveCount(0);
+    await expect(submit).toBeDisabled();
+    // Exercise the handler guard independently of the disabled button.
+    await page.locator("form").evaluate(form => form.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true })));
+    expect(posts).toBe(1);
+    failRefresh = false;
+    await page.getByRole("button", { name: "Retry account lookup" }).click();
+    await expect(page.getByText(/Signed-in as creator/)).toBeVisible();
+    await expect(page.getByRole("link", { name: "Profile", exact: true })).toBeVisible();
+    await expect(submit).toBeEnabled();
+  });
+}
+
+test("signed-out account is not an error and cannot submit even with valid inputs", async ({ page }) => {
+  await page.route("**/auth/me", route => route.fulfill({ status: 401, json: {} }));
+  let posts = 0;
+  await page.route("**/bounties", route => {
+    posts++;
+    return route.fulfill({ status: 401, json: {} });
+  });
+  await page.goto("/bounties/new");
+  await fillBasic(page);
+  await expect(page.getByRole("main").getByRole("link", { name: "Log in with osu!" })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Retry account lookup" })).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Create bounty · 330 BP" })).toBeDisabled();
+  await page.locator("form").evaluate(form => form.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true })));
+  expect(posts).toBe(0);
 });

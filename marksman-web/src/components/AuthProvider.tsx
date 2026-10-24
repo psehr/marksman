@@ -9,6 +9,8 @@ import {
   type ReactNode,
 } from "react";
 import type { User } from "@marksman/contracts";
+import { getCurrentUser } from "@/lib/api/users";
+import { ApiError } from "@/lib/api/client";
 
 type AuthContextValue = {
   user: User | null;
@@ -39,27 +41,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setError(null);
 
     try {
-      const response = await fetch(
-        `${process.env.NEXT_PUBLIC_API_URL}/auth/me`,
-        {
-          credentials: "include",
-          cache: "no-store",
-        },
-      );
-
-      if (response.status === 401) {
-        setUser(null);
+      const currentUser: User = await getCurrentUser();
+      setUser(currentUser);
+    } catch (error) {
+      setUser(null);
+      if (error instanceof ApiError && error.status === 401) {
         return;
       }
 
-      if (!response.ok) {
-        throw new Error("Failed to load user");
-      }
-
-      const currentUser: User = await response.json();
-      setUser(currentUser);
-    } catch {
-      setUser(null);
       setError("Could not check your session. Please try again.");
     } finally {
       setLoading(false);
