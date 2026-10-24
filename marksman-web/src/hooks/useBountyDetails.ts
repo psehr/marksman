@@ -13,11 +13,14 @@ export function useBountyDetails(bountyId: string) {
   const refreshBounty = () => {
     setRefresh((previous) => previous + 1);
   };
-
   const { user } = useAuth();
+
+  const AUTOMATIC_POLLING_INTERVAL = 5_000;
 
   useEffect(() => {
     let ignore = false;
+    let hasLoaded = false;
+    let timer: ReturnType<typeof setTimeout> | undefined;
 
     async function load() {
       try {
@@ -26,13 +29,22 @@ export function useBountyDetails(bountyId: string) {
 
         setBounty(bounty);
         setQueryStatus("complete");
+
+        hasLoaded = true;
+
+        if (bounty.status === "open") {
+          timer = setTimeout(() => void load(), AUTOMATIC_POLLING_INTERVAL);
+        }
       } catch (error) {
         if (ignore) return;
-        setQueryStatus(
-          error instanceof ApiError && error.status === 404
-            ? "notFound"
-            : "errored",
-        );
+
+        if (error instanceof ApiError && error.status === 404) {
+          return setQueryStatus("notFound");
+        } else if (!hasLoaded) {
+          setQueryStatus("errored");
+        }
+
+        timer = setTimeout(() => void load(), AUTOMATIC_POLLING_INTERVAL);
       }
     }
 
@@ -41,6 +53,7 @@ export function useBountyDetails(bountyId: string) {
 
     return () => {
       ignore = true;
+      clearTimeout(timer);
     };
   }, [bountyId, refresh, user?.identity.id]);
 
