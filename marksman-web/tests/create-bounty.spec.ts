@@ -1,4 +1,4 @@
-import type { User } from "@marksman/contracts";
+import type { User, OsuBeatmapMetadata } from "@marksman/contracts";
 import { expect, test, type Page } from "@playwright/test";
 
 const user: User = {
@@ -10,6 +10,19 @@ const user: User = {
   stats: { bpBalance: 1000 },
   createdAt: "2025-01-01T00:00:00.000Z",
 };
+
+const metadata: OsuBeatmapMetadata = {
+  id: 123456, version: "Expert", difficulty_rating: 5, mode: "osu",
+  status: "ranked", bpm: 180, url: "https://osu.ppy.sh/beatmaps/123456",
+  max_combo: 1000, checksum: null, ar: 9, accuracy: 8, cs: 4, drain: 6,
+  total_length: 120, hit_length: 110, playcount: 100,
+  beatmapset: { title: "Starlight", artist: "Aurora", creator: "mapper", user_id: 7,
+    covers: { cover: "https://assets.ppy.sh/cover.jpg", card: "https://assets.ppy.sh/card.jpg" } },
+};
+
+test.beforeEach(async ({ page }) => {
+  await page.route("**/beatmaps/*", route => route.fulfill({ json: metadata }));
+});
 
 async function mockAccount(page: Page, balance = () => 1000) {
   await page.route("**/auth/me", (route) =>
@@ -40,7 +53,7 @@ test("previews a grade bounty, submits once, and refreshes the balance", async (
     if (route.request().method() !== "POST") return route.fulfill({ json: [] });
     bodies.push(route.request().postDataJSON());
     await gate;
-    balance = 700;
+    balance = 670;
     await route.fulfill({ status: 201, json: { message: "Bounty created" } });
   });
   await page.goto("/bounties?status=open");
@@ -51,14 +64,14 @@ test("previews a grade bounty, submits once, and refreshes the balance", async (
   const preview = page.getByRole("region", { name: "Bounty preview" });
   await expect(preview.getByText("Only HD")).toBeVisible();
   await expect(
-    preview.getByText("Balance after creation: 700 BP"),
+    preview.getByText("Balance after creation: 670 BP"),
   ).toBeVisible();
   await expect(preview.getByRole("link")).toHaveAttribute(
     "href",
     "https://osu.ppy.sh/beatmaps/123456",
   );
   await page
-    .getByRole("button", { name: "Create bounty · 300 BP", exact: true })
+    .getByRole("button", { name: "Create bounty · 330 BP", exact: true })
     .click();
   try {
     await expect(
@@ -70,7 +83,7 @@ test("previews a grade bounty, submits once, and refreshes the balance", async (
   }
   await expect(page.getByText("Bounty created! It is now open.")).toBeVisible();
   await expect(
-    page.getByText("Signed-in as creator · Available balance: 700 BP"),
+    page.getByText("Signed-in as creator · Available balance: 670 BP"),
   ).toBeVisible();
   expect(bodies).toEqual([
     {
@@ -78,6 +91,7 @@ test("previews a grade bounty, submits once, and refreshes the balance", async (
       goal: {
         type: "minimum_grade",
         beatmapId: 123456,
+        beatmapChecksum: null,
         minimumGradeRequirement: "A",
         modRequirement: { rule: "exact", mods: ["HD"] },
       },
@@ -118,10 +132,10 @@ test("rejects set-only links, conflicting mods, and rewards above the balance", 
   await page.getByLabel("HT", { exact: true }).uncheck();
   await page.getByLabel("Reward (BP)").fill("1001");
   await expect(
-    page.getByRole("button", { name: "Create bounty · 1001 BP" }),
+    page.getByRole("button", { name: "Create bounty · 1102 BP" }),
   ).toBeDisabled();
   await expect(page.getByRole("main").getByRole("alert")).toContainText(
-    "Not enough BP",
+    "Insufficient BP",
   );
   expect(posts).toBe(0);
 });
@@ -144,13 +158,13 @@ test("preserves a combo bounty after a network failure and allows an explicit re
   await page.getByLabel("Minimum combo (%)").fill("99.5");
   await page.getByLabel("Minimum accuracy (%) — optional").fill("98");
   await page.getByLabel("Mod rule").selectOption("exact");
-  await page.getByRole("button", { name: "Create bounty · 300 BP" }).click();
+  await page.getByRole("button", { name: "Create bounty · 330 BP" }).click();
   await expect(page.getByRole("main").getByRole("alert")).toContainText(
     "request may have succeeded",
   );
   await expect(page.getByLabel("Minimum combo (%)")).toHaveValue("99.5");
   await expect(page.getByLabel("Reward (BP)")).toHaveValue("300");
-  await page.getByRole("button", { name: "Create bounty · 300 BP" }).click();
+  await page.getByRole("button", { name: "Create bounty · 330 BP" }).click();
   await expect(page.getByText("Bounty created! It is now open.")).toBeVisible();
   expect(bodies).toEqual(
     Array(2).fill({
@@ -158,6 +172,7 @@ test("preserves a combo bounty after a network failure and allows an explicit re
       goal: {
         type: "full_combo",
         beatmapId: 123456,
+        beatmapChecksum: null,
         minimumComboRatio: 0.995,
         minimumAccuracy: 98,
         modRequirement: { rule: "exact", mods: [] },
@@ -175,13 +190,13 @@ test("refreshes a stale balance when funding is rejected", async ({ page }) => {
   });
   await page.goto("/bounties/new");
   await fillBasic(page);
-  await page.getByRole("button", { name: "Create bounty · 300 BP" }).click();
+  await page.getByRole("button", { name: "Create bounty · 330 BP" }).click();
   await expect(
     page.getByText("Signed-in as creator · Available balance: 100 BP"),
   ).toBeVisible();
   await expect(page.getByLabel("Reward (BP)")).toHaveValue("300");
   await expect(
-    page.getByRole("button", { name: "Create bounty · 300 BP" }),
+    page.getByRole("button", { name: "Create bounty · 330 BP" }),
   ).toBeDisabled();
 });
 
@@ -193,7 +208,7 @@ test("requires login and handles a session expiring before submission", async ({
   );
   await page.goto("/bounties/new");
   await expect(
-    page.getByRole("link", { name: "Log in with osu!" }),
+    page.getByRole("main").getByRole("link", { name: "Log in with osu!" }),
   ).toBeVisible();
   await expect(
     page.getByRole("button", { name: "Create bounty", exact: true }),
@@ -205,12 +220,77 @@ test("requires login and handles a session expiring before submission", async ({
   );
   await page.reload();
   await fillBasic(page);
-  await page.getByRole("button", { name: "Create bounty · 300 BP" }).click();
+  await page.getByRole("button", { name: "Create bounty · 330 BP" }).click();
   await expect(page.getByRole("main").getByRole("alert")).toContainText(
     "Your session expired",
   );
   await expect(
-    page.getByRole("link", { name: "Log in with osu!" }),
+    page.getByRole("main").getByRole("link", { name: "Log in with osu!" }),
   ).toBeVisible();
   await expect(page.getByLabel("Reward (BP)")).toHaveValue("300");
+});
+
+for (const failure of ["404", "network", "malformed"] as const) {
+  test(`metadata ${failure} shows an error and same-ID retry recovers without submitting`, async ({ page }) => {
+    await mockAccount(page);
+    const uncaught: string[] = [];
+    page.on("pageerror", error => uncaught.push(error.message));
+    let reads = 0;
+    let posts = 0;
+    await page.route("**/bounties", route => {
+      posts++;
+      return route.fulfill({ status: 500 });
+    });
+    await page.route("**/beatmaps/123456", route => {
+      if (++reads === 1) {
+        if (failure === "network") return route.abort("failed");
+        if (failure === "malformed") return route.fulfill({ json: { id: 123456 } });
+        return route.fulfill({ status: 404, json: { error: "Missing" } });
+      }
+      return route.fulfill({ json: metadata });
+    });
+    await page.goto("/bounties/new");
+    await fillBasic(page);
+    const preview = page.getByRole("region", { name: "Bounty preview" });
+    await expect(preview.getByText(failure === "404"
+      ? "Beatmap not found. Check the difficulty ID."
+      : "Unable to retrieve beatmap metadata. Please try again.")).toBeVisible();
+    await preview.getByRole("button", { name: "Retry", exact: true }).click();
+    await expect(preview.getByRole("link")).toContainText("Aurora - Starlight [Expert]");
+    expect(reads).toBe(2);
+    expect(posts).toBe(0);
+    expect(uncaught).toEqual([]);
+  });
+}
+
+test("metadata ignores a late response for the previous ID and clears on invalid input", async ({ page }) => {
+  await mockAccount(page);
+  let release!: () => void;
+  const gate = new Promise<void>(resolve => { release = resolve; });
+  let finish!: () => void;
+  const finished = new Promise<void>(resolve => { finish = resolve; });
+  let oldReads = 0;
+  await page.route("**/beatmaps/123456", async route => {
+    oldReads++;
+    await gate;
+    await route.fulfill({ json: metadata });
+    finish();
+  });
+  await page.route("**/beatmaps/654321", route => route.fulfill({
+    json: { ...metadata, id: 654321, beatmapset: null },
+  }));
+  await page.goto("/bounties/new");
+  const input = page.getByLabel("Beatmap ID or difficulty URL");
+  const preview = page.getByRole("region", { name: "Bounty preview" });
+  await input.fill("123456");
+  await expect.poll(() => oldReads).toBe(1);
+  await input.fill("654321");
+  await expect(preview.getByRole("link")).toHaveText("654321");
+  release();
+  await finished;
+  await expect(preview.getByRole("link")).toHaveAttribute("href", "https://osu.ppy.sh/beatmaps/654321");
+  await expect(preview.getByText(/Starlight/)).toHaveCount(0);
+  await input.fill("invalid");
+  await expect(preview.getByText("Choose a beatmap")).toBeVisible();
+  await expect(preview.getByRole("link")).toHaveCount(0);
 });

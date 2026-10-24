@@ -1,11 +1,7 @@
 "use client";
 
-import {
-  createBountySchema,
-  userSchema,
-  type User,
-  OsuBeatmapMetadata,
-} from "@marksman/contracts";
+import { useBeatmapMetadata } from "@/hooks/useBeatmapMetadata";
+import { createBountySchema, userSchema, type User } from "@marksman/contracts";
 import Link from "next/link";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 
@@ -61,15 +57,15 @@ export default function CreateBountyForm() {
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [created, setCreated] = useState(false);
-  const [beatmapMetadata, setBeatmapMetadata] =
-    useState<OsuBeatmapMetadata | null>(null);
-  const [beatmapLookupStatus, setBeatmapLookupStatus] = useState<
-    "idle" | "loading" | "success" | "error"
-  >("idle");
-  const [beatmapLookupError, setBeatmapLookupError] = useState<string | null>(
-    null,
-  );
-  const [beatmapLookupAttempt, setBeatmapLookupAttempt] = useState(0);
+
+  const beatmapId = beatmapIdFromInput(beatmap);
+
+  const {
+    beatmapMetadata,
+    beatmapLookupStatus,
+    retryLookup,
+    beatmapLookupError,
+  } = useBeatmapMetadata(beatmapId);
 
   const submitting = useRef(false);
 
@@ -97,63 +93,6 @@ export default function CreateBountyForm() {
     void loadAccount();
     return () => controller.abort();
   }, [accountAttempt]);
-
-  const beatmapId = beatmapIdFromInput(beatmap);
-
-  useEffect(() => {
-    let ignore = false;
-
-    setBeatmapMetadata(null);
-    setBeatmapLookupError(null);
-
-    if (beatmapId === undefined) {
-      setBeatmapLookupStatus("idle");
-      return;
-    }
-
-    setBeatmapLookupStatus("loading");
-
-    const timer = window.setTimeout(() => {
-      async function loadBeatmap() {
-        try {
-          const response = await fetch(
-            `${process.env.NEXT_PUBLIC_API_URL}/beatmaps/${beatmapId}`,
-          );
-
-          if (!response.ok) {
-            throw new Error(
-              response.status === 404
-                ? "Beatmap not found. Check the difficulty ID."
-                : "Unable to retrieve beatmap metadata. Please try again.",
-            );
-          }
-
-          const metadata: OsuBeatmapMetadata = await response.json();
-
-          if (!ignore) {
-            setBeatmapMetadata(metadata);
-            setBeatmapLookupStatus("success");
-          }
-        } catch (error) {
-          if (!ignore) {
-            setBeatmapLookupError(
-              error instanceof Error
-                ? error.message
-                : "Unable to retrieve beatmap metadata. Please try again.",
-            );
-            setBeatmapLookupStatus("error");
-          }
-        }
-      }
-
-      void loadBeatmap();
-    }, 300);
-
-    return () => {
-      ignore = true;
-      window.clearTimeout(timer);
-    };
-  }, [beatmapId, beatmapLookupAttempt]);
 
   const result = createBountySchema.safeParse({
     rewardBp: reward.trim() ? Number(reward) : undefined,
@@ -462,9 +401,7 @@ export default function CreateBountyForm() {
                 <button
                   type="button"
                   className="cursor-pointer"
-                  onClick={() =>
-                    setBeatmapLookupAttempt((attempt) => attempt + 1)
-                  }
+                  onClick={() => retryLookup()}
                 >
                   Retry
                 </button>
