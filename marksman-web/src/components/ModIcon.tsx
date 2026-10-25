@@ -99,8 +99,8 @@ export default function ModIcon({
             y1="88"
             x2="88"
             y2="12"
-            stroke="var(--color-background)"
-            strokeWidth="5"
+            stroke="var(--color-surface)"
+            strokeWidth="3"
             strokeLinecap="round"
             vectorEffect="non-scaling-stroke"
           />
@@ -110,7 +110,7 @@ export default function ModIcon({
             x2="88"
             y2="12"
             stroke="currentColor"
-            strokeWidth="2.5"
+            strokeWidth="1"
             strokeLinecap="round"
             vectorEffect="non-scaling-stroke"
           />

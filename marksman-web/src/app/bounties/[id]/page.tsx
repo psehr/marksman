@@ -13,6 +13,7 @@ import GoalCategory from "@/components/bounty_details/GoalCategory";
 import ModsRequirement from "@/components/bounty_details/ModsRequirement";
 import BeatmapRequirement from "@/components/bounty_details/BeatmapRequirement";
 import { useBountyDetails } from "@/hooks/useBountyDetails";
+import BountyCard from "@/components/bounty_views/BountyCard";
 
 export function InfoSection({
   title,
@@ -55,7 +56,7 @@ export default function BountyDetailsPage() {
         <div className="flex flex-col w-3/5 h-fit gap-12">
           {queryStatus === "complete" && bounty ? (
             <>
-              <Bounty bounty={bounty} />
+              <BountyCard bounty={bounty} />
               <div className="grid grid-cols-2 gap-4">
                 <InfoSection title="Current Status">
                   <BountyStatus bounty={bounty} />

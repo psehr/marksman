@@ -2,6 +2,7 @@
 
 import { useAuth } from "@/components/AuthProvider";
 import BountyList from "@/components/BountyList";
+import ButtonLink from "@/components/buttons/ButtonLink";
 import SearchPanel, {
   type BountySortingMethod,
 } from "@/components/SearchPanel";
@@ -84,16 +85,8 @@ function Bounties() {
 
   return (
     <div className="flex flex-col w-full h-full items-center gap-12 p-12">
-      <div className="flex w-2/5 h-full place-content-center items-center gap-4">
-        <Link
-          href="/bounties/new"
-          className="rounded bg-sky-700 px-4 py-4 h-fit"
-        >
-          Create a bounty
-        </Link>
-      </div>
-      <div className="flex flex-col w-4/5 h-full items-center gap-4">
-        <div className="bg-blue-950 flex w-3/4 p-2 h-full rounded-xl border border-slate-600">
+      <div className="flex flex-col w-full max-w-6xl h-full items-center gap-4">
+        <div className="bg-surface flex w-full p-2 h-full rounded-xl border border-border">
           <SearchPanel
             searchInput={searchInput}
             setSearchInput={(value) =>
@@ -114,7 +107,7 @@ function Bounties() {
             }}
           />
         </div>
-        <div className="w-full h-1/2 flex place-content-center items-center">
+        <div className="w-full max-w-6xl h-1/2 flex place-content-center items-center">
           {queryStatus === "complete" ? (
             <BountyList bounties={sortedBounties} hasBounties={hasBounties} />
           ) : null}

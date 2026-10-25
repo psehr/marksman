@@ -4,6 +4,7 @@ import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "./AuthProvider";
 import { AuthButton } from "./AuthButton";
+import ButtonLink from "./buttons/ButtonLink";
 
 function RouteLink({
   url,
@@ -39,6 +40,11 @@ export default function NavBar() {
           title="Bounties"
           selected={path.startsWith("/bounties")}
         />
+      </div>
+      <div>
+        <ButtonLink href="/bounties/new" variant="accent">
+          Create a bounty
+        </ButtonLink>
       </div>
       {user ? (
         <RouteLink

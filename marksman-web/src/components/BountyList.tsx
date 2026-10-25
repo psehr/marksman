@@ -1,5 +1,5 @@
 import type { ExtendedBounty } from "@marksman/contracts";
-import Bounty from "./Bounty";
+import BountyCard from "./bounty_views/BountyCard";
 
 export default function BountyList({
   bounties,
@@ -9,12 +9,10 @@ export default function BountyList({
   hasBounties: boolean;
 }) {
   return (
-    <div className="flex flex-col gap-2 p-2 w-3/4 h-full items-center">
-      {bounties.length > 0 ? (
-        bounties.map((bounty) => <Bounty bounty={bounty} key={bounty.id} />)
-      ) : (
-        <p>{hasBounties ? "No matching bounties" : "No bounties available"}</p>
-      )}
+    <div className="grid w-full grid-cols-1 gap-4 lg:grid-cols-2">
+      {bounties.map((bounty) => (
+        <BountyCard key={bounty.id} bounty={bounty} />
+      ))}
     </div>
   );
 }

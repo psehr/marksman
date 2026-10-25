@@ -1,3 +1,4 @@
+import BountyCard from "@/components/bounty_views/BountyCard";
 import Button from "@/components/buttons/Button";
 import { Anonymous_Pro, Encode_Sans } from "next/font/google";
 
@@ -18,9 +19,6 @@ function InfoSection({
     </div>
   );
 }
-
-const focus_style =
-  "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring";
 
 export default async function Home() {
   return (

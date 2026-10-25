@@ -1,16 +1,9 @@
 import type { Metadata } from "next";
-import { Anonymous_Pro, Encode_Sans, Source_Code_Pro } from "next/font/google";
+import { Anonymous_Pro, Encode_Sans } from "next/font/google";
 import "./globals.css";
 import { AuthProvider } from "@/components/AuthProvider";
 import NavBar from "@/components/NavBar";
-
-const scp = Source_Code_Pro({
-  subsets: ["latin"],
-  weight: "500",
-});
-
-const aes_font = Anonymous_Pro({ subsets: ["latin"], weight: "400" });
-const base_font = Encode_Sans({ subsets: ["latin"], weight: ["400", "700"] });
+import { base_font } from "@/lib/fonts";
 
 export const metadata: Metadata = {
   title: "Marksman",

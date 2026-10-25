@@ -22,7 +22,7 @@ export default function SearchPanel(props: {
       <div className="flex flex-col gap-2 items-center">
         <input
           type="text"
-          className="flex w-full rounded-sm text-center bg-slate-950"
+          className="flex w-full rounded-sm text-center bg-background"
           placeholder="Search bounties.."
           aria-label="Search bounties"
           value={props.searchInput}
