@@ -21,10 +21,28 @@ const modNames = {
 } satisfies Record<ModAcronym, string>;
 
 const sizes = {
-  sm: "h-6 min-w-8 px-1 text-xs",
-  md: "h-8 min-w-10 px-1.5 text-sm",
-  lg: "h-10 min-w-12 px-2 text-base",
+  sm: "h-6 text-xs",
+  md: "h-8 text-sm",
+  lg: "h-10 text-base",
 };
+
+// Official osu-web SVG artwork; see public/images/mods/README.md and LICENCE.
+const icons = {
+  EZ: { file: "easy", color: "#a3cf83" },
+  NF: { file: "no-fail", color: "#a3cf83" },
+  HT: { file: "half-time", color: "#a3cf83" },
+  HD: { file: "hidden", color: "#ed8d83" },
+  HR: { file: "hard-rock", color: "#ed8d83" },
+  DT: { file: "double-time", color: "#ed8d83" },
+  FL: { file: "flashlight", color: "#ed8d83" },
+  SO: { file: "spun-out", color: "#83bfcf" },
+  NM: { file: "no-mod", color: "#bebc99" },
+} satisfies Record<Exclude<ModAcronym, "ANY">, { file: string; color: string }>;
+
+function mask(file: string) {
+  const value = `url(/images/mods/${file}.svg) center / contain no-repeat`;
+  return { mask: value, WebkitMask: value };
+}
 
 type ModIconProps = {
   mod: ModAcronym;
@@ -40,25 +58,52 @@ export default function ModIcon({
   crossed = false,
   className = "",
 }: ModIconProps) {
-  const name = modNames[mod];
+  const name = modNames[mod] ?? mod;
   const label = crossed ? `${name} forbidden` : name;
+  const icon = mod === "ANY" ? undefined : icons[mod];
 
   return (
     <span
       role="img"
       aria-label={label}
       title={label}
-      className={`relative inline-flex shrink-0 items-center justify-center rounded-md border border-white/25 bg-slate-900 font-bold leading-none tracking-wide text-white ${sizes[size]} ${className}`}
+      className={`relative inline-flex aspect-[120/84] shrink-0 items-center justify-center font-bold leading-none tracking-wide ${sizes[size]} ${!icon ? "rounded-md border border-border bg-background" : ""} ${className}`}
     >
-      <span aria-hidden="true">{mod === "ANY" ? "?" : mod}</span>
+      {icon ? (
+        <span
+          aria-hidden="true"
+          className="absolute inset-y-px inset-x-[1.4286px]"
+        >
+          <span
+            className="absolute inset-0"
+            style={{ ...mask("mod-icon"), backgroundColor: icon.color }}
+          />
+          <span
+            className="absolute inset-0 bg-surface"
+            style={mask(`mod-${icon.file}`)}
+          />
+        </span>
+      ) : (
+        <span aria-hidden="true">{mod === "ANY" ? "?" : mod}</span>
+      )}
       {crossed && (
         <svg
           aria-hidden="true"
           focusable="false"
           viewBox="0 0 100 100"
           preserveAspectRatio="none"
-          className="pointer-events-none absolute inset-0 size-full text-red-400"
+          className="pointer-events-none absolute inset-0 size-full text-danger"
         >
+          <line
+            x1="12"
+            y1="88"
+            x2="88"
+            y2="12"
+            stroke="var(--color-background)"
+            strokeWidth="5"
+            strokeLinecap="round"
+            vectorEffect="non-scaling-stroke"
+          />
           <line
             x1="12"
             y1="88"

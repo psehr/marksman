@@ -104,3 +104,43 @@ for (const failure of ["http", "network", "schema"]) {
     await expect(page.getByText("Failed to load bounties", { exact: true })).toBeVisible();
   });
 }
+
+test("official mod badges load local SVGs and retain labels, sizes and exclusions", async ({ page }) => {
+  await setup(page);
+  const supported = ["EZ", "HD", "HR", "DT", "HT", "FL", "NF", "SO"] as const;
+  const names = ["Easy", "Hidden", "Hard Rock", "Double Time", "Half Time", "Flashlight", "No Fail", "Spun Out"];
+  const fixtures = supported.map((mod, index) => ({
+    ...rows[0],
+    id: `00000000-0000-4000-8000-${String(index + 1).padStart(12, "0")}`,
+    goal: { ...rows[0].goal, modRequirement: { rule: "exact", mods: [mod] } },
+  }));
+  const extra = [
+    { rule: "exact", mods: [] },
+    { rule: "any" },
+    { rule: "excludes", mods: ["HR"] },
+  ].map((modRequirement, index) => ({
+    ...rows[0], id: `00000000-0000-4000-8000-${String(index + 20).padStart(12, "0")}`,
+    goal: { ...rows[0].goal, modRequirement },
+  }));
+  await page.route("**/bounties", route => route.request().isNavigationRequest()
+    ? route.fallback() : route.fulfill({ json: [...fixtures, ...extra] }));
+  await page.goto("/bounties");
+  for (const name of [...names, "No mods", "Any mods", "Hard Rock forbidden"]) {
+    const icon = page.getByRole("img", { name, exact: true });
+    await expect(icon).toBeVisible();
+    await expect(icon).toHaveAttribute("title", name);
+    const box = await icon.boundingBox();
+    expect(box!.height).toBe(24);
+    expect(box!.width / box!.height).toBeCloseTo(120 / 84, 1);
+  }
+  await expect(page.getByRole("img", { name: "Hard Rock forbidden", exact: true }).locator("svg")).toHaveCount(1);
+  const files = ["icon", "easy", "hidden", "hard-rock", "double-time", "half-time", "flashlight", "no-fail", "spun-out", "no-mod"];
+  for (const file of files) {
+    const response = await page.request.get(`/images/mods/mod-${file}.svg`);
+    expect(response.ok()).toBe(true);
+    expect(await response.text()).toContain("<svg");
+  }
+  const glyph = page.getByRole("img", { name: "Hard Rock", exact: true }).locator("span span").last();
+  await expect(glyph).toHaveCSS("mask-image", /mod-hard-rock\.svg/);
+  await page.screenshot({ path: "/tmp/marksman-mod-icons.png", fullPage: true });
+});
