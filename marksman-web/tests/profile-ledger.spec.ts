@@ -39,6 +39,7 @@ async function setup(page: Page, account: User | null = owner, authGate?: Promis
       : { status: 401, json: { code: "NOT_LOGGED_IN", error: "Not logged in" } });
   });
   await page.route("**/users/*", route => {
+    if (new URL(route.request().url()).origin === "http://127.0.0.1:3100") return route.fallback();
     if (route.request().isNavigationRequest() || !["fetch", "xhr"].includes(route.request().resourceType())) return route.fallback();
     const id = new URL(route.request().url()).pathname.split("/").pop();
     if (id !== owner.identity.id && id !== other.identity.id) return route.fallback();
@@ -49,10 +50,11 @@ async function setup(page: Page, account: User | null = owner, authGate?: Promis
     state.ledgerPages.push(Number(new URL(route.request().url()).searchParams.get("page")));
     return route.fulfill({ json: [entry(1)] });
   });
+  await page.route("**/users/*/bounty-events?*", route => route.fulfill({ json: [] }));
   return state;
 }
 const visit = (page: Page) => page.goto(`/users/${owner.identity.id}`);
-const history = (page: Page) => page.getByRole("heading", { name: "Transactions history" });
+const history = (page: Page) => page.getByRole("heading", { name: "Transactions", exact: true });
 const next = (page: Page) => page.getByRole("button", { name: ">", exact: true });
 const previous = (page: Page) => page.getByRole("button", { name: "<", exact: true });
 
@@ -80,7 +82,9 @@ for (const account of [null, other]) {
     const state = await setup(page, account);
     await visit(page);
     await expect(page.getByText("Balance: 100 BP", { exact: true })).toBeVisible();
-    await expect(page.getByText(account ? "Signed-in as" : "Log in with osu!", { exact: false })).toBeVisible();
+    await expect(account
+      ? page.getByRole("button", { name: "Log out", exact: true }).first()
+      : page.getByRole("link", { name: "Log in with osu!", exact: true })).toBeVisible();
     await expect(history(page)).toHaveCount(0);
     expect(state.ledgerPages).toEqual([]);
   });
@@ -176,7 +180,7 @@ test("daily claim from page two refreshes balance and account and returns histor
   await page.getByRole("button", { name: "Claim daily 25 BP", exact: true }).click();
   await expect(page.getByText("Claimed 25 BP.", { exact: true })).toBeVisible();
   await expect(page.getByText("Balance: 125 BP", { exact: true })).toBeVisible();
-  await expect(page.getByText("Page 1", { exact: true })).toBeVisible();
+  await expect(history(page).locator("..").getByText("Page 1", { exact: true })).toBeVisible();
   await expect(page.getByRole("cell", { name: "+25", exact: true })).toBeVisible();
   expect(state.accountReads).toBeGreaterThan(reads);
 });
@@ -200,12 +204,69 @@ for (const lateStatus of [200, 500]) {
     await visit(page);
     try {
       await expect.poll(() => started).toBe(true);
-      await page.getByRole("button", { name: "Log out", exact: true }).click();
+      await page.getByRole("button", { name: "Log out", exact: true }).first().click();
       await expect(page.getByRole("link", { name: "Log in with osu!" })).toBeVisible();
     } finally { pending.release(); }
     await expect.poll(() => finished).toBe(true);
     await expect(history(page)).toHaveCount(0);
     await expect(page.getByRole("table")).toHaveCount(0);
     await expect(page.getByText("Error loading ledger", { exact: true })).toHaveCount(0);
+  });
+}
+
+for (const status of [400, 404, 500, "schema"] as const) {
+  test(`profile ${status} response shows the appropriate error`, async ({ page }) => {
+    await setup(page);
+    await page.route(`**/users/${owner.identity.id}`, route => {
+      if (route.request().isNavigationRequest()) return route.fallback();
+      return route.fulfill({ status: status === "schema" ? 200 : status, json: {} });
+    });
+    await visit(page);
+    if (status === 400 || status === 404) {
+      await expect(page.getByRole("heading", { name: "404", exact: true })).toBeVisible();
+    } else {
+      await expect(page.getByText("500 Internal Error", { exact: true })).toBeVisible();
+    }
+  });
+}
+
+test("malformed ledger response stays inline and Retry restores valid entries", async ({ page }) => {
+  await setup(page);
+  let reads = 0;
+  await page.route("**/users/me/ledger?*", route => route.fulfill({ json: ++reads === 1 ? [{}] : [entry(1)] }));
+  await visit(page);
+  await expect(page.getByText("Error loading ledger", { exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "Retry", exact: true }).click();
+  await expect(page.getByRole("cell", { name: "+25", exact: true })).toBeVisible();
+});
+
+for (const failure of ["network", "http", "already-claimed"] as const) {
+  test(`daily claim handles ${failure} and releases pending state`, async ({ page }) => {
+    await setup(page);
+    let attempts = 0;
+    const pending = gate();
+    await page.route("**/economy/daily-claim", async route => {
+      attempts++;
+      await pending.promise;
+      if (attempts > 1) return route.fulfill({ json: { message: "Daily reward claimed." } });
+      if (failure === "network") return route.abort("failed");
+      return route.fulfill({ status: failure === "http" ? 500 : 409, json: { error: "Fixture claim failure" } });
+    });
+    await visit(page);
+    await page.getByRole("button", { name: "Claim daily 25 BP", exact: true }).click();
+    try {
+      await expect.poll(() => attempts).toBe(1);
+      await expect(page.getByRole("button", { name: "Claiming…", exact: true })).toBeDisabled();
+    } finally { pending.release(); }
+    if (failure === "already-claimed") {
+      await expect(page.getByText("Already claimed today. Daily rewards reset at 00:00 UTC.", { exact: true })).toBeVisible();
+      await expect(page.getByRole("button", { name: "Daily BP claimed", exact: true })).toBeDisabled();
+    } else {
+      await expect(page.getByRole("alert").filter({ hasText: /Fixture claim failure|Could not claim/ })).toHaveText(failure === "http"
+        ? "Fixture claim failure" : "Could not claim the daily reward. Please try again.");
+      await page.getByRole("button", { name: "Claim daily 25 BP", exact: true }).click();
+      await expect(page.getByText("Claimed 25 BP.", { exact: true })).toBeVisible();
+      expect(attempts).toBe(2);
+    }
   });
 }

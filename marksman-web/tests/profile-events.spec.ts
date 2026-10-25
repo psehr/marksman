@@ -43,6 +43,7 @@ async function setup(page: Page, account: User | null = null, authGate?: Promise
     return route.fulfill({ status: 204 });
   });
   await page.route("**/users/*", route => {
+    if (new URL(route.request().url()).origin === "http://127.0.0.1:3100") return route.fallback();
     if (!["fetch", "xhr"].includes(route.request().resourceType())) return route.fallback();
     const id = new URL(route.request().url()).pathname.split("/").pop();
     const user = [creator, winner].find(user => user.identity.id === id);
@@ -225,3 +226,13 @@ for (const lateStatus of [200, 500]) {
     expect(winnerPages).toEqual([1]);
   });
 }
+
+test("malformed events response stays inline and Retry restores valid history", async ({ page }) => {
+  await setup(page);
+  let reads = 0;
+  await page.route("**/users/*/bounty-events?*", route => route.fulfill({ json: ++reads === 1 ? [{}] : [event(1)] }));
+  await visit(page);
+  await expect(page.getByText("Error loading events", { exact: true })).toBeVisible();
+  await page.getByRole("button", { name: "Retry", exact: true }).click();
+  await expect(table(page).locator("tbody tr")).toHaveCount(1);
+});
