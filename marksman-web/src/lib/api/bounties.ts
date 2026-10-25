@@ -8,3 +8,15 @@ export async function getBounty(bountyId: string) {
     }),
   );
 }
+
+export async function getAllBounties() {
+  return extendedBountySchema
+    .array()
+    .parse(await apiFetch(`/bounties`, { method: "GET" }));
+}
+
+export async function getBookmarkedBounties() {
+  return extendedBountySchema
+    .array()
+    .parse(await apiFetch(`/users/me/bookmarked-bounties`, { method: "GET" }));
+}
