@@ -23,7 +23,7 @@ function InfoSection({
 export default async function Home() {
   return (
     <div
-      className={`min-h-screen flex flex-col p-16 items-center ${enc.className} text-foreground space-y-6`}
+      className={`flex min-h-screen flex-col items-center p-16 ${enc.className} text-foreground space-y-6`}
     >
       <InfoSection title={"Example container"}>
         <p>This is a standard descriptive paragraph.</p>
@@ -32,7 +32,7 @@ export default async function Home() {
         </p>
       </InfoSection>
 
-      <span className="w-1/3 border border-border"></span>
+      <span className="border-border w-1/3 border"></span>
 
       <div className="flex flex-wrap justify-center gap-4">
         <Button size="md" variant="accent">
@@ -47,7 +47,7 @@ export default async function Home() {
         </Button>
       </div>
 
-      <span className="w-1/3 border border-border"></span>
+      <span className="border-border w-1/3 border"></span>
 
       <InfoSection title="Message examples">
         <p className="text-success">

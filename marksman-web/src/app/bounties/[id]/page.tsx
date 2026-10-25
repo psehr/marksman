@@ -52,8 +52,8 @@ export default function BountyDetailsPage() {
     return notFound();
   } else {
     return (
-      <div className="flex w-full h-full place-content-center items-center p-12">
-        <div className="flex flex-col w-3/5 h-fit gap-12">
+      <div className="flex w-full h-full place-content-center items-center pt-12 px-4">
+        <div className="flex flex-col w-full max-w-2xl h-fit gap-12">
           {queryStatus === "complete" && bounty ? (
             <>
               <BountyCard bounty={bounty} />

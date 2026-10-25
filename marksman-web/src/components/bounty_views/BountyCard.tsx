@@ -5,16 +5,15 @@ import Image from "next/image";
 import ModIcon from "../ModIcon";
 import { BountyBeatmapMetadata, ExtendedBounty } from "@marksman/contracts";
 import { formatDistance } from "date-fns";
-import { useRouter } from "next/navigation";
+import Link from "next/link";
 
 function BadgeLabel({ label, text }: { label: string; text: string }) {
   return (
     <span
-      aria-label={label}
       title={label}
-      className={`relative inline-flex shrink-0 items-center justify-center rounded-xs border border-border bg-surface font-bold leading-none tracking-wide h-6 min-w-8 px-2 text-xs`}
+      className={`border-border bg-surface relative inline-flex h-6 min-w-8 shrink-0 items-center justify-center rounded-xs border px-2 text-xs leading-none font-bold tracking-wide`}
     >
-      <span aria-hidden="true">{text}</span>
+      {text}
     </span>
   );
 }
@@ -24,14 +23,14 @@ function BeatmapCard({
 }: {
   beatmapMetadata: BountyBeatmapMetadata | null;
 }) {
-  const coverUrl = `${beatmapMetadata?.covers?.cover ?? null}`;
+  const coverUrl = beatmapMetadata?.covers?.cover;
   const title = `${beatmapMetadata?.song?.title ?? "title"}`;
   const artist = `${beatmapMetadata?.song?.artist ?? "artist"}`;
   const version = `${beatmapMetadata?.version.name ?? "version"}`;
   const mapper = `${beatmapMetadata?.creator?.username ?? "mapper"}`;
 
   return (
-    <div className="relative h-20 overflow-hidden">
+    <div className="relative h-24 overflow-hidden">
       {coverUrl ? (
         <Image
           src={coverUrl}
@@ -40,25 +39,25 @@ function BeatmapCard({
           className="object-cover"
         />
       ) : null}
-      <div className="absolute inset-0 bg-black/50" aria-hidden></div>
+      <div className="absolute inset-0 bg-black/30" aria-hidden></div>
       <div
-        className="absolute inset-0 bg-linear-to-b from-transparent to-card"
+        className="to-card absolute inset-0 bg-linear-to-b from-transparent"
         aria-hidden="true"
       />
       <div
-        className={`relative z-10 gap-4 ${aes_font.className} flex size-full px-4 p-2`}
+        className={`relative z-10 gap-4 ${aes_font.className} flex size-full p-2 px-4`}
       >
         <div className="flex min-w-0 flex-1 flex-col">
           <p className="text-accent truncate text-lg font-bold">{title}</p>
-          <p className="text-foreground-muted text-sm italic truncate">
+          <p className="text-foreground-muted truncate text-sm italic">
             {artist}
           </p>
         </div>
         <div className="flex min-w-0 flex-1 flex-col text-end">
-          <p className="text-accent text-lg truncate font-bold">
+          <p className="text-accent truncate text-lg font-bold">
             [ {version} ]
           </p>
-          <p className="text-foreground-muted text-sm italic truncate">
+          <p className="text-foreground-muted truncate text-sm italic">
             {mapper}
           </p>
         </div>
@@ -68,8 +67,6 @@ function BeatmapCard({
 }
 
 export default function BountyCard({ bounty }: { bounty: ExtendedBounty }) {
-  const router = useRouter();
-
   let mod_requirement;
   let acc_requirement;
   let mods;
@@ -136,7 +133,7 @@ export default function BountyCard({ bounty }: { bounty: ExtendedBounty }) {
   switch (bounty.status) {
     case "open":
       status = (
-        <p className="text-xs text-foreground-muted italic">
+        <p className="text-foreground-muted text-xs italic">
           Created by {bounty.owner?.username ?? "owner"}{" "}
           {formatDistance(new Date(), bounty.createdAt)} ago
         </p>
@@ -145,21 +142,21 @@ export default function BountyCard({ bounty }: { bounty: ExtendedBounty }) {
     case "completed":
       if (bounty.winner && bounty.completedAt) {
         status = (
-          <p className="text-xs text-foreground-muted italic">
+          <p className="text-foreground-muted text-xs italic">
             Completed by {bounty.winner.username}{" "}
             {formatDistance(new Date(), bounty.completedAt)} ago
           </p>
         );
       } else {
         status = (
-          <p className="text-xs text-foreground-muted italic">Completed</p>
+          <p className="text-foreground-muted text-xs italic">Completed</p>
         );
       }
       break;
     case "cancelled":
       if (bounty.cancelledAt) {
         status = (
-          <p className="text-xs text-foreground-muted italic">
+          <p className="text-foreground-muted text-xs italic">
             Cancelled {formatDistance(new Date(), bounty.cancelledAt)} ago
           </p>
         );
@@ -170,37 +167,35 @@ export default function BountyCard({ bounty }: { bounty: ExtendedBounty }) {
   if (bounty.goal.minimumAccuracy !== undefined) {
     acc_requirement = (
       <BadgeLabel
-        label="A minimum accuracy is required."
+        label={`A minimum accuracy of ${bounty.goal.minimumAccuracy}% is required.`}
         text={`Accuracy >=${bounty.goal.minimumAccuracy}%`}
       />
     );
   }
 
   return (
-    <div
-      className="bg-card flex w-full min-w-0 flex-col overflow-hidden rounded border border-border hover:brightness-110 cursor-pointer"
-      onClick={() => {
-        router.push("/bounties/" + bounty.id);
-      }}
+    <Link
+      className="bg-card border-border hover:border-focus-ring focus-visible:border-accent flex w-full min-w-0 cursor-pointer flex-col overflow-hidden rounded border transition-all focus-visible:outline-0"
+      href={`/bounties/${bounty.id}`}
     >
       <BeatmapCard beatmapMetadata={bounty.beatmap} />
-      <div className="flex place-content-between px-4 p-2 gap-4">
-        <div className="flex flex-col gap-2 min-w-0 flex-1">
-          <div className="flex gap-2 flex-wrap">
+      <div className="flex place-content-between gap-4 p-2 px-4">
+        <div className="flex min-w-0 flex-1 flex-col gap-2">
+          <div className="flex flex-wrap gap-2">
             {goalType ?? null}
             {acc_requirement ?? null}
             {mod_requirement ?? null}
             <div className="flex flex-wrap gap-1">{mods ?? null}</div>
           </div>
-          <div className="flex gap-1 items-center flex-wrap">
+          <div className="flex flex-wrap items-center gap-1">
             {status ?? null}
           </div>
         </div>
-        <div className="flex flex-col gap-1 text-end shrink-0 whitespace-nowrap">
-          <p className="text-xl font-bold text-accent">{bounty.rewardBp} BP</p>
-          <p className="text-xs text-foreground-muted italic"></p>
+        <div className="flex shrink-0 flex-col gap-1 text-end whitespace-nowrap">
+          <p className="text-accent text-xl font-bold">{bounty.rewardBp} BP</p>
+          <p className="text-foreground-muted text-xs italic"></p>
         </div>
       </div>
-    </div>
+    </Link>
   );
 }

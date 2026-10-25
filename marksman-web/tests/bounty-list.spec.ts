@@ -18,7 +18,7 @@ function bounty(index: number, username: string, status: ExtendedBounty["status"
   };
 }
 const rows = [bounty(1, "Alpha", "open", 300), bounty(2, "Beta", "open", 100), bounty(3, "Gamma", "completed", 200)];
-const creators = (page: Page) => page.locator("p").filter({ hasText: /^Created .* ago by/ });
+const creators = (page: Page) => page.locator('a[href^="/bounties/"]').filter({ hasText: / BP/ });
 async function setup(page: Page, signedIn = true) {
   let all = 0;
   let bookmarked = 0;
@@ -47,19 +47,19 @@ test("local controls update results without refetching or losing the original da
   await expect(creators(page)).toHaveText([/Alpha/]);
   await page.getByRole("button", { name: "All bounties", exact: true }).click();
   await page.getByRole("textbox", { name: "Search bounties" }).fill("zzzzzzzz");
-  await expect(page.getByText("No matching bounties", { exact: true })).toBeVisible();
+  await expect(page.getByText("No bounties found", { exact: true })).toBeVisible();
   await page.getByRole("textbox", { name: "Search bounties" }).fill("Alpha");
   await expect(creators(page)).toHaveText([/Alpha/]);
   await page.getByRole("textbox", { name: "Search bounties" }).fill("");
   await page.getByRole("button", { name: "Completed", exact: true }).click();
-  await expect(creators(page)).toHaveText([/Gamma/]);
+  await expect(creators(page)).toHaveText([/Completed/]);
   await page.goBack();
   await expect(creators(page)).toHaveText([/Beta/, /Alpha/]);
   await page.goForward();
-  await expect(creators(page)).toHaveText([/Gamma/]);
+  await expect(creators(page)).toHaveText([/Completed/]);
   expect(reads()).toEqual({ all: 1, bookmarked: 0 });
   await page.reload();
-  await expect(creators(page)).toHaveText([/Gamma/]);
+  await expect(creators(page)).toHaveText([/Completed/]);
 });
 
 test("bookmark switching fetches the selected endpoint and filters its statuses", async ({ page }) => {
@@ -69,10 +69,10 @@ test("bookmark switching fetches the selected endpoint and filters its statuses"
   await page.getByRole("button", { name: "Bookmarked bounties", exact: true }).click();
   await expect(creators(page)).toHaveText([/Beta/]);
   await page.getByRole("button", { name: "Completed", exact: true }).click();
-  await expect(creators(page)).toHaveText([/Gamma/]);
+  await expect(creators(page)).toHaveText([/Completed/]);
   await page.getByRole("button", { name: "All bounties", exact: true }).click();
   await expect.poll(reads).toEqual({ all: 2, bookmarked: 1 });
-  await expect(creators(page)).toHaveText([/Gamma/]);
+  await expect(creators(page)).toHaveText([/Completed/]);
 });
 
 for (const relationship of ["created", "bookmarked"]) {
@@ -89,7 +89,7 @@ test("empty status has the no-bounties message", async ({ page }) => {
   await page.route("**/bounties", route => route.request().isNavigationRequest()
     ? route.fallback() : route.fulfill({ json: [rows[0]] }));
   await page.goto("/bounties?status=completed");
-  await expect(page.getByText("No bounties available", { exact: true })).toBeVisible();
+  await expect(page.getByText("No bounties to display", { exact: true })).toBeVisible();
 });
 
 for (const failure of ["http", "network", "schema"]) {
@@ -125,7 +125,7 @@ test("official mod badges load local SVGs and retain labels, sizes and exclusion
   await page.route("**/bounties", route => route.request().isNavigationRequest()
     ? route.fallback() : route.fulfill({ json: [...fixtures, ...extra] }));
   await page.goto("/bounties");
-  for (const name of [...names, "No mods", "Any mods", "Hard Rock forbidden"]) {
+  for (const name of [...names, "No mods", "Hard Rock forbidden"]) {
     const icon = page.getByRole("img", { name, exact: true });
     await expect(icon).toBeVisible();
     await expect(icon).toHaveAttribute("title", name);
@@ -143,4 +143,91 @@ test("official mod badges load local SVGs and retain labels, sizes and exclusion
   const glyph = page.getByRole("img", { name: "Hard Rock", exact: true }).locator("span span").last();
   await expect(glyph).toHaveCSS("mask-image", /mod-hard-rock\.svg/);
   await page.screenshot({ path: "/tmp/marksman-mod-icons.png", fullPage: true });
+});
+
+const metadata: NonNullable<ExtendedBounty["beatmap"]> = {
+  url: "https://osu.ppy.sh/beatmaps/42", version: { id: 42, name: "A long difficulty name for mobile layout" },
+  song: { title: "A long song title for mobile layout", artist: "Example artist" },
+  specs: { sr: 5, ar: 9, od: 8, cs: 4, hp: 5, bpm: 180, length: { total: 120, drain: 100 }, maxCombo: 500 },
+  covers: null, creator: { id: 456, username: "Example mapper" },
+  stats: { status: "ranked", playcount: 100 },
+};
+
+test("missing metadata and missing covers render cards without invalid images", async ({ page }) => {
+  await setup(page);
+  const errors: string[] = [];
+  page.on("pageerror", error => errors.push(error.message));
+  await page.route("**/bounties", route => route.request().isNavigationRequest()
+    ? route.fallback() : route.fulfill({ json: [rows[0], { ...rows[1], beatmap: metadata }] }));
+  await page.goto("/bounties");
+  await expect(creators(page)).toHaveCount(2);
+  await expect(creators(page).locator("img")).toHaveCount(0);
+  expect(errors).toEqual([]);
+});
+
+test("cards support Tab, visible focus, hover and Enter and expose accuracy", async ({ page }) => {
+  await setup(page);
+  const fixture = { ...rows[0], goal: { ...rows[0].goal, minimumAccuracy: 98.5 } };
+  await page.route("**/bounties", route => route.request().isNavigationRequest()
+    ? route.fallback() : route.fulfill({ json: [fixture, rows[1]] }));
+  await page.goto("/bounties");
+  const cards = creators(page);
+  await expect(cards).toHaveCount(2);
+  await expect(cards.nth(1)).toHaveAccessibleName(/Accuracy >=98.5%/);
+  await page.getByRole("button", { name: "Desc ↓", exact: true }).focus();
+  await page.keyboard.press("Tab");
+  await expect(cards.first()).toBeFocused();
+  await expect(cards.first()).toHaveCSS("border-top-color", "rgb(230, 198, 91)");
+  await page.keyboard.press("Tab");
+  await expect(cards.nth(1)).toBeFocused();
+  await cards.first().hover();
+  await expect(cards.first()).toHaveCSS("border-top-color", "rgb(230, 198, 91)");
+  await page.keyboard.press("Enter");
+  await expect(page).toHaveURL(new RegExp(`/bounties/${fixture.id}$`));
+});
+
+for (const width of [375, 1280]) {
+  test(`card grid fits viewport at ${width}px`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 900 });
+    await setup(page);
+    await page.route("**/bounties", route => route.request().isNavigationRequest()
+      ? route.fallback() : route.fulfill({ json: rows.slice(0, 2).map(row => ({
+        ...row, beatmap: metadata, goal: { ...row.goal, minimumAccuracy: 98.5, modRequirement: { rule: "exact", mods: ["HD", "HR", "DT"] } },
+      })) }));
+    await page.goto("/bounties");
+    const cards = creators(page);
+    await expect(cards).toHaveCount(2);
+    const boxes = await cards.evaluateAll(elements => elements.map(element => {
+      const rect = element.getBoundingClientRect();
+      return { x: rect.x, y: rect.y, right: rect.right, width: element.clientWidth, scroll: element.scrollWidth };
+    }));
+    for (const box of boxes) {
+      expect(box.x).toBeGreaterThanOrEqual(0);
+      expect(box.right).toBeLessThanOrEqual(width);
+      expect(box.scroll).toBeLessThanOrEqual(box.width);
+    }
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width);
+    if (width === 375) expect(boxes[1].y).toBeGreaterThan(boxes[0].y);
+    else expect(boxes[1].y).toBe(boxes[0].y);
+    await page.screenshot({ path: `/tmp/marksman-cards-${width}.png`, fullPage: true });
+  });
+}
+
+test("detail card fits a mobile viewport", async ({ page }) => {
+  await page.setViewportSize({ width: 375, height: 900 });
+  await setup(page, false);
+  const fixture = { ...rows[0], beatmap: metadata, goal: { ...rows[0].goal, minimumAccuracy: 98.5 } };
+  await page.route(`**/bounties/${fixture.id}`, route =>
+    route.request().isNavigationRequest() || route.request().headers()["rsc"]
+      ? route.fallback() : route.fulfill({ json: fixture }));
+  await page.goto(`/bounties/${fixture.id}`);
+  const card = creators(page);
+  await expect(card).toHaveCount(1);
+  const box = await card.boundingBox();
+  expect(box!.x).toBeGreaterThanOrEqual(16);
+  expect(box!.width).toBeGreaterThan(300);
+  expect(box!.x + box!.width).toBeLessThanOrEqual(359);
+  await page.screenshot({ path: "/tmp/marksman-detail-mobile.png", fullPage: true });
+  const overflow = await page.locator("body *").evaluateAll(elements => elements.filter(element => element.getBoundingClientRect().right > 375).map(element => ({ tag: element.tagName, text: element.textContent?.slice(0, 100) })));
+  expect(await page.evaluate(() => document.documentElement.scrollWidth), JSON.stringify(overflow)).toBeLessThanOrEqual(375);
 });
