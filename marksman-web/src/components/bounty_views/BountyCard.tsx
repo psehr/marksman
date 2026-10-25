@@ -3,9 +3,15 @@
 import { aes_font } from "@/lib/fonts";
 import Image from "next/image";
 import ModIcon from "../ModIcon";
-import { BountyBeatmapMetadata, ExtendedBounty } from "@marksman/contracts";
+import {
+  BountyBeatmapMetadata,
+  ExtendedBounty,
+  getBountyTier,
+} from "@marksman/contracts";
 import { formatDistance } from "date-fns";
 import Link from "next/link";
+import BPIcon from "../BPIcon";
+import BountyTierBadge from "../BountyTierBadge";
 
 function BadgeLabel({ label, text }: { label: string; text: string }) {
   return (
@@ -39,7 +45,7 @@ function BeatmapCard({
           className="object-cover"
         />
       ) : null}
-      <div className="absolute inset-0 bg-black/30" aria-hidden></div>
+      <div className="absolute inset-0 bg-black/50" aria-hidden></div>
       <div
         className="to-card absolute inset-0 bg-linear-to-b from-transparent"
         aria-hidden="true"
@@ -173,6 +179,8 @@ export default function BountyCard({ bounty }: { bounty: ExtendedBounty }) {
     );
   }
 
+  const tier = getBountyTier(bounty.rewardBp);
+
   return (
     <Link
       className="bg-card border-border hover:border-focus-ring focus-visible:border-accent flex w-full min-w-0 cursor-pointer flex-col overflow-hidden rounded border transition-all focus-visible:outline-0"
@@ -191,9 +199,15 @@ export default function BountyCard({ bounty }: { bounty: ExtendedBounty }) {
             {status ?? null}
           </div>
         </div>
-        <div className="flex shrink-0 flex-col gap-1 text-end whitespace-nowrap">
-          <p className="text-accent text-xl font-bold">{bounty.rewardBp} BP</p>
-          <p className="text-foreground-muted text-xs italic"></p>
+
+        <div className="flex shrink-0 flex-col items-end gap-2 sm:flex-row sm:items-center">
+          <div className="flex gap-1">
+            <span className="text-accent text-2xl font-bold leading-none -translate-y-px">
+              {bounty.rewardBp.toLocaleString()}
+            </span>
+            <BPIcon size="md" />
+          </div>
+          <BountyTierBadge tier={tier} size="md" />
         </div>
       </div>
     </Link>
