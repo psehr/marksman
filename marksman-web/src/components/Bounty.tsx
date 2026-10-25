@@ -31,7 +31,7 @@ export default function Bounty(props: { bounty: ExtendedBounty }) {
 
   return (
     <div
-      className="flex relative w-full h-32 overflow-clip rounded-xl border border-slate-600 cursor-pointer hover:brightness-110"
+      className="flex relative w-full h-32 overflow-clip border border-slate-600 cursor-pointer hover:brightness-110"
       onClick={() => {
         router.push("/bounties/" + b.id);
       }}

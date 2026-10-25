@@ -17,7 +17,7 @@ function RouteLink({
   return (
     <Link
       href={url}
-      className={`cursor-pointer ${selected ? "opacity-100" : "opacity-30"}`}
+      className={`cursor-pointer ${selected ? "text-accent" : "text-foreground-muted"}`}
       aria-current={selected ? "page" : undefined}
     >
       {title}
@@ -30,8 +30,8 @@ export default function NavBar() {
   const { user } = useAuth();
 
   return (
-    <nav className="flex w-full h-16 place-content-between items-center bg-blue-950 gap-8 px-12">
-      <div className="flex gap-8 items-center">
+    <nav className="flex min-h-16 w-full flex-wrap items-center justify-between gap-3 border-b border-border bg-surface px-4 py-3 sm:px-12">
+      <div className="flex gap-3 sm:gap-8 items-center">
         <RouteLink url="/" title="Marksman" selected={path === "/"} />
         <p>•</p>
         <RouteLink

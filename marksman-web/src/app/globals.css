@@ -3,3 +3,26 @@
 body {
   font-family: Arial, Helvetica, sans-serif;
 }
+
+@theme {
+  --color-background: #111106;
+
+  --color-surface: #303015;
+  --color-surface-hover: #565627;
+  --color-surface-raised: #3d3d1c;
+
+  --color-border: #737342;
+
+  --color-foreground: #f4f1dc;
+  --color-foreground-muted: #bebc99;
+
+  --color-accent: #e6c65b;
+  --color-accent-hover: #f2d778;
+  --color-on-accent: #211c08;
+
+  --color-success: #a3cf83;
+  --color-warning: #efa85c;
+  --color-danger: #ed8d83;
+
+  --color-focus-ring: #e6c65b;
+}

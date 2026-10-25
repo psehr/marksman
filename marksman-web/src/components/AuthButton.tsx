@@ -2,7 +2,8 @@
 
 import { useState } from "react";
 import { useAuth } from "./AuthProvider";
-import Link from "next/link";
+import Button from "./buttons/Button";
+import ButtonLink from "./buttons/ButtonLink";
 
 export function AuthButton() {
   const { user, loading, error, refreshUser } = useAuth();
@@ -41,26 +42,20 @@ export function AuthButton() {
 
   if (!user) {
     return (
-      <Link
+      <ButtonLink
         href={`${process.env.NEXT_PUBLIC_API_URL}/auth/osu`}
-        className="rounded bg-sky-700 px-4 py-2 text-white h-fit"
+        variant="accent"
       >
         Log in with osu!
-      </Link>
+      </ButtonLink>
     );
   }
 
   return (
     <>
-      <button
-        type="button"
-        onClick={() => {
-          logout();
-        }}
-        className="rounded bg-red-700/50 px-4 py-2 text-white h-fit cursor-pointer"
-      >
+      <Button variant="danger" onClick={() => logout()}>
         Log out
-      </button>
+      </Button>
       {logoutError && <p role="alert">{logoutError}</p>}
     </>
   );
