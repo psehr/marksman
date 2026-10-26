@@ -231,3 +231,41 @@ for (const failRefresh of [false, true]) {
     expect(await handle!.evaluate(element => element.isConnected)).toBe(true);
   });
 }
+
+for (const width of [320, 375, 390]) {
+  test(`mobile beatmap requirement wraps stats and shows focus at ${width}px`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 850 });
+    const state = await setupDetail(page);
+    state.bounty.beatmap = { ...bounty.beatmap!, song: { title: 'A very long beatmap title to exercise truncation', artist: 'A very long artist name' }, specs: { ...bounty.beatmap!.specs, length: { total: 3665, drain: 3665 }, sr: 10.25 } };
+    await page.goto(`/bounties/${bounty.id}`);
+    const link = page.locator('a[href="https://osu.ppy.sh/beatmaps/42"]');
+    await expect(link).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Start Hunt', exact: true })).toBeEnabled();
+    await link.scrollIntoViewIfNeeded();
+    await page.screenshot({ path: `/tmp/marksman-detail-mobile-${width}.png`, fullPage: true });
+    const metrics = await link.evaluate(element => {
+      const box = element.getBoundingClientRect();
+      const star = [...element.querySelectorAll('p')].find(p => p.textContent?.includes('★'))!;
+      const starBox = star.getBoundingClientRect();
+      const stats = star.previousElementSibling!;
+      const statsBox = stats.getBoundingClientRect();
+      return { left: box.left, right: box.right, width: element.clientWidth, scrollWidth: element.scrollWidth,
+        documentWidth: document.documentElement.scrollWidth,
+        statsRight: statsBox.right, starLeft: starBox.left, bottomDifference: Math.abs(statsBox.bottom - starBox.bottom),
+        clipped: [...stats.querySelectorAll('p')].some(p => { const r = p.getBoundingClientRect(); return r.left < box.left || r.right > starBox.left || r.bottom > box.bottom; }) };
+    });
+    console.log(width, metrics);
+    expect.soft(metrics.documentWidth).toBeLessThanOrEqual(width);
+    expect.soft(metrics.right).toBeLessThanOrEqual(width);
+    expect.soft(metrics.scrollWidth).toBeLessThanOrEqual(metrics.width);
+    expect.soft(metrics.clipped).toBe(false);
+    expect.soft(metrics.statsRight).toBeLessThanOrEqual(metrics.starLeft);
+    expect.soft(metrics.bottomDifference).toBeLessThanOrEqual(1);
+    await page.keyboard.press('Tab');
+    await link.focus();
+    const focused = await link.evaluate(element => ({ visible: element.matches(':focus-visible'), border: getComputedStyle(element).borderTopColor }));
+    expect(focused.visible).toBe(true);
+    const accent = await page.evaluate(() => { const span = document.createElement('span'); span.style.color = 'var(--color-accent)'; document.body.append(span); const color = getComputedStyle(span).color; span.remove(); return color; });
+    await expect(link).toHaveCSS("border-top-color", accent);
+  });
+}

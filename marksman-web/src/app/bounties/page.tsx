@@ -84,7 +84,7 @@ function Bounties() {
   }
 
   return (
-    <div className="flex flex-col w-full h-full items-center gap-12 pt-12 px-4">
+    <div className="flex flex-col w-full h-full items-center gap-12 py-12 px-4">
       <div className="flex flex-col w-full max-w-6xl h-full items-center gap-4">
         <div className="bg-surface flex w-full p-2 h-full rounded-xl border border-border">
           <SearchPanel

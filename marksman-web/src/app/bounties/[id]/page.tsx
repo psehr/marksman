@@ -10,13 +10,15 @@ import GoalCategory from "@/components/bounty_details/GoalCategory";
 import ModsRequirement from "@/components/bounty_details/ModsRequirement";
 import BeatmapRequirement from "@/components/bounty_details/BeatmapRequirement";
 import { useBountyDetails } from "@/hooks/useBountyDetails";
-import BountyCard, { BadgeLabel } from "@/components/bounty_views/BountyCard";
+import BountyCard from "@/components/bounty_views/BountyCard";
 import { aes_font } from "@/lib/fonts";
 import { InfoSection } from "@/components/bounty_details/InfoSection";
+import { BadgeLabel } from "@/components/bounty_views/BadgeLabel";
 
 export default function BountyDetailsPage() {
   const { id } = useParams<{ id: string }>();
-  const { bounty, queryStatus, refreshBounty, refreshEngagement } = useBountyDetails(id);
+  const { bounty, queryStatus, refreshBounty, refreshEngagement } =
+    useBountyDetails(id);
 
   const { user } = useAuth();
 
@@ -36,7 +38,7 @@ export default function BountyDetailsPage() {
     return notFound();
   } else {
     return (
-      <div className="flex w-full h-full place-content-center items-center pt-12 px-4">
+      <div className="flex w-full h-full place-content-center items-center py-12 px-4">
         <div className="flex flex-col w-full max-w-2xl h-fit gap-4">
           {queryStatus === "complete" && bounty ? (
             <>
@@ -49,7 +51,7 @@ export default function BountyDetailsPage() {
                 isAuthenticated={isAuthenticated}
               />
               <div className="grid grid-cols-2 gap-4 mt-8">
-                <InfoSection title="Status" className="col-span-full">
+                <InfoSection title="Status">
                   <div
                     className={`${aes_font.className} font-bold text-4xl w-full`}
                   >
@@ -58,15 +60,19 @@ export default function BountyDetailsPage() {
                 </InfoSection>
 
                 <InfoSection title="Engagement">
-                  <div className="grid grid-cols-2 gap-4 h-full items-center">
-                    <BadgeLabel
-                      label="X players are currently hunting this bounty."
-                      text="X players hunting"
-                    />
-                    <BadgeLabel
-                      label="X players have bookmarked this bounty."
-                      text="X bookmarks"
-                    />
+                  <div
+                    className={`flex flex-col gap-2 items-center ${aes_font.className} font-bold`}
+                  >
+                    <p>
+                      <span className="text-accent font-bold">X</span> player(s)
+                      are hunting
+                    </p>
+                    <p>
+                      <span className="text-accent font-bold">
+                        {bounty.engagement.bookmarkCount}
+                      </span>{" "}
+                      user(s) have bookmarked
+                    </p>
                   </div>
                 </InfoSection>
 
@@ -74,12 +80,12 @@ export default function BountyDetailsPage() {
                   <GoalCategory bounty={bounty} />
                 </InfoSection>
 
-                <InfoSection title="Beatmap" className="col-span-full">
-                  <BeatmapRequirement bounty={bounty} />
+                <InfoSection title="Mods">
+                  <ModsRequirement bounty={bounty} />
                 </InfoSection>
 
-                <InfoSection title="Mods" className="col-span-full">
-                  <ModsRequirement bounty={bounty} />
+                <InfoSection title="Beatmap" className="col-span-full">
+                  <BeatmapRequirement bounty={bounty} />
                 </InfoSection>
               </div>
             </>

@@ -18,7 +18,7 @@ function bounty(index: number, username: string, status: ExtendedBounty["status"
   };
 }
 const rows = [bounty(1, "Alpha", "open", 300), bounty(2, "Beta", "open", 100), bounty(3, "Gamma", "completed", 200)];
-const creators = (page: Page) => page.locator('a[href^="/bounties/"]').filter({ hasText: / BP/ });
+const creators = (page: Page) => page.locator('a[href^="/bounties/"]').filter({ hasText: /Created by|Completed|Cancelled/ });
 async function setup(page: Page, signedIn = true) {
   let all = 0;
   let bookmarked = 0;
@@ -161,7 +161,7 @@ test("missing metadata and missing covers render cards without invalid images", 
     ? route.fallback() : route.fulfill({ json: [rows[0], { ...rows[1], beatmap: metadata }] }));
   await page.goto("/bounties");
   await expect(creators(page)).toHaveCount(2);
-  await expect(creators(page).locator("img")).toHaveCount(0);
+  await expect(creators(page).locator('img[data-nimg="fill"]')).toHaveCount(0);
   expect(errors).toEqual([]);
 });
 

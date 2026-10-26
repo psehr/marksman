@@ -11,11 +11,10 @@ export default function BeatmapRequirement({
     <div
       className={`flex flex-col w-full p-2 gap-2 ${aes_font.className} font-bold`}
     >
-      <div className="flex gap-2 place-content-center">
-        <p>The following</p>
-        <p className="text-accent">beatmap</p>
-        <p>must be played</p>
-      </div>
+      <p>
+        The following <span className="text-accent">beatmap</span> must be
+        played
+      </p>
       <BeatmapCard beatmapMetadata={bounty.beatmap} />
     </div>
   ) : null;

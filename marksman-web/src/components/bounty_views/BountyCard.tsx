@@ -4,43 +4,12 @@ import ModIcon from "../ModIcon";
 import { ExtendedBounty, getBountyTier } from "@marksman/contracts";
 import { formatDistance } from "date-fns";
 import Link from "next/link";
+import Image from "next/image";
 import BPIcon from "../BPIcon";
 import BountyTierBadge from "../BountyTierBadge";
 import GradeIcon from "../GradeIcon";
 import { BeatmapCard } from "./BeatmapCard";
-
-export function BadgeLabel({
-  label,
-  text,
-}: {
-  label: string;
-  text: React.ReactNode;
-}) {
-  return (
-    <span
-      title={label}
-      className={`border-border bg-surface relative inline-flex h-6 min-w-8 shrink-0 items-center justify-center rounded-xs border px-2 text-xs leading-none font-bold tracking-wide`}
-    >
-      {text}
-    </span>
-  );
-}
-
-export function renderMods(bounty: ExtendedBounty, size: "sm" | "md" | "lg") {
-  const rule = bounty.goal.modRequirement.rule;
-  if (rule === "any") return <ModIcon mod="ANY" size={size} />;
-  const mods = bounty.goal.modRequirement.mods;
-
-  if (rule === "exact" && mods.length === 0)
-    return <ModIcon mod={"NM"} size={size} />;
-
-  return mods.map((mod) => {
-    if (rule === "excludes") {
-      return <ModIcon mod={mod} crossed key={mod} size={size} />;
-    }
-    return <ModIcon mod={mod} key={mod} size={size} />;
-  });
-}
+import { BadgeLabel } from "./BadgeLabel";
 
 export default function BountyCard({ bounty }: { bounty: ExtendedBounty }) {
   let mod_requirement;
@@ -100,7 +69,7 @@ export default function BountyCard({ bounty }: { bounty: ExtendedBounty }) {
       goalType = (
         <div className="flex items-center gap-1">
           <BadgeLabel
-            label="X players have bookmarked this bounty."
+            label={`Achieve a minimum grade of ${bounty.goal.minimumGradeRequirement}`}
             text="Minimum grade"
           />
           <GradeIcon
@@ -155,14 +124,30 @@ export default function BountyCard({ bounty }: { bounty: ExtendedBounty }) {
   }
 
   const tier = getBountyTier(bounty.rewardBp);
+  const coverUrl = bounty.beatmap?.covers?.cover;
 
   return (
     <Link
-      className="bg-card border-border hover:border-focus-ring focus-visible:border-accent flex w-full min-w-0 cursor-pointer flex-col overflow-hidden rounded border transition-all focus-visible:outline-0"
+      className="relative isolate bg-card border-border hover:border-focus-ring focus-visible:border-accent flex w-full min-w-0 cursor-pointer flex-col overflow-hidden rounded border transition-all focus-visible:outline-0"
       href={`/bounties/${bounty.id}`}
     >
+      {coverUrl && (
+        <>
+          <Image
+            src={coverUrl}
+            alt=""
+            fill
+            className="pointer-events-none object-cover"
+            sizes="(min-width: 1024px) 50vw, 100vw"
+          />
+          <div
+            className="pointer-events-none absolute inset-0 bg-linear-to-b from-black/90 via-black/40 to-black/90"
+            aria-hidden="true"
+          />
+        </>
+      )}
       <BeatmapCard beatmapMetadata={bounty.beatmap} variant="bounty" />
-      <div className="flex place-content-between gap-4 p-4">
+      <div className="relative z-10 flex place-content-between items-end gap-4 p-4">
         <div className="flex min-w-0 flex-1 flex-col gap-2">
           <div className="flex flex-wrap items-center gap-2">
             {status ?? null}
@@ -178,13 +163,13 @@ export default function BountyCard({ bounty }: { bounty: ExtendedBounty }) {
         </div>
 
         <div className="flex shrink-0 flex-col items-end gap-2 sm:flex-row sm:items-center">
+          <BountyTierBadge tier={tier} size="md" />
           <div className="flex gap-1">
             <span className="text-accent text-2xl font-bold leading-none -translate-y-px">
               {bounty.rewardBp.toLocaleString()}
             </span>
             <BPIcon size="md" />
           </div>
-          <BountyTierBadge tier={tier} size="md" />
         </div>
       </div>
     </Link>

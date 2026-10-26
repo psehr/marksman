@@ -1,6 +1,22 @@
 import { ExtendedBounty } from "@marksman/contracts";
-import { renderMods } from "../bounty_views/BountyCard";
 import { aes_font } from "@/lib/fonts";
+import ModIcon from "../ModIcon";
+
+function ModRequirementIcons({ bounty }: { bounty: ExtendedBounty }) {
+  const rule = bounty.goal.modRequirement.rule;
+  if (rule === "any") return <ModIcon mod="ANY" size="md" />;
+  const mods = bounty.goal.modRequirement.mods;
+
+  if (rule === "exact" && mods.length === 0)
+    return <ModIcon mod={"NM"} size="md" />;
+
+  return mods.map((mod) => {
+    if (rule === "excludes") {
+      return <ModIcon mod={mod} crossed key={mod} size="md" />;
+    }
+    return <ModIcon mod={mod} key={mod} size="md" />;
+  });
+}
 
 export default function ModsRequirement({
   bounty,
@@ -14,31 +30,34 @@ export default function ModsRequirement({
       ) : null}
       {bounty.goal.modRequirement.rule === "exact" ? (
         <div className="flex flex-col items-center gap-2">
-          <div className="flex gap-2">
-            <p>Used mods must be </p>
-            <p className="text-accent">exactly</p>
+          <p>
+            Used mods must be <span className="text-accent">exactly</span>
+          </p>
+          <div className="flex gap-1">
+            <ModRequirementIcons bounty={bounty} />
           </div>
-          <div className="flex gap-1">{renderMods(bounty, "md")}</div>
         </div>
       ) : null}
       {bounty.goal.modRequirement.rule === "includes" ? (
         <div className="flex flex-col items-center gap-2">
-          <div className="flex gap-2">
-            <p>Mods must </p>
-            <p className="text-accent">include</p>
-            <p>the following:</p>
+          <p>
+            Mods must <span className="text-accent">include</span> the
+            following:
+          </p>
+          <div className="flex gap-1">
+            <ModRequirementIcons bounty={bounty} />
           </div>
-          <div className="flex gap-1">{renderMods(bounty, "md")}</div>
         </div>
       ) : null}
       {bounty.goal.modRequirement.rule === "excludes" ? (
         <div className="flex flex-col items-center gap-2">
-          <div className="flex gap-2">
-            <p>Some mods must be</p>
-            <p className="text-accent">excluded</p>
-            <p>to qualify:</p>
+          <p>
+            Some mods must be <span className="text-accent">excluded</span> to
+            qualify
+          </p>
+          <div className="flex gap-1">
+            <ModRequirementIcons bounty={bounty} />
           </div>
-          <div className="flex gap-1">{renderMods(bounty, "md")}</div>
         </div>
       ) : null}
     </div>
