@@ -40,7 +40,7 @@ export default function GradeIcon({
       {minimum && <span aria-hidden="true" className="font-bold"></span>}
       <span
         aria-hidden="true"
-        className="block h-full aspect-[2/1] bg-contain bg-center bg-no-repeat"
+        className="block h-full aspect-2/1 bg-contain bg-center bg-no-repeat"
         style={{
           backgroundImage: `url(/images/grades/GradeSmall-${icon.file}.svg)`,
         }}

@@ -68,7 +68,7 @@ export default function ModIcon({
       role="img"
       aria-label={label}
       title={label}
-      className={`relative inline-flex aspect-[120/84] shrink-0 items-center justify-center font-bold leading-none tracking-wide ${sizes[size]} ${!icon ? "rounded-md border border-border bg-background" : ""} ${className}`}
+      className={`relative inline-flex aspect-120/84 shrink-0 items-center justify-center font-bold leading-none tracking-wide ${sizes[size]} ${!icon ? "rounded-md border border-border bg-background" : ""} ${className}`}
     >
       {icon ? (
         <span
