@@ -23,5 +23,5 @@ export async function apiFetch(path: string, options: RequestInit = {}): Promise
       "code" in error && typeof error.code === "string" ? error.code : undefined,
     );
   }
-  return response.json();
+  return response.status === 204 ? undefined : response.json();
 }

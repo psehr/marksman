@@ -1,6 +1,7 @@
+import Button from "./buttons/Button";
+
 type HuntControlsProps = {
   isHunting: boolean;
-  count: number;
   loading: boolean;
   pending: boolean;
   ready: boolean;
@@ -9,27 +10,22 @@ type HuntControlsProps = {
   onRefresh: () => void;
 };
 
-/** Presentation only: change markup/styles here without changing requests. */
+/** Compact action with recovery feedback; request state lives in useHunt. */
 export default function HuntControls({
-  isHunting, count, loading, pending, ready, error, onToggle, onRefresh,
+  isHunting, loading, pending, ready, error, onToggle, onRefresh,
 }: HuntControlsProps) {
   return (
-    <div className="flex flex-col items-center gap-3" aria-busy={loading || pending}>
-      {loading ? <p role="status">Loading hunts...</p> : null}
-      {!loading && ready ? (
-        <>
-          <p role="status">{isHunting ? "You are hunting this bounty." : "Start hunting before finishing a qualifying play."}</p>
-          <p className="text-sm">{count} active hunt(s)</p>
-          <p className="text-sm">Scores finished while hunting are checked automatically. Stopping keeps earlier attempts eligible.</p>
-          <button type="button" onClick={onToggle} disabled={pending}
-            className="rounded bg-sky-700 px-4 py-2 disabled:opacity-50">
-            {pending ? (isHunting ? "Stopping..." : "Starting...") : (isHunting ? "Stop Hunt" : "Start Hunt")}
-          </button>
-        </>
-      ) : null}
-      {error ? <p role="alert">{error}</p> : null}
-      <button type="button" onClick={onRefresh} disabled={loading || pending}
-        className="text-sm underline disabled:opacity-50">Reload hunts</button>
+    <div className="flex min-w-0 flex-col gap-2" aria-busy={loading || pending}>
+      {loading || ready ? (
+        <Button size="lg" variant="accent" className="w-full" onClick={onToggle} disabled={loading || pending}>
+          {loading ? "Loading hunt..." : pending ? (isHunting ? "Stopping..." : "Starting...") : (isHunting ? "Stop Hunt" : "Start Hunt")}
+        </Button>
+      ) : (
+        <Button size="lg" variant="accent" className="w-full" onClick={onRefresh} disabled={pending}>
+          Reload hunts
+        </Button>
+      )}
+      {error && <p role="alert" className="text-sm">{error}</p>}
     </div>
   );
 }

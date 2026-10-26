@@ -1,19 +1,21 @@
 "use client";
 
-import { aes_font } from "@/lib/fonts";
-import Image from "next/image";
 import ModIcon from "../ModIcon";
-import {
-  BountyBeatmapMetadata,
-  ExtendedBounty,
-  getBountyTier,
-} from "@marksman/contracts";
+import { ExtendedBounty, getBountyTier } from "@marksman/contracts";
 import { formatDistance } from "date-fns";
 import Link from "next/link";
 import BPIcon from "../BPIcon";
 import BountyTierBadge from "../BountyTierBadge";
+import GradeIcon from "../GradeIcon";
+import { BeatmapCard } from "./BeatmapCard";
 
-function BadgeLabel({ label, text }: { label: string; text: string }) {
+export function BadgeLabel({
+  label,
+  text,
+}: {
+  label: string;
+  text: React.ReactNode;
+}) {
   return (
     <span
       title={label}
@@ -24,52 +26,20 @@ function BadgeLabel({ label, text }: { label: string; text: string }) {
   );
 }
 
-function BeatmapCard({
-  beatmapMetadata,
-}: {
-  beatmapMetadata: BountyBeatmapMetadata | null;
-}) {
-  const coverUrl = beatmapMetadata?.covers?.cover;
-  const title = `${beatmapMetadata?.song?.title ?? "title"}`;
-  const artist = `${beatmapMetadata?.song?.artist ?? "artist"}`;
-  const version = `${beatmapMetadata?.version.name ?? "version"}`;
-  const mapper = `${beatmapMetadata?.creator?.username ?? "mapper"}`;
+export function renderMods(bounty: ExtendedBounty, size: "sm" | "md" | "lg") {
+  const rule = bounty.goal.modRequirement.rule;
+  if (rule === "any") return <ModIcon mod="ANY" size={size} />;
+  const mods = bounty.goal.modRequirement.mods;
 
-  return (
-    <div className="relative h-24 overflow-hidden">
-      {coverUrl ? (
-        <Image
-          src={coverUrl}
-          alt="Beatmap Cover"
-          fill
-          className="object-cover"
-        />
-      ) : null}
-      <div className="absolute inset-0 bg-black/50" aria-hidden></div>
-      <div
-        className="to-card absolute inset-0 bg-linear-to-b from-transparent"
-        aria-hidden="true"
-      />
-      <div
-        className={`relative z-10 gap-4 ${aes_font.className} flex size-full p-2 px-4`}
-      >
-        <div className="flex min-w-0 flex-1 flex-col">
-          <p className="text-accent truncate text-lg font-bold">{title}</p>
-          <p className="text-foreground-muted truncate text-sm italic">
-            {artist}
-          </p>
-        </div>
-        <div className="flex min-w-0 flex-1 flex-col text-end">
-          <p className="text-accent truncate text-lg font-bold">
-            [ {version} ]
-          </p>
-          <p className="text-foreground-muted truncate text-sm italic">
-            {mapper}
-          </p>
-        </div>
-      </div>
-    </div>
-  );
+  if (rule === "exact" && mods.length === 0)
+    return <ModIcon mod={"NM"} size={size} />;
+
+  return mods.map((mod) => {
+    if (rule === "excludes") {
+      return <ModIcon mod={mod} crossed key={mod} size={size} />;
+    }
+    return <ModIcon mod={mod} key={mod} size={size} />;
+  });
 }
 
 export default function BountyCard({ bounty }: { bounty: ExtendedBounty }) {
@@ -90,10 +60,10 @@ export default function BountyCard({ bounty }: { bounty: ExtendedBounty }) {
         <BadgeLabel label="Exact mods must be used." text={`Exact mods`} />
       );
       if (bounty.goal.modRequirement.mods.length === 0) {
-        mods = <ModIcon mod="NM" size="sm" key="NM" />;
+        mods = <ModIcon mod="NM" size="xs" key="NM" />;
       } else {
         mods = bounty.goal.modRequirement.mods.map((mod) => (
-          <ModIcon mod={mod} size="sm" key={mod} />
+          <ModIcon mod={mod} size="xs" key={mod} />
         ));
       }
       break;
@@ -105,7 +75,7 @@ export default function BountyCard({ bounty }: { bounty: ExtendedBounty }) {
         />
       );
       mods = bounty.goal.modRequirement.mods.map((mod) => (
-        <ModIcon mod={mod} size="sm" key={mod} crossed />
+        <ModIcon mod={mod} size="xs" key={mod} crossed />
       ));
       break;
     case "includes":
@@ -116,7 +86,7 @@ export default function BountyCard({ bounty }: { bounty: ExtendedBounty }) {
         />
       );
       mods = bounty.goal.modRequirement.mods.map((mod) => (
-        <ModIcon mod={mod} size="sm" key={mod} />
+        <ModIcon mod={mod} size="xs" key={mod} />
       ));
       break;
   }
@@ -128,10 +98,17 @@ export default function BountyCard({ bounty }: { bounty: ExtendedBounty }) {
 
     case "minimum_grade":
       goalType = (
-        <BadgeLabel
-          label={`A minimum grade of ${bounty.goal.minimumGradeRequirement} is required.`}
-          text={`Grade >=${bounty.goal.minimumGradeRequirement}`}
-        />
+        <div className="flex items-center gap-1">
+          <BadgeLabel
+            label="X players have bookmarked this bounty."
+            text="Minimum grade"
+          />
+          <GradeIcon
+            grade={bounty.goal.minimumGradeRequirement}
+            minimum
+            size="sm"
+          />
+        </div>
       );
       break;
   }
@@ -139,7 +116,7 @@ export default function BountyCard({ bounty }: { bounty: ExtendedBounty }) {
   switch (bounty.status) {
     case "open":
       status = (
-        <p className="text-foreground-muted text-xs italic">
+        <p className="text-foreground-muted text-xs">
           Created by {bounty.owner?.username ?? "owner"}{" "}
           {formatDistance(new Date(), bounty.createdAt)} ago
         </p>
@@ -148,21 +125,19 @@ export default function BountyCard({ bounty }: { bounty: ExtendedBounty }) {
     case "completed":
       if (bounty.winner && bounty.completedAt) {
         status = (
-          <p className="text-foreground-muted text-xs italic">
+          <p className="text-foreground-muted text-xs">
             Completed by {bounty.winner.username}{" "}
             {formatDistance(new Date(), bounty.completedAt)} ago
           </p>
         );
       } else {
-        status = (
-          <p className="text-foreground-muted text-xs italic">Completed</p>
-        );
+        status = <p className="text-foreground-muted text-xs">Completed</p>;
       }
       break;
     case "cancelled":
       if (bounty.cancelledAt) {
         status = (
-          <p className="text-foreground-muted text-xs italic">
+          <p className="text-foreground-muted text-xs">
             Cancelled {formatDistance(new Date(), bounty.cancelledAt)} ago
           </p>
         );
@@ -174,7 +149,7 @@ export default function BountyCard({ bounty }: { bounty: ExtendedBounty }) {
     acc_requirement = (
       <BadgeLabel
         label={`A minimum accuracy of ${bounty.goal.minimumAccuracy}% is required.`}
-        text={`Accuracy >=${bounty.goal.minimumAccuracy}%`}
+        text={`Acc. ≥${bounty.goal.minimumAccuracy}%`}
       />
     );
   }
@@ -186,17 +161,19 @@ export default function BountyCard({ bounty }: { bounty: ExtendedBounty }) {
       className="bg-card border-border hover:border-focus-ring focus-visible:border-accent flex w-full min-w-0 cursor-pointer flex-col overflow-hidden rounded border transition-all focus-visible:outline-0"
       href={`/bounties/${bounty.id}`}
     >
-      <BeatmapCard beatmapMetadata={bounty.beatmap} />
-      <div className="flex place-content-between gap-4 p-2 px-4">
+      <BeatmapCard beatmapMetadata={bounty.beatmap} variant="bounty" />
+      <div className="flex place-content-between gap-4 p-4">
         <div className="flex min-w-0 flex-1 flex-col gap-2">
-          <div className="flex flex-wrap gap-2">
+          <div className="flex flex-wrap items-center gap-2">
+            {status ?? null}
+          </div>
+          <div className="flex flex-wrap gap-2 items-center">
             {goalType ?? null}
+            {goalType ? <span className="text-border">•</span> : null}
             {acc_requirement ?? null}
+            {acc_requirement ? <span className="text-border">•</span> : null}
             {mod_requirement ?? null}
             <div className="flex flex-wrap gap-1">{mods ?? null}</div>
-          </div>
-          <div className="flex flex-wrap items-center gap-1">
-            {status ?? null}
           </div>
         </div>
 

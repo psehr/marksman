@@ -21,6 +21,7 @@ const modNames = {
 } satisfies Record<ModAcronym, string>;
 
 const sizes = {
+  xs: "h-5 text-xs",
   sm: "h-6 text-xs",
   md: "h-8 text-sm",
   lg: "h-10 text-base",

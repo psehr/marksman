@@ -1,4 +1,5 @@
 import type { ExtendedBounty } from "@marksman/contracts";
+import GradeIcon from "./GradeIcon";
 
 const sizes = {
   sm: "h-6 min-w-8 px-1 text-xs",
@@ -18,11 +19,11 @@ export default function GoalIcon({
   size = "md",
   className = "",
 }: GoalIconProps) {
-  const isFullCombo = goal.type === "full_combo";
-  const label = isFullCombo
-    ? "Full combo required"
-    : `Minimum grade: ${goal.minimumGradeRequirement}`;
-  const badge = isFullCombo ? "FC" : `≥${goal.minimumGradeRequirement}`;
+  if (goal.type === "minimum_grade") {
+    return <GradeIcon grade={goal.minimumGradeRequirement} minimum size={size} className={className} />;
+  }
+  const label = "Full combo required";
+  const badge = "FC";
 
   return (
     <span

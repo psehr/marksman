@@ -1,4 +1,4 @@
-import { InfoSection } from "../[id]/page";
+import { InfoSection } from "@/components/bounty_details/InfoSection";
 
 export default function AboutPage() {
   return (

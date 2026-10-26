@@ -1,7 +1,7 @@
 import { getBounty } from "@/lib/api/bounties";
 import { ExtendedBounty } from "@marksman/contracts";
 import { ApiError } from "@/lib/api/client";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useAuth } from "@/components/AuthProvider";
 
 export function useBountyDetails(bountyId: string) {
@@ -13,21 +13,37 @@ export function useBountyDetails(bountyId: string) {
   const refreshBounty = () => {
     setRefresh((previous) => previous + 1);
   };
+  const generation = useRef(0);
+  const engagementRevision = useRef(0);
+  const refreshEngagement = async () => {
+    const current = generation.current;
+    const revision = ++engagementRevision.current;
+    const updated = await getBounty(bountyId);
+    if (generation.current !== current || engagementRevision.current !== revision) return;
+    engagementRevision.current++;
+    setBounty((previous) =>
+      previous ? { ...previous, engagement: updated.engagement } : previous,
+    );
+  };
   const { user } = useAuth();
 
   const AUTOMATIC_POLLING_INTERVAL = 5_000;
 
   useEffect(() => {
+    generation.current++;
     let ignore = false;
     let hasLoaded = false;
     let timer: ReturnType<typeof setTimeout> | undefined;
 
     async function load() {
       try {
+        const revision = engagementRevision.current;
         const bounty = await getBounty(bountyId);
         if (ignore) return;
 
-        setBounty(bounty);
+        setBounty(previous => revision !== engagementRevision.current && previous
+          ? { ...bounty, engagement: previous.engagement }
+          : bounty);
         setQueryStatus("complete");
 
         hasLoaded = true;
@@ -53,9 +69,10 @@ export function useBountyDetails(bountyId: string) {
 
     return () => {
       ignore = true;
+      generation.current++;
       clearTimeout(timer);
     };
   }, [bountyId, refresh, user?.identity.id]);
 
-  return { bounty, queryStatus, refreshBounty };
+  return { bounty, queryStatus, refreshBounty, refreshEngagement };
 }

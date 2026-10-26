@@ -1,31 +1,22 @@
 import { ExtendedBounty } from "@marksman/contracts";
-import Link from "next/link";
+import { BeatmapCard } from "../bounty_views/BeatmapCard";
+import { aes_font } from "@/lib/fonts";
 
 export default function BeatmapRequirement({
   bounty,
 }: {
   bounty: ExtendedBounty;
 }) {
-  const mapUrl = `https://osu.ppy.sh/beatmaps/${bounty?.goal.beatmapId}`;
-
-  return (
-    <>
-      {bounty.beatmap && bounty.beatmap.song && bounty.beatmap.specs ? (
-        <div className="flex flex-row gap-2 place-content-center">
-          <p>Score must be set on</p>
-          <p className="italic font-bold truncate max-w-2/3">
-            {bounty.beatmap.song.artist} - {bounty.beatmap.song.title} [
-            {bounty.beatmap.version.name}]
-          </p>
-          <p>({bounty.beatmap.specs.sr.toFixed(2)}★)</p>
-        </div>
-      ) : (
-        <p>Unavailable beatmap metadata</p>
-      )}
-
-      <Link href={mapUrl} className="bg-sky-700 px-4 py-2 rounded w-fit">
-        osu! Beatmap Page
-      </Link>
-    </>
-  );
+  return bounty.beatmap ? (
+    <div
+      className={`flex flex-col w-full p-2 gap-2 ${aes_font.className} font-bold`}
+    >
+      <div className="flex gap-2 place-content-center">
+        <p>The following</p>
+        <p className="text-accent">beatmap</p>
+        <p>must be played</p>
+      </div>
+      <BeatmapCard beatmapMetadata={bounty.beatmap} />
+    </div>
+  ) : null;
 }

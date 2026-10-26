@@ -231,3 +231,34 @@ test("detail card fits a mobile viewport", async ({ page }) => {
   const overflow = await page.locator("body *").evaluateAll(elements => elements.filter(element => element.getBoundingClientRect().right > 375).map(element => ({ tag: element.tagName, text: element.textContent?.slice(0, 100) })));
   expect(await page.evaluate(() => document.documentElement.scrollWidth), JSON.stringify(overflow)).toBeLessThanOrEqual(375);
 });
+
+test("official grade badges preserve minimum labels and load all grade variants", async ({ page }) => {
+  await setup(page, false);
+  const grades = ["D", "C", "B", "A", "S", "SH", "X", "XH"] as const;
+  const files = ["D", "C", "B", "A", "S", "S-Silver", "SS", "SS-Silver"];
+  const labels = ["D", "C", "B", "A", "S", "Silver S", "SS", "Silver SS"];
+  const fixtures = grades.map((grade, index) => ({
+    ...bounty(index + 1, `Grade ${grade}`, "open", 100),
+    goal: { ...rows[0].goal, minimumGradeRequirement: grade },
+  }));
+  const fullCombo = { ...bounty(9, "FC player", "open", 100),
+    goal: { type: "full_combo", beatmapId: 42, beatmapChecksum: null,
+      minimumComboRatio: 0.99, modRequirement: { rule: "any" } } };
+  await page.route("**/bounties", route => route.request().isNavigationRequest()
+    ? route.fallback() : route.fulfill({ json: [...fixtures, fullCombo] }));
+  await page.goto("/bounties");
+  for (const [index, label] of labels.entries()) {
+    const badge = page.getByRole("img", { name: `Minimum grade: ${label}`, exact: true });
+    await expect(badge).toBeVisible();
+    await expect(badge).toHaveText("≥");
+    const artwork = badge.locator("span").last();
+    await expect(artwork).toHaveCSS("background-image", new RegExp(`GradeSmall-${files[index]}\\.svg`));
+    const box = await artwork.boundingBox();
+    expect(box?.height).toBe(24);
+    expect(box?.width).toBe(48);
+    const response = await page.request.get(`/images/grades/GradeSmall-${files[index]}.svg`);
+    expect(response.ok()).toBeTruthy();
+    expect(await response.text()).toContain('<svg width="32" height="16"');
+  }
+  await expect(page.getByTitle("A full-combo is required.", { exact: true })).toHaveText("FC");
+});

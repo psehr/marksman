@@ -53,7 +53,7 @@ for (const failure of ["network", "http"] as const) {
         if (failure === "network") return route.abort("failed");
         return route.fulfill({ status: 503, json: { error: "Unavailable" } });
       }
-      return route.fulfill({ json: { ...bounty, engagement: {
+      return route.fulfill({ json: { ...bounty, rewardBp: count === 1 ? 100 : 777, engagement: {
         ...bounty.engagement, bookmarkCount: count === 1 ? 0 : 7,
       } } });
     });
@@ -69,7 +69,7 @@ for (const failure of ["network", "http"] as const) {
     await expect(open(page)).toBeVisible();
     await expect(error(page)).toHaveCount(0);
     await page.clock.runFor(5000);
-    await expect(page.getByText("7 player(s) bookmarked")).toBeVisible();
+    await expect(page.getByText("777", { exact: true })).toBeVisible();
     expect(reads()).toBe(3);
   });
 }
