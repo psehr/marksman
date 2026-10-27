@@ -1,17 +1,15 @@
 "use client";
-import { PROFILE_HISTORY_PAGE_SIZE } from "@marksman/contracts";
 import { AuthButton } from "@/components/auth/AuthButton";
 import Button from "@/components/ui/Button";
 import { InfoSection } from "@/components/ui/InfoSection";
-import {
-  UserCard,
-  MainSection,
-  DailyClaim,
-  LedgerEntries,
-  PageSelector,
-  EventHistory,
-} from "@/components/users/UserProfile";
+import { DailyClaim } from "@/components/users/DailyClaim";
+import { EventHistory } from "@/components/users/EventHistory";
+import { LedgerEntries } from "@/components/users/LedgerEntries";
+import { MainSection } from "@/components/users/MainSection";
+import { PageSelector } from "@/components/users/PageSelector";
+import { UserCard } from "@/components/users/UserCard";
 import { useUserProfile } from "@/hooks/useUserProfile";
+import { PROFILE_HISTORY_PAGE_SIZE } from "@marksman/contracts";
 import { notFound, useParams } from "next/navigation";
 
 export default function UserPage() {
@@ -84,30 +82,29 @@ export default function UserPage() {
           >
             <InfoSection
               title="Events"
-              className="min-w-0"
-              contentClassName="min-w-0 flex-1 p-4"
+              className="min-w-0 h-96"
+              contentClassName="flex min-h-0 flex-1 flex-col p-4"
             >
               {eventsQueryStatus === "loading" ? <p>Loading...</p> : null}
               {eventsQueryStatus === "errored" ? (
                 <div className="flex gap-2">
                   <p>Error loading events</p>
-                  <Button
-                    size="sm"
-                    onClick={() => refreshEvents()}
-                  >
+                  <Button size="sm" onClick={() => refreshEvents()}>
                     Retry
                   </Button>
                 </div>
               ) : null}
               {eventsQueryStatus === "complete" && events ? (
-                <div className="flex flex-col w-full min-w-0 items-center gap-4">
+                <div className="flex min-h-0 flex-1 flex-col gap-4">
                   <EventHistory events={events} />
-                  <PageSelector
-                    entriesLength={events.length}
-                    pageSize={PROFILE_HISTORY_PAGE_SIZE}
-                    selectedPage={eventsPage}
-                    setSelectedPage={setEventsPage}
-                  />
+                  <div className="shrink-0 self-center">
+                    <PageSelector
+                      entriesLength={events.length}
+                      pageSize={PROFILE_HISTORY_PAGE_SIZE}
+                      selectedPage={eventsPage}
+                      setSelectedPage={setEventsPage}
+                    />
+                  </div>
                 </div>
               ) : null}
             </InfoSection>
@@ -115,8 +112,8 @@ export default function UserPage() {
             {userIsPageOwner ? (
               <InfoSection
                 title="Transactions"
-                className="min-w-0"
-                contentClassName="min-w-0 flex-1 p-4"
+                className="min-w-0 h-96"
+                contentClassName="flex min-h-0 flex-1 flex-col p-4"
               >
                 {userIsPageOwner && ledgerQueryStatus === "loading" ? (
                   <p>Loading...</p>
@@ -124,10 +121,7 @@ export default function UserPage() {
                 {userIsPageOwner && ledgerQueryStatus === "errored" ? (
                   <div className="flex gap-2">
                     <p>Error loading ledger</p>
-                    <Button
-                      size="sm"
-                      onClick={() => refreshLedger()}
-                    >
+                    <Button size="sm" onClick={() => refreshLedger()}>
                       Retry
                     </Button>
                   </div>
@@ -135,14 +129,16 @@ export default function UserPage() {
                 {userIsPageOwner &&
                 ledgerQueryStatus === "complete" &&
                 ledgerEntries ? (
-                  <div className="flex flex-col w-full min-w-0 items-center gap-4">
+                  <div className="flex min-h-0 flex-1 flex-col gap-4">
                     <LedgerEntries entries={ledgerEntries} />
-                    <PageSelector
-                      entriesLength={ledgerEntries.length}
-                      pageSize={PROFILE_HISTORY_PAGE_SIZE}
-                      selectedPage={ledgerPage}
-                      setSelectedPage={setLedgerPage}
-                    />
+                    <div className="shrink-0 self-center">
+                      <PageSelector
+                        entriesLength={ledgerEntries.length}
+                        pageSize={PROFILE_HISTORY_PAGE_SIZE}
+                        selectedPage={ledgerPage}
+                        setSelectedPage={setLedgerPage}
+                      />
+                    </div>
                   </div>
                 ) : null}
               </InfoSection>

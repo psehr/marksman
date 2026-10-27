@@ -72,8 +72,8 @@ test("late authentication starts owner history; renders signed amounts and bount
     await expect(history(page)).toHaveCount(0);
   } finally { auth.release(); }
   await expect(history(page)).toBeVisible();
-  await expect(page.getByRole("cell", { name: "+25", exact: true })).toBeVisible();
-  await expect(page.getByRole("cell", { name: "-3", exact: true })).toBeVisible();
+  await expect(page.getByRole("cell", { name: "+25 BP", exact: true })).toBeVisible();
+  await expect(page.getByRole("cell", { name: "-3 BP", exact: true })).toBeVisible();
   await expect(page.getByRole("link", { name: "Bounty Funding Fee" })).toHaveAttribute("href", `/bounties/${bountyId}`);
 });
 
@@ -181,7 +181,7 @@ test("daily claim from page two refreshes balance and account and returns histor
   await expect(page.getByText("Claimed 25 BP.", { exact: true })).toBeVisible();
   await expect(page.getByText("Balance: 125 BP", { exact: true })).toBeVisible();
   await expect(history(page).locator("..").getByText("Page 1", { exact: true })).toBeVisible();
-  await expect(page.getByRole("cell", { name: "+25", exact: true })).toBeVisible();
+  await expect(page.getByRole("cell", { name: "+25 BP", exact: true })).toBeVisible();
   expect(state.accountReads).toBeGreaterThan(reads);
 });
 
@@ -237,7 +237,7 @@ test("malformed ledger response stays inline and Retry restores valid entries", 
   await visit(page);
   await expect(page.getByText("Error loading ledger", { exact: true })).toBeVisible();
   await page.getByRole("button", { name: "Retry", exact: true }).click();
-  await expect(page.getByRole("cell", { name: "+25", exact: true })).toBeVisible();
+  await expect(page.getByRole("cell", { name: "+25 BP", exact: true })).toBeVisible();
 });
 
 for (const failure of ["network", "http", "already-claimed"] as const) {

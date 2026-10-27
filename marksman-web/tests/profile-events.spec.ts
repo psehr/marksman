@@ -263,10 +263,10 @@ for (const width of [320, 1280]) {
         const content = el.parentElement!.getBoundingClientRect();
         const section = panel.getBoundingClientRect();
         return { tableWidth: table.width, contentWidth: content.width,
-          tableBottom: table.bottom, panelBottom: section.bottom };
+          contentBottom: content.bottom, panelBottom: section.bottom };
       });
       expect(Math.abs(bounds.tableWidth - bounds.contentWidth)).toBeLessThan(2);
-      expect(bounds.tableBottom).toBeLessThan(bounds.panelBottom);
+      expect(bounds.contentBottom).toBeLessThan(bounds.panelBottom);
     }
     const eventsBounds = await section(page).boundingBox();
     const ledgerBounds = await page.getByRole("heading", { name: "Transactions", exact: true }).locator("..").boundingBox();
@@ -275,5 +275,79 @@ for (const width of [320, 1280]) {
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
     await next(page).click();
     await expect(section(page).getByText("Page 2", { exact: true })).toBeVisible();
+  });
+}
+
+test("history headers and stretched links retain native keyboard and pointer navigation", async ({ page }) => {
+  const errors: string[] = [];
+  page.on("pageerror", error => errors.push(error.message));
+  await setup(page, creator);
+  const bountyId = event(1).bountyId;
+  await page.route("**/users/me/ledger?*", route => route.fulfill({ json: [
+    { id: event(1).bountyId, userId: creator.identity.id, amount: -25,
+      reason: "bounty_funding", bountyId, createdAt: "2026-01-02T12:00:00.000Z" },
+    { id: event(2).bountyId, userId: creator.identity.id, amount: 25,
+      reason: "daily_claim", bountyId: null, createdAt: "2026-01-02T12:00:00.000Z" },
+  ] }));
+  await visit(page);
+  await expect(table(page).getByRole("columnheader")).toHaveText(["Date", "Event"]);
+  const ledger = page.getByRole("table", { name: "BP transaction history" });
+  await expect(ledger.getByRole("columnheader")).toHaveText(["Date", "Transaction", "Amount"]);
+  const plainRow = ledger.locator("tbody tr").nth(1);
+  await expect(plainRow.getByRole("link")).toHaveCount(0);
+  await plainRow.locator("td").first().click();
+  await expect(page).toHaveURL(new RegExp(`/users/${creator.identity.id}$`));
+  const eventLink = table(page).getByRole("link").first();
+  await eventLink.focus();
+  await expect(eventLink).toBeFocused();
+  await page.keyboard.press("Tab");
+  await expect(table(page).getByRole("link").nth(1)).toBeFocused();
+  await page.keyboard.press("Enter");
+  await expect(page).toHaveURL(new RegExp(`/bounties/${event(2).bountyId}$`));
+  await visit(page);
+  // Click the date, outside the link text, to exercise the stretched overlay.
+  const dateCell = await table(page).locator("tbody tr").first().locator("td").first().boundingBox();
+  await page.mouse.click(dateCell!.x + dateCell!.width / 2, dateCell!.y + dateCell!.height / 2);
+  await expect(page).toHaveURL(new RegExp(`/bounties/${bountyId}$`));
+  await visit(page);
+  await expect(ledger.locator("tbody tr")).toHaveCount(2);
+  const amountCell = await ledger.locator("tbody tr").first().locator("td").last().boundingBox();
+  await page.mouse.click(amountCell!.x + amountCell!.width / 2, amountCell!.y + amountCell!.height / 2);
+  await expect(page).toHaveURL(new RegExp(`/bounties/${bountyId}$`));
+  expect(errors).toEqual([]);
+});
+
+for (const width of [320, 1280]) {
+  test(`pagination remains bottom aligned on full, short and empty histories at ${width}px`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 900 });
+    await setup(page, creator);
+    let count = 10;
+    await page.route("**/users/*/bounty-events?*", route => route.fulfill({
+      json: Array.from({ length: count }, (_, i) => event(i + 1, "completed")),
+    }));
+    await page.route("**/users/me/ledger?*", route => route.fulfill({ json:
+      Array.from({ length: count }, (_, i) => ({
+        id: event(i + 1).bountyId, userId: creator.identity.id, amount: 25,
+        reason: "daily_claim", bountyId: null, createdAt: "2026-01-02T12:00:00.000Z",
+      })),
+    }));
+    const positions: number[][] = [];
+    for (const size of [10, 1, 0]) {
+      count = size;
+      await visit(page);
+      const panels = [section(page), page.getByRole("heading", { name: "Transactions", exact: true }).locator("..")];
+      const offsets: number[] = [];
+      for (const panel of panels) {
+        const selector = panel.getByText("Page 1", { exact: true }).locator("..");
+        await expect(selector).toBeVisible();
+        await expect(panel.locator("tbody tr")).toHaveCount(size);
+        offsets.push(await selector.evaluate(el =>
+          el.closest("section")!.getBoundingClientRect().bottom - el.getBoundingClientRect().bottom));
+      }
+      positions.push(offsets);
+    }
+    for (let panel = 0; panel < 2; panel++) {
+      for (const position of positions) expect(Math.abs(position[panel] - positions[0][panel])).toBeLessThan(2);
+    }
   });
 }
