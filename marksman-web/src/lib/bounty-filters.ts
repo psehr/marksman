@@ -1,14 +1,33 @@
 import type { BountyTier, ExtendedBounty } from "@marksman/contracts";
 
 export const tierOptions: readonly BountyTier[] = [
-  "Easy", "Normal", "Hard", "Lunatic", "Extra", "Phantasm",
+  "Easy",
+  "Normal",
+  "Hard",
+  "Lunatic",
+  "Extra",
+  "Phantasm",
 ];
 export type BountyGoal = ExtendedBounty["goal"]["type"];
-export const goalOptions: readonly BountyGoal[] = ["full_combo", "minimum_grade"];
-type RequiredMod = Extract<ExtendedBounty["goal"]["modRequirement"], { mods: unknown }>["mods"][number];
+export const goalOptions: readonly BountyGoal[] = [
+  "full_combo",
+  "minimum_grade",
+];
+type RequiredMod = Extract<
+  ExtendedBounty["goal"]["modRequirement"],
+  { mods: unknown }
+>["mods"][number];
 export type BountyModFilter = RequiredMod | "NM";
 export const modOptions: readonly BountyModFilter[] = [
-  "NM", "EZ", "HT", "NF", "DT", "FL", "HD", "HR", "SO",
+  "EZ",
+  "HT",
+  "NF",
+  "DT",
+  "FL",
+  "HD",
+  "HR",
+  "SO",
+  "NM",
 ];
 
 export type AdditionalBountyFilters = {
@@ -23,7 +42,7 @@ export function parseSelection<T extends string>(
   options: readonly T[],
 ): Set<T> {
   const values = new Set(value?.split(",") ?? []);
-  return new Set(options.filter(option => values.has(option)));
+  return new Set(options.filter((option) => values.has(option)));
 }
 
 export function parseModSelection(value: string | null): Set<BountyModFilter> {
@@ -40,5 +59,5 @@ export function toggleSelection<T extends string>(
   const next = new Set(selected);
   if (next.has(value)) next.delete(value);
   else next.add(value);
-  return options.filter(option => next.has(option)).join(",") || null;
+  return options.filter((option) => next.has(option)).join(",") || null;
 }

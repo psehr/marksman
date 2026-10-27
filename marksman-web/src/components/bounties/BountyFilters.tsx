@@ -51,17 +51,19 @@ function IconFilterButton({
   onClick,
   pressed = false,
   children,
+  className,
   "aria-label": ariaLabel,
 }: {
   onClick: () => void;
   pressed?: boolean;
   children: React.ReactNode;
+  className?: string;
   "aria-label"?: string;
 }) {
   return (
     <button
       onClick={onClick}
-      className="opacity-40 aria-pressed:opacity-100 cursor-pointer focus-visible:outline-2 focus-visible:outline-accent"
+      className={`opacity-40 aria-pressed:opacity-100 cursor-pointer focus-visible:outline-2 focus-visible:outline-accent ${className}`}
       aria-pressed={pressed}
       aria-label={ariaLabel}
       type="button"
@@ -200,7 +202,7 @@ export default function BountyFilters(props: {
           </div>
         </div>
       </div>
-      <details className="border-t border-border pt-4 text-center text-foreground-muted">
+      <details className="border-t border-border pt-4 text-center">
         <summary className="cursor-pointer">Show additional filters</summary>
 
         <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-3">
@@ -208,7 +210,7 @@ export default function BountyFilters(props: {
             <legend className="mb-2 text-foreground-muted font-bold">
               Reward Tier
             </legend>
-            <div className="flex flex-wrap justify-center gap-2">
+            <div className="flex flex-wrap gap-2">
               {tierOptions.map((tier) => (
                 <IconFilterButton
                   onClick={() => props.onToggleTier(tier)}
@@ -224,22 +226,20 @@ export default function BountyFilters(props: {
             <legend className="mb-2 text-foreground-muted font-bold">
               Goal Type
             </legend>
-            <div className="grid grid-cols-2 gap-2">
+            <div className="flex flex-col gap-2">
               <IconFilterButton
                 onClick={() => props.onToggleGoal("full_combo")}
                 pressed={props.selectedFilters.goals.has("full_combo")}
+                className="border-2 border-border aria-pressed:border-accent rounded h-8"
               >
-                <div className="flex place-content-center items-center min-w-24 h-8 border border-border">
-                  <span>Full-Combo</span>
-                </div>
+                Full-Combo
               </IconFilterButton>
               <IconFilterButton
                 onClick={() => props.onToggleGoal("minimum_grade")}
                 pressed={props.selectedFilters.goals.has("minimum_grade")}
+                className="border-2 border-border aria-pressed:border-accent rounded h-8"
               >
-                <div className="flex place-content-center items-center min-w-24 h-8 border border-border">
-                  <span>Minimum Grade</span>
-                </div>
+                Minimum Grade
               </IconFilterButton>
             </div>
           </fieldset>
@@ -247,9 +247,6 @@ export default function BountyFilters(props: {
             <legend className="mb-2 text-foreground-muted font-bold">
               Mods
             </legend>
-            <p className="mb-2 text-xs">
-              Requires all selected mods. NM means exact no mods.
-            </p>
             {modOptions.map((mod) => (
               <IconFilterButton
                 onClick={() => props.onToggleMod(mod)}

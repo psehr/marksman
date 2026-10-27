@@ -92,7 +92,9 @@ function Bounties() {
   }
 
   function toggleMod(mod: BountyModFilter) {
-    const current = parseModSelection(new URL(window.location.href).searchParams.get("mods"));
+    const current = parseModSelection(
+      new URL(window.location.href).searchParams.get("mods"),
+    );
     if (mod === "NM") {
       updateFilters({ mods: current.has("NM") ? null : "NM" });
     } else {
@@ -111,7 +113,17 @@ function Bounties() {
   return (
     <div className="flex flex-col w-full h-full items-center gap-12 py-12 px-4">
       <div className="flex flex-col w-full max-w-6xl h-full items-center gap-4">
-        <div className="flex flex-col lg:flex-row w-full gap-4">
+        <div className="flex flex-col w-full gap-4">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
+            <ButtonLink
+              href="/bounties/new"
+              variant="accent"
+              className="font-bold"
+            >
+              Create a bounty
+            </ButtonLink>
+            <ButtonLink href="/bounties/about">About bounties</ButtonLink>
+          </div>
           <BountyFilters
             selectedFilters={selectedFilters}
             onToggleTier={(tier) => {
@@ -119,14 +131,18 @@ function Bounties() {
                 new URL(window.location.href).searchParams.get("tiers"),
                 tierOptions,
               );
-              updateFilters({ tiers: toggleSelection(current, tier, tierOptions) });
+              updateFilters({
+                tiers: toggleSelection(current, tier, tierOptions),
+              });
             }}
             onToggleGoal={(goal) => {
               const current = parseSelection(
                 new URL(window.location.href).searchParams.get("goals"),
                 goalOptions,
               );
-              updateFilters({ goals: toggleSelection(current, goal, goalOptions) });
+              updateFilters({
+                goals: toggleSelection(current, goal, goalOptions),
+              });
             }}
             onToggleMod={toggleMod}
             searchInput={searchInput}
@@ -147,16 +163,6 @@ function Bounties() {
               updateFilters({ relationship: value ? value : null });
             }}
           />
-          <div className="flex flex-col gap-2">
-            <ButtonLink
-              href="/bounties/new"
-              variant="accent"
-              className="font-bold"
-            >
-              Create a bounty
-            </ButtonLink>
-            <ButtonLink href="/bounties/about">About bounties</ButtonLink>
-          </div>
         </div>
         <div className="w-full max-w-6xl h-1/2 flex place-content-center items-center">
           {queryStatus === "complete" ? (
