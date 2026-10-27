@@ -1,5 +1,5 @@
 import Link from "next/link";
-import CreateBountyForm from "@/components/CreateBountyForm";
+import CreateBountyForm from "@/components/bounties/CreateBountyForm";
 
 export default function NewBountyPage() {
   return (

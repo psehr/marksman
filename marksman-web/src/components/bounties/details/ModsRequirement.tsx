@@ -1,6 +1,6 @@
 import { ExtendedBounty } from "@marksman/contracts";
 import { aes_font } from "@/lib/fonts";
-import ModIcon from "../ModIcon";
+import ModIcon from "@/components/osu/ModIcon";
 
 function ModRequirementIcons({ bounty }: { bounty: ExtendedBounty }) {
   const rule = bounty.goal.modRequirement.rule;

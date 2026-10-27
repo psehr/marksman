@@ -2,9 +2,9 @@
 
 import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
-import { useAuth } from "./AuthProvider";
-import { AuthButton } from "./AuthButton";
-import ButtonLink from "./buttons/ButtonLink";
+import { useAuth } from "../auth/AuthProvider";
+import { AuthButton } from "../auth/AuthButton";
+import ButtonLink from "@/components/ui/ButtonLink";
 
 function RouteLink({
   url,

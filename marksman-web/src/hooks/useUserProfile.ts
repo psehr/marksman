@@ -1,4 +1,4 @@
-import { useAuth } from "@/components/AuthProvider";
+import { useAuth } from "@/components/auth/AuthProvider";
 import { getUser, getUserLedger, getUserBountyEvents } from "@/lib/api/users";
 import { claimDailyBp } from "@/lib/api/economy";
 import { ApiError } from "@/lib/api/client";
@@ -127,7 +127,8 @@ export function useUserProfile(id: string) {
       } catch (error) {
         if (!ignore) {
           setUserQueryStatus(
-            error instanceof ApiError && (error.status === 404 || error.status === 400)
+            error instanceof ApiError &&
+              (error.status === 404 || error.status === 400)
               ? "notFound"
               : "errored",
           );

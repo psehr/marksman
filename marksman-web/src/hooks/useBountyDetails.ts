@@ -2,7 +2,7 @@ import { getBounty } from "@/lib/api/bounties";
 import { ExtendedBounty } from "@marksman/contracts";
 import { ApiError } from "@/lib/api/client";
 import { useEffect, useRef, useState } from "react";
-import { useAuth } from "@/components/AuthProvider";
+import { useAuth } from "@/components/auth/AuthProvider";
 
 export function useBountyDetails(bountyId: string) {
   const [queryStatus, setQueryStatus] = useState<
@@ -19,7 +19,11 @@ export function useBountyDetails(bountyId: string) {
     const current = generation.current;
     const revision = ++engagementRevision.current;
     const updated = await getBounty(bountyId);
-    if (generation.current !== current || engagementRevision.current !== revision) return;
+    if (
+      generation.current !== current ||
+      engagementRevision.current !== revision
+    )
+      return;
     engagementRevision.current++;
     setBounty((previous) =>
       previous ? { ...previous, engagement: updated.engagement } : previous,
@@ -41,9 +45,11 @@ export function useBountyDetails(bountyId: string) {
         const bounty = await getBounty(bountyId);
         if (ignore) return;
 
-        setBounty(previous => revision !== engagementRevision.current && previous
-          ? { ...bounty, engagement: previous.engagement }
-          : bounty);
+        setBounty((previous) =>
+          revision !== engagementRevision.current && previous
+            ? { ...bounty, engagement: previous.engagement }
+            : bounty,
+        );
         setQueryStatus("complete");
 
         hasLoaded = true;

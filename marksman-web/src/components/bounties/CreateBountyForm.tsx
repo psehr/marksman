@@ -4,7 +4,7 @@ import { useBeatmapMetadata } from "@/hooks/useBeatmapMetadata";
 import { createBountySchema } from "@marksman/contracts";
 import Link from "next/link";
 import { useRef, useState, type FormEvent } from "react";
-import { useAuth } from "./AuthProvider";
+import { useAuth } from "../auth/AuthProvider";
 
 const apiUrl = process.env.NEXT_PUBLIC_API_URL;
 const mods = ["EZ", "HD", "HR", "DT", "HT", "FL", "NF", "SO"] as const;
@@ -127,7 +127,13 @@ export default function CreateBountyForm() {
     if (submitting.current || created) return;
     setSubmitted(true);
     setError(null);
-    if (!result.success || issues.length || insufficient || accountLoading || user === null)
+    if (
+      !result.success ||
+      issues.length ||
+      insufficient ||
+      accountLoading ||
+      user === null
+    )
       return;
     submitting.current = true;
     setPending(true);
@@ -443,7 +449,13 @@ export default function CreateBountyForm() {
         )}
         <button
           type="submit"
-          disabled={pending || created || accountLoading || user === null || insufficient}
+          disabled={
+            pending ||
+            created ||
+            accountLoading ||
+            user === null ||
+            insufficient
+          }
           className="rounded bg-sky-700 px-4 py-2 text-white disabled:opacity-50"
         >
           {pending

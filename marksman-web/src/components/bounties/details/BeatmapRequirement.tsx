@@ -1,5 +1,5 @@
 import { ExtendedBounty } from "@marksman/contracts";
-import { BeatmapCard } from "../bounty_views/BeatmapCard";
+import { BeatmapCard } from "@/components/beatmaps/BeatmapCard";
 import { aes_font } from "@/lib/fonts";
 
 export default function BeatmapRequirement({

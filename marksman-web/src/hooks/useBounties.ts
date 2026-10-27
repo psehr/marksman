@@ -1,4 +1,4 @@
-import { useAuth } from "@/components/AuthProvider";
+import { useAuth } from "@/components/auth/AuthProvider";
 import { getAllBounties, getBookmarkedBounties } from "@/lib/api/bounties";
 import type { ExtendedBounty } from "@marksman/contracts";
 import Fuse from "fuse.js";

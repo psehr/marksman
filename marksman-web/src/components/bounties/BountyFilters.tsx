@@ -1,11 +1,11 @@
-import { useAuth } from "./AuthProvider";
+import { useAuth } from "../auth/AuthProvider";
 
 export type BountySortingMethod = {
   type: "date" | "bpReward";
   order: "asc" | "desc";
 };
 
-export default function SearchPanel(props: {
+export default function BountyFilters(props: {
   searchInput: string;
   bountyType: "open" | "completed";
   setBountyType: (status: "open" | "completed") => void;

@@ -1,4 +1,4 @@
-import { InfoSection } from "@/components/bounty_details/InfoSection";
+import { InfoSection } from "@/components/ui/InfoSection";
 
 export default function AboutPage() {
   return (

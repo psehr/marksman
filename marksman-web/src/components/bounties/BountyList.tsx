@@ -1,5 +1,5 @@
 import type { ExtendedBounty } from "@marksman/contracts";
-import BountyCard from "./bounty_views/BountyCard";
+import BountyCard from "./BountyCard";
 
 export default function BountyList({
   bounties,

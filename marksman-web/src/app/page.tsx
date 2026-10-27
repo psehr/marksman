@@ -1,5 +1,5 @@
-import BountyCard from "@/components/bounty_views/BountyCard";
-import Button from "@/components/buttons/Button";
+import BountyCard from "@/components/bounties/BountyCard";
+import Button from "@/components/ui/Button";
 import { Anonymous_Pro, Encode_Sans } from "next/font/google";
 
 const ano = Anonymous_Pro({ subsets: ["latin"], weight: "400" });

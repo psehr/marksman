@@ -63,13 +63,13 @@ export function BeatmapCard({
           <div
             className={`relative z-10 gap-4 ${aes_font.className} flex size-full p-2 px-4`}
           >
-            <div className="flex min-w-0 flex-[2] flex-col">
+            <div className="flex min-w-0 flex-2 flex-col">
               <p className="text-accent truncate text-lg font-bold">{title}</p>
               <p className="text-foreground-muted truncate text-sm italic">
                 {artist}
               </p>
             </div>
-            <div className="flex min-w-0 flex-[1] flex-col text-end">
+            <div className="flex min-w-0 flex-1 flex-col text-end">
               <p className="text-accent truncate text-lg font-bold">
                 [ {version} ]
               </p>
@@ -92,7 +92,7 @@ export function BeatmapCard({
             className={`relative z-10 gap-2 ${aes_font.className} flex flex-col w-full p-2 px-4`}
           >
             <div className="flex gap-4">
-              <div className="flex min-w-0 flex-[2] flex-col text-left">
+              <div className="flex min-w-0 flex-2 flex-col text-left">
                 <p className="text-accent truncate text-lg font-bold">
                   {title}
                 </p>
@@ -100,7 +100,7 @@ export function BeatmapCard({
                   {artist}
                 </p>
               </div>
-              <div className="flex min-w-0 flex-[1] flex-col text-end">
+              <div className="flex min-w-0 flex-1 flex-col text-end">
                 <p className="text-accent truncate text-lg font-bold">
                   [ {version} ]
                 </p>

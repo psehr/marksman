@@ -1,5 +1,5 @@
 "use client";
-import { AuthButton } from "@/components/AuthButton";
+import { AuthButton } from "@/components/auth/AuthButton";
 import {
   UserCard,
   MainSection,
@@ -7,7 +7,7 @@ import {
   LedgerEntries,
   PageSelector,
   EventHistory,
-} from "@/components/UserProfile";
+} from "@/components/users/UserProfile";
 import { useUserProfile } from "@/hooks/useUserProfile";
 import { notFound, useParams } from "next/navigation";
 

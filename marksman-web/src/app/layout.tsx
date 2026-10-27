@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import { Anonymous_Pro, Encode_Sans } from "next/font/google";
 import "./globals.css";
-import { AuthProvider } from "@/components/AuthProvider";
-import NavBar from "@/components/NavBar";
+import { AuthProvider } from "@/components/auth/AuthProvider";
+import NavBar from "@/components/layout/NavBar";
 import { base_font } from "@/lib/fonts";
 
 export const metadata: Metadata = {

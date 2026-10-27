@@ -1,6 +1,6 @@
 import { aes_font } from "@/lib/fonts";
 import { ExtendedBounty } from "@marksman/contracts";
-import GradeIcon from "../GradeIcon";
+import GradeIcon from "@/components/osu/GradeIcon";
 
 export default function GoalCategory({ bounty }: { bounty: ExtendedBounty }) {
   return (

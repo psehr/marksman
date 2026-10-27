@@ -1,15 +1,15 @@
 "use client";
 
-import ModIcon from "../ModIcon";
+import ModIcon from "../osu/ModIcon";
 import { ExtendedBounty, getBountyTier } from "@marksman/contracts";
 import { formatDistance } from "date-fns";
 import Link from "next/link";
 import Image from "next/image";
-import BPIcon from "../BPIcon";
-import BountyTierBadge from "../BountyTierBadge";
-import GradeIcon from "../GradeIcon";
-import { BeatmapCard } from "./BeatmapCard";
-import { BadgeLabel } from "./BadgeLabel";
+import BPIcon from "../economy/BPIcon";
+import BountyTierBadge from "./BountyTierBadge";
+import GradeIcon from "../osu/GradeIcon";
+import { BeatmapCard } from "../beatmaps/BeatmapCard";
+import { BadgeLabel } from "../ui/BadgeLabel";
 
 export default function BountyCard({ bounty }: { bounty: ExtendedBounty }) {
   let mod_requirement;

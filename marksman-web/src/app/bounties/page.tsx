@@ -1,11 +1,11 @@
 "use client";
 
-import { useAuth } from "@/components/AuthProvider";
-import BountyList from "@/components/BountyList";
-import ButtonLink from "@/components/buttons/ButtonLink";
+import { useAuth } from "@/components/auth/AuthProvider";
+import BountyList from "@/components/bounties/BountyList";
+import ButtonLink from "@/components/ui/ButtonLink";
 import SearchPanel, {
   type BountySortingMethod,
-} from "@/components/SearchPanel";
+} from "@/components/bounties/BountyFilters";
 import { useBounties } from "@/hooks/useBounties";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";

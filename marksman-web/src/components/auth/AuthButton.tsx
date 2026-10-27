@@ -2,8 +2,8 @@
 
 import { useState } from "react";
 import { useAuth } from "./AuthProvider";
-import Button from "./buttons/Button";
-import ButtonLink from "./buttons/ButtonLink";
+import Button from "../ui/Button";
+import ButtonLink from "../ui/ButtonLink";
 
 export function AuthButton() {
   const { user, loading, error, refreshUser } = useAuth();

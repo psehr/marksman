@@ -1,19 +1,19 @@
 "use client";
 
-import { useAuth } from "@/components/AuthProvider";
+import { useAuth } from "@/components/auth/AuthProvider";
 import { useParams, notFound } from "next/navigation";
 import BountyActions, {
   type AvailableActions,
-} from "@/components/bounty_details/BountyActions";
-import BountyStatus from "@/components/bounty_details/BountyStatus";
-import GoalCategory from "@/components/bounty_details/GoalCategory";
-import ModsRequirement from "@/components/bounty_details/ModsRequirement";
-import BeatmapRequirement from "@/components/bounty_details/BeatmapRequirement";
+} from "@/components/bounties/details/BountyActions";
+import BountyStatus from "@/components/bounties/details/BountyStatus";
+import GoalCategory from "@/components/bounties/details/GoalCategory";
+import ModsRequirement from "@/components/bounties/details/ModsRequirement";
+import BeatmapRequirement from "@/components/bounties/details/BeatmapRequirement";
 import { useBountyDetails } from "@/hooks/useBountyDetails";
-import BountyCard from "@/components/bounty_views/BountyCard";
+import BountyCard from "@/components/bounties/BountyCard";
 import { aes_font } from "@/lib/fonts";
-import { InfoSection } from "@/components/bounty_details/InfoSection";
-import { BadgeLabel } from "@/components/bounty_views/BadgeLabel";
+import { InfoSection } from "@/components/ui/InfoSection";
+import { BadgeLabel } from "@/components/ui/BadgeLabel";
 
 export default function BountyDetailsPage() {
   const { id } = useParams<{ id: string }>();
