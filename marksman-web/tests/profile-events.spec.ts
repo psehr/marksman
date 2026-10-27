@@ -21,7 +21,7 @@ function gate() {
   const promise = new Promise<void>(resolve => { release = resolve; });
   return { promise, release };
 }
-const section = (page: Page) => page.getByRole("heading", { name: "Events history", exact: true }).locator("..");
+const section = (page: Page) => page.getByRole("heading", { name: "Events", exact: true }).locator("..");
 const table = (page: Page) => section(page).getByRole("table", { name: "Bounty Events History" });
 const next = (page: Page) => section(page).getByRole("button", { name: ">", exact: true });
 const previous = (page: Page) => section(page).getByRole("button", { name: "<", exact: true });
@@ -76,6 +76,7 @@ for (const account of [null, winner]) {
     await expect(table(page).getByRole("link").nth(1)).toHaveAttribute("href", `/bounties/${event(2).bountyId}`);
     await expect(table(page).locator("tbody tr").first()).toContainText("ago");
     expect(state.ledgerReads).toBe(0);
+    await expect(page.getByRole("heading", { name: "Transactions", exact: true })).toHaveCount(0);
     await expect(page.getByRole("table", { name: "BP transaction history" })).toHaveCount(0);
   });
 }
@@ -105,11 +106,11 @@ test("public history loads before authentication and persists after logout on pa
   await page.route("**/users/*/bounty-events?*", route => {
     const p = Number(new URL(route.request().url()).searchParams.get("page"));
     pages.push(p);
-    return route.fulfill({ json: p === 1 ? Array.from({ length: 20 }, (_, i) => event(i + 1)) : [event(21, "cancelled")] });
+    return route.fulfill({ json: p === 1 ? Array.from({ length: 10 }, (_, i) => event(i + 1)) : [event(11, "cancelled")] });
   });
   try {
     await visit(page);
-    await expect(table(page).locator("tbody tr")).toHaveCount(20);
+    await expect(table(page).locator("tbody tr")).toHaveCount(10);
     await next(page).click();
     await expect(section(page).getByText("Page 2", { exact: true })).toBeVisible();
   } finally { auth.release(); }
@@ -128,10 +129,10 @@ test("pagination shows loading, short final page and Previous without reloading 
     const p = Number(new URL(route.request().url()).searchParams.get("page"));
     pages.push(p);
     if (p === 2) await pending.promise;
-    return route.fulfill({ json: p === 1 ? Array.from({ length: 20 }, (_, i) => event(i + 1)) : [event(21, "cancelled")] });
+    return route.fulfill({ json: p === 1 ? Array.from({ length: 10 }, (_, i) => event(i + 1)) : [event(11, "cancelled")] });
   });
   await visit(page);
-  await expect(table(page).locator("tbody tr")).toHaveCount(20);
+  await expect(table(page).locator("tbody tr")).toHaveCount(10);
   const reads = state.profileReads;
   await next(page).click();
   try {
@@ -142,7 +143,7 @@ test("pagination shows loading, short final page and Previous without reloading 
   await expect(section(page).getByText("Page 2", { exact: true })).toBeVisible();
   await expect(next(page)).toHaveCount(0);
   await previous(page).click();
-  await expect(table(page).locator("tbody tr")).toHaveCount(20);
+  await expect(table(page).locator("tbody tr")).toHaveCount(10);
   expect(state.profileReads).toBe(reads);
   expect(pages).toEqual([1, 2, 1]);
   // The owner's independently paginated ledger remains on its first page.
@@ -154,14 +155,14 @@ test("empty page after a full final page keeps Previous; empty first page has no
   let empty = false;
   await page.route("**/users/*/bounty-events?*", route => route.fulfill({
     json: !empty && new URL(route.request().url()).searchParams.get("page") === "1"
-      ? Array.from({ length: 20 }, (_, i) => event(i + 1)) : [],
+      ? Array.from({ length: 10 }, (_, i) => event(i + 1)) : [],
   }));
   await visit(page);
   await next(page).click();
   await expect(section(page).getByText("[No events to show]", { exact: true })).toBeVisible();
   await expect(next(page)).toHaveCount(0);
   await previous(page).click();
-  await expect(table(page).locator("tbody tr")).toHaveCount(20);
+  await expect(table(page).locator("tbody tr")).toHaveCount(10);
   empty = true;
   await page.reload();
   await expect(section(page).getByText("[No events to show]", { exact: true })).toBeVisible();
@@ -202,10 +203,10 @@ for (const lateStatus of [200, 500]) {
         winnerPages.push(p);
         return route.fulfill({ json: [event(99, "completed")] });
       }
-      if (p === 1) return route.fulfill({ json: Array.from({ length: 20 }, (_, i) => event(i + 1)) });
+      if (p === 1) return route.fulfill({ json: Array.from({ length: 10 }, (_, i) => event(i + 1)) });
       started = true;
       await pending.promise;
-      await route.fulfill({ status: lateStatus, json: lateStatus === 200 ? [event(21, "cancelled")] : { error: "Late failure" } });
+      await route.fulfill({ status: lateStatus, json: lateStatus === 200 ? [event(11, "cancelled")] : { error: "Late failure" } });
       finished = true;
     });
     await visit(page);
@@ -236,3 +237,43 @@ test("malformed events response stays inline and Retry restores valid history", 
   await page.getByRole("button", { name: "Retry", exact: true }).click();
   await expect(table(page).locator("tbody tr")).toHaveCount(1);
 });
+
+for (const width of [320, 1280]) {
+  test(`full profile histories fit their panels at ${width}px`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 900 });
+    await setup(page, creator);
+    await page.route("**/users/*/bounty-events?*", route => route.fulfill({
+      json: Array.from({ length: 10 }, (_, i) => event(i + 1, "completed")),
+    }));
+    await page.route("**/users/me/ledger?*", route => route.fulfill({
+      json: Array.from({ length: 10 }, (_, i) => ({
+        id: `00000000-0000-4000-8000-${(i + 1).toString(16).padStart(12, "0")}`,
+        userId: creator.identity.id, amount: 25, reason: "daily_claim",
+        bountyId: null, createdAt: "2026-01-02T12:00:00.000Z",
+      })),
+    }));
+    await visit(page);
+    await expect(table(page).locator("tbody tr")).toHaveCount(10);
+    const ledger = page.getByRole("table", { name: "BP transaction history" });
+    await expect(ledger.locator("tbody tr")).toHaveCount(10);
+    for (const historyTable of [table(page), ledger]) {
+      const bounds = await historyTable.evaluate(el => {
+        const panel = el.closest("section")!;
+        const table = el.getBoundingClientRect();
+        const content = el.parentElement!.getBoundingClientRect();
+        const section = panel.getBoundingClientRect();
+        return { tableWidth: table.width, contentWidth: content.width,
+          tableBottom: table.bottom, panelBottom: section.bottom };
+      });
+      expect(Math.abs(bounds.tableWidth - bounds.contentWidth)).toBeLessThan(2);
+      expect(bounds.tableBottom).toBeLessThan(bounds.panelBottom);
+    }
+    const eventsBounds = await section(page).boundingBox();
+    const ledgerBounds = await page.getByRole("heading", { name: "Transactions", exact: true }).locator("..").boundingBox();
+    if (width === 320) expect(ledgerBounds!.y).toBeGreaterThanOrEqual(eventsBounds!.y + eventsBounds!.height);
+    else expect(Math.abs(ledgerBounds!.y - eventsBounds!.y)).toBeLessThan(2);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true);
+    await next(page).click();
+    await expect(section(page).getByText("Page 2", { exact: true })).toBeVisible();
+  });
+}

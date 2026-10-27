@@ -8,3 +8,4 @@ export * from "./bounty-event";
 export * from "./hunt";
 export * from "./hunt-attempt";
 export * from "./bounty-tiers";
+export * from "./pagination";

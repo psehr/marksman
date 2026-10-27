@@ -1,3 +1,4 @@
+import { PROFILE_HISTORY_PAGE_SIZE } from "@marksman/contracts";
 import { and, desc, eq, or } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import { bounties, users } from "./schema";
@@ -123,7 +124,7 @@ export async function getBountyEventsOfUser(
   page: number,
 ): Promise<BountyEvent[]> {
   const pageNumber = Number.isInteger(page) && page > 0 ? page : 1;
-  const pageSize = 20;
+  const pageSize = PROFILE_HISTORY_PAGE_SIZE;
 
   const rows = await db
     .select({

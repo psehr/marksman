@@ -98,10 +98,10 @@ test("pagination shows loading, short final page and Previous without reloading 
     const p = Number(new URL(route.request().url()).searchParams.get("page"));
     state.ledgerPages.push(p);
     if (p === 2) { requested = true; await pending.promise; }
-    return route.fulfill({ json: p === 1 ? Array.from({ length: 20 }, (_, i) => entry(i + 1)) : [entry(21, "bounty_fee")] });
+    return route.fulfill({ json: p === 1 ? Array.from({ length: 10 }, (_, i) => entry(i + 1)) : [entry(11, "bounty_fee")] });
   });
   await visit(page);
-  await expect(page.locator("tbody tr")).toHaveCount(20);
+  await expect(page.locator("tbody tr")).toHaveCount(10);
   const reads = state.profileReads;
   await next(page).click();
   try {
@@ -113,7 +113,7 @@ test("pagination shows loading, short final page and Previous without reloading 
   await expect(page.locator("tbody tr")).toHaveCount(1);
   await expect(next(page)).toHaveCount(0);
   await previous(page).click();
-  await expect(page.locator("tbody tr")).toHaveCount(20);
+  await expect(page.locator("tbody tr")).toHaveCount(10);
   expect(state.profileReads).toBe(reads);
   expect(state.ledgerPages).toEqual([1, 2, 1]);
 });
@@ -123,14 +123,14 @@ test("empty page after a full final page allows returning; empty first page has 
   let empty = false;
   await page.route("**/users/me/ledger?*", route => route.fulfill({
     json: !empty && new URL(route.request().url()).searchParams.get("page") === "1"
-      ? Array.from({ length: 20 }, (_, i) => entry(i + 1)) : [],
+      ? Array.from({ length: 10 }, (_, i) => entry(i + 1)) : [],
   }));
   await visit(page);
   await next(page).click();
   await expect(page.getByText("[No transactions to show]", { exact: true })).toBeVisible();
   await expect(next(page)).toHaveCount(0);
   await previous(page).click();
-  await expect(page.locator("tbody tr")).toHaveCount(20);
+  await expect(page.locator("tbody tr")).toHaveCount(10);
   empty = true;
   await page.reload();
   await expect(page.getByText("[No transactions to show]", { exact: true })).toBeVisible();
@@ -164,8 +164,8 @@ test("daily claim from page two refreshes balance and account and returns histor
     const p = Number(new URL(route.request().url()).searchParams.get("page"));
     state.ledgerPages.push(p);
     return route.fulfill({ json: p === 1
-      ? (claimed ? [entry(99)] : Array.from({ length: 20 }, (_, i) => entry(i + 1, "bounty_fee")))
-      : [entry(21, "bounty_fee")] });
+      ? (claimed ? [entry(99)] : Array.from({ length: 10 }, (_, i) => entry(i + 1, "bounty_fee")))
+      : [entry(11, "bounty_fee")] });
   });
   await page.route("**/economy/daily-claim", route => {
     expect(route.request().method()).toBe("POST");

@@ -130,21 +130,21 @@ test("ledger uses authenticated identity and ignores supplied user IDs", async (
   assert.deepEqual((await readEntries(await request(bob.id))).map(e => e.id), [bobEntry.id]);
 });
 
-test("default page and pages 1 through 3 preserve ordering, limits and tied timestamps", async () => {
+test("default page and pages 1 through 5 preserve ordering, limits and tied timestamps", async () => {
   const rows = await seedEntries(alice.id, 45);
   const expected = [...rows].sort((a, b) =>
     b.createdAt.getTime() - a.createdAt.getTime() || b.id.localeCompare(a.id));
   const defaultPage = await readEntries(await request(alice.id));
   const pages = [];
-  for (const page of [1, 2, 3]) {
+  for (const page of [1, 2, 3, 4, 5]) {
     const entries = await readEntries(await request(alice.id, `?page=${page}`));
-    assert.deepEqual(entries.map(e => e.id), expected.slice((page - 1) * 20, page * 20).map(e => e.id));
+    assert.deepEqual(entries.map(e => e.id), expected.slice((page - 1) * 10, page * 10).map(e => e.id));
     pages.push(entries);
   }
   assert.deepEqual(defaultPage, pages[0]);
-  assert.deepEqual(pages.map(p => p.length), [20, 20, 5]);
+  assert.deepEqual(pages.map(p => p.length), [10, 10, 10, 10, 5]);
   assert.equal(new Set(pages.flat().map(e => e.id)).size, 45);
-  assert.deepEqual(await readEntries(await request(alice.id, "?page=4")), []);
+  assert.deepEqual(await readEntries(await request(alice.id, "?page=6")), []);
 });
 
 for (const value of ["0", "-1", "1.5", "abc", "", "Infinity", "NaN", "9007199254740992"]) {

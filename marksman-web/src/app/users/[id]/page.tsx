@@ -1,5 +1,8 @@
 "use client";
+import { PROFILE_HISTORY_PAGE_SIZE } from "@marksman/contracts";
 import { AuthButton } from "@/components/auth/AuthButton";
+import Button from "@/components/ui/Button";
+import { InfoSection } from "@/components/ui/InfoSection";
 import {
   UserCard,
   MainSection,
@@ -57,80 +60,94 @@ export default function UserPage() {
 
   if (userQueryStatus === "complete" && detailedUser) {
     return (
-      <div className="size-full p-12 flex flex-col place-content-center items-center">
+      <div className="w-full py-12 px-4 flex flex-col place-content-center items-center">
         <MainSection>
-          <div className="w-full flex place-content-between pb-8 border-b border-slate-600">
-            <UserCard user={detailedUser} />
-            <div className="flex flex-col place-content-end gap-2">
-              {userIsPageOwner ? (
-                <DailyClaim
-                  claimed={claimed}
-                  claimPending={claimPending}
-                  claimMessage={claimMessage}
-                  claimError={claimError}
-                  claimDailyReward={claimDailyReward}
-                />
+          <div className="w-full">
+            <div className="w-full flex flex-col sm:flex-row justify-between gap-4 pb-8 border-b border-border">
+              <UserCard user={detailedUser} />
+              <div className="flex flex-col place-content-end gap-2">
+                {userIsPageOwner ? (
+                  <DailyClaim
+                    claimed={claimed}
+                    claimPending={claimPending}
+                    claimMessage={claimMessage}
+                    claimError={claimError}
+                    claimDailyReward={claimDailyReward}
+                  />
+                ) : null}
+                {user ? <AuthButton /> : null}
+              </div>
+            </div>
+          </div>
+          <div
+            className={`w-full grid grid-cols-1 gap-4 ${userIsPageOwner ? "lg:grid-cols-2" : ""}`}
+          >
+            <InfoSection
+              title="Events"
+              className="min-w-0"
+              contentClassName="min-w-0 flex-1 p-4"
+            >
+              {eventsQueryStatus === "loading" ? <p>Loading...</p> : null}
+              {eventsQueryStatus === "errored" ? (
+                <div className="flex gap-2">
+                  <p>Error loading events</p>
+                  <Button
+                    size="sm"
+                    onClick={() => refreshEvents()}
+                  >
+                    Retry
+                  </Button>
+                </div>
               ) : null}
-              {user ? <AuthButton /> : null}
-            </div>
-          </div>
-          <div className="w-full flex flex-col items-center gap-8 pb-8 border-b border-slate-600">
-            <h1 className="text-xl italic">Events history</h1>
-            {eventsQueryStatus === "loading" ? <p>Loading...</p> : null}
-            {eventsQueryStatus === "errored" ? (
-              <div className="flex gap-2">
-                <p>Error loading events</p>
-                <button
-                  className="cursor-pointer underline"
-                  onClick={() => refreshEvents()}
-                >
-                  Retry
-                </button>
-              </div>
-            ) : null}
-            {eventsQueryStatus === "complete" && events ? (
-              <div className="flex flex-col w-2/3 items-center">
-                <EventHistory events={events} />
-                <PageSelector
-                  entriesLength={events.length}
-                  pageSize={20}
-                  selectedPage={eventsPage}
-                  setSelectedPage={setEventsPage}
-                />
-              </div>
-            ) : null}
-          </div>
-
-          {userIsPageOwner && ledgerQueryStatus === "loading" ? (
-            <p>Loading...</p>
-          ) : null}
-          {userIsPageOwner && ledgerQueryStatus === "errored" ? (
-            <div className="flex gap-2">
-              <p>Error loading ledger</p>
-              <button
-                className="cursor-pointer underline"
-                onClick={() => refreshLedger()}
-              >
-                Retry
-              </button>
-            </div>
-          ) : null}
-          {userIsPageOwner ? (
-            <div className="w-full flex flex-col items-center gap-8 pb-8 border-b border-slate-600">
-              <h1 className="text-xl italic">Transactions</h1>
-              {ledgerQueryStatus === "complete" && ledgerEntries ? (
-                <div className="flex flex-col w-2/3 items-center">
-                  <LedgerEntries entries={ledgerEntries} />
+              {eventsQueryStatus === "complete" && events ? (
+                <div className="flex flex-col w-full min-w-0 items-center gap-4">
+                  <EventHistory events={events} />
                   <PageSelector
-                    entriesLength={ledgerEntries.length}
-                    pageSize={20}
-                    selectedPage={ledgerPage}
-                    setSelectedPage={setLedgerPage}
+                    entriesLength={events.length}
+                    pageSize={PROFILE_HISTORY_PAGE_SIZE}
+                    selectedPage={eventsPage}
+                    setSelectedPage={setEventsPage}
                   />
                 </div>
               ) : null}
-            </div>
-          ) : null}
+            </InfoSection>
+
+            {userIsPageOwner ? (
+              <InfoSection
+                title="Transactions"
+                className="min-w-0"
+                contentClassName="min-w-0 flex-1 p-4"
+              >
+                {userIsPageOwner && ledgerQueryStatus === "loading" ? (
+                  <p>Loading...</p>
+                ) : null}
+                {userIsPageOwner && ledgerQueryStatus === "errored" ? (
+                  <div className="flex gap-2">
+                    <p>Error loading ledger</p>
+                    <Button
+                      size="sm"
+                      onClick={() => refreshLedger()}
+                    >
+                      Retry
+                    </Button>
+                  </div>
+                ) : null}
+                {userIsPageOwner &&
+                ledgerQueryStatus === "complete" &&
+                ledgerEntries ? (
+                  <div className="flex flex-col w-full min-w-0 items-center gap-4">
+                    <LedgerEntries entries={ledgerEntries} />
+                    <PageSelector
+                      entriesLength={ledgerEntries.length}
+                      pageSize={PROFILE_HISTORY_PAGE_SIZE}
+                      selectedPage={ledgerPage}
+                      setSelectedPage={setLedgerPage}
+                    />
+                  </div>
+                ) : null}
+              </InfoSection>
+            ) : null}
+          </div>
         </MainSection>
       </div>
     );

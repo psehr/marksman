@@ -186,16 +186,16 @@ test("pagination counts events, orders newest first, and breaks timestamp ties d
     expected.push({ bountyId, type: "created" });
   }
   const pages = [];
-  for (const page of [1, 2, 3]) {
+  for (const page of [1, 2, 3, 4, 5]) {
     const events = await readEvents(await request(alice.id, `?page=${page}`));
     assert.deepEqual(events.map(({ bountyId, type }) => ({ bountyId, type })),
-      expected.slice((page - 1) * 20, page * 20));
+      expected.slice((page - 1) * 10, page * 10));
     pages.push(events);
   }
-  assert.deepEqual(pages.map(p => p.length), [20, 20, 5]);
+  assert.deepEqual(pages.map(p => p.length), [10, 10, 10, 10, 5]);
   assert.equal(new Set(pages.flat().map(e => `${e.bountyId}:${e.type}`)).size, 45);
   assert.deepEqual(await readEvents(await request()), pages[0]);
-  assert.deepEqual(await readEvents(await request(alice.id, "?page=4")), []);
+  assert.deepEqual(await readEvents(await request(alice.id, "?page=6")), []);
 });
 
 test("existing profile with no bounties returns an empty array", async () => {

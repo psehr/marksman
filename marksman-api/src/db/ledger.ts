@@ -1,3 +1,4 @@
+import { PROFILE_HISTORY_PAGE_SIZE } from "@marksman/contracts";
 import { LedgerEntry } from "@marksman/contracts";
 import { db, Transaction } from "./index";
 import { ledgerEntries } from "./schema";
@@ -27,8 +28,8 @@ export async function getUserLedgerHistory(
     .from(ledgerEntries)
     .where(eq(ledgerEntries.userId, userId))
     .orderBy(desc(ledgerEntries.createdAt), desc(ledgerEntries.id))
-    .limit(20)
-    .offset((pageNumber - 1) * 20);
+    .limit(PROFILE_HISTORY_PAGE_SIZE)
+    .offset((pageNumber - 1) * PROFILE_HISTORY_PAGE_SIZE);
 
   return rows.map(toLedgerEntry);
 }

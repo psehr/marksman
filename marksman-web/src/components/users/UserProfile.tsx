@@ -1,3 +1,4 @@
+import Button from "@/components/ui/Button";
 import type { BountyEvent, LedgerEntry, User } from "@marksman/contracts";
 import { formatDistance } from "date-fns";
 import Link from "next/link";
@@ -5,7 +6,7 @@ import type { ReactNode } from "react";
 
 export function UserCard({ user }: { user: User }) {
   return (
-    <div className="size-fit px-4 p-2 border border-slate-600 rounded bg-black/30 text-xl">
+    <div className="size-fit max-w-full wrap-anywhere px-4 p-2 border border-border rounded bg-background text-xl">
       <Link
         className="font-bold underline underline-offset-2"
         href={`https://osu.ppy.sh/users/${user.identity.osuUserId}`}
@@ -19,7 +20,7 @@ export function UserCard({ user }: { user: User }) {
 
 export function MainSection({ children }: { children: ReactNode }) {
   return (
-    <div className="w-1/2 h-screen bg-blue-950 rounded shadow-md border border-slate-600 flex flex-col items-center gap-8 p-8">
+    <div className="w-full max-w-6xl bg-surface rounded shadow-md border border-border flex flex-col items-center gap-8 p-4 sm:p-8">
       {children}
     </div>
   );
@@ -40,9 +41,9 @@ export function DailyClaim({
 }) {
   return (
     <div className="text-right">
-      <button
+      <Button
         type="button"
-        className="px-4 p-2 bg-yellow-500/50 cursor-pointer rounded disabled:opacity-50 disabled:cursor-not-allowed"
+        variant="accent"
         disabled={claimPending || claimed}
         onClick={() => void claimDailyReward()}
       >
@@ -51,7 +52,7 @@ export function DailyClaim({
           : claimed
             ? "Daily BP claimed"
             : "Claim daily 25 BP"}
-      </button>
+      </Button>
       {claimMessage ? <p role="status">{claimMessage}</p> : null}
       {claimError ? <p role="alert">{claimError}</p> : null}
     </div>
@@ -62,8 +63,13 @@ export function LedgerEntries({ entries }: { entries: LedgerEntry[] }) {
   if (!entries.length) return <p>[No transactions to show]</p>;
 
   return (
-    <table className="w-full text-left">
+    <table className="w-full table-fixed wrap-anywhere text-left">
       <caption className="sr-only">BP transaction history</caption>
+      <colgroup>
+        <col className="w-1/4" />
+        <col className="w-[55%]" />
+        <col className="w-1/5" />
+      </colgroup>
       <thead>
         <tr>
           <th scope="col">Date</th>
@@ -143,14 +149,14 @@ export function PageSelector({
   return (
     <div className="flex gap-2">
       {selectedPage > 1 ? (
-        <button
-          className="cursor-pointer"
+        <Button
+          size="sm"
           onClick={() => {
             setSelectedPage(selectedPage - 1);
           }}
         >
           {"<"}
-        </button>
+        </Button>
       ) : (
         "-"
       )}
@@ -158,14 +164,14 @@ export function PageSelector({
       {entriesLength < pageSize ? (
         "-"
       ) : (
-        <button
-          className="cursor-pointer"
+        <Button
+          size="sm"
           onClick={() => {
             setSelectedPage(selectedPage + 1);
           }}
         >
           {">"}
-        </button>
+        </Button>
       )}
     </div>
   );
@@ -175,8 +181,13 @@ export function EventHistory({ events }: { events: BountyEvent[] }) {
   if (!events.length) return <p>[No events to show]</p>;
 
   return (
-    <table className="w-full text-left">
+    <table className="w-full table-fixed wrap-anywhere text-left">
       <caption className="sr-only">Bounty Events History</caption>
+      <colgroup>
+        <col className="w-1/4" />
+        <col className="w-[55%]" />
+        <col className="w-1/5" />
+      </colgroup>
       <thead>
         <tr>
           <th scope="col">Date</th>
@@ -234,4 +245,3 @@ export function EventHistory({ events }: { events: BountyEvent[] }) {
     </table>
   );
 }
-
