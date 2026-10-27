@@ -3,11 +3,19 @@
 import { useAuth } from "@/components/auth/AuthProvider";
 import BountyList from "@/components/bounties/BountyList";
 import ButtonLink from "@/components/ui/ButtonLink";
-import SearchPanel, {
+import BountyFilters, {
   type BountySortingMethod,
 } from "@/components/bounties/BountyFilters";
 import { useBounties } from "@/hooks/useBounties";
-import Link from "next/link";
+import {
+  tierOptions,
+  goalOptions,
+  modOptions,
+  parseSelection,
+  parseModSelection,
+  toggleSelection,
+  type BountyModFilter,
+} from "@/lib/bounty-filters";
 import { useSearchParams } from "next/navigation";
 import { Suspense } from "react";
 
@@ -35,6 +43,12 @@ function Bounties() {
       ? rawRelationship
       : null;
 
+  const selectedFilters = {
+    tiers: parseSelection(searchParams.get("tiers"), tierOptions),
+    goals: parseSelection(searchParams.get("goals"), goalOptions),
+    mods: parseModSelection(searchParams.get("mods")),
+  };
+
   const searchInput = searchParams.get("search") ?? "";
 
   const selectedSortingMethod: BountySortingMethod = {
@@ -48,6 +62,7 @@ function Bounties() {
     hasBounties,
   } = useBounties(
     {
+      ...selectedFilters,
       bookmarked: relationship === "bookmarked",
       ownership: {
         filter: relationship === "created",
@@ -76,6 +91,16 @@ function Bounties() {
     else window.history.pushState(null, "", url);
   }
 
+  function toggleMod(mod: BountyModFilter) {
+    const current = parseModSelection(new URL(window.location.href).searchParams.get("mods"));
+    if (mod === "NM") {
+      updateFilters({ mods: current.has("NM") ? null : "NM" });
+    } else {
+      current.delete("NM");
+      updateFilters({ mods: toggleSelection(current, mod, modOptions) });
+    }
+  }
+
   function setSelectedSortingMethod(method: BountySortingMethod) {
     updateFilters({
       sort: method.type === "bpReward" ? "reward" : null,
@@ -86,8 +111,24 @@ function Bounties() {
   return (
     <div className="flex flex-col w-full h-full items-center gap-12 py-12 px-4">
       <div className="flex flex-col w-full max-w-6xl h-full items-center gap-4">
-        <div className="bg-surface flex w-full p-2 h-full rounded-xl border border-border">
-          <SearchPanel
+        <div className="flex flex-col lg:flex-row w-full gap-4">
+          <BountyFilters
+            selectedFilters={selectedFilters}
+            onToggleTier={(tier) => {
+              const current = parseSelection(
+                new URL(window.location.href).searchParams.get("tiers"),
+                tierOptions,
+              );
+              updateFilters({ tiers: toggleSelection(current, tier, tierOptions) });
+            }}
+            onToggleGoal={(goal) => {
+              const current = parseSelection(
+                new URL(window.location.href).searchParams.get("goals"),
+                goalOptions,
+              );
+              updateFilters({ goals: toggleSelection(current, goal, goalOptions) });
+            }}
+            onToggleMod={toggleMod}
             searchInput={searchInput}
             setSearchInput={(value) =>
               updateFilters({ search: value || null }, true)
@@ -106,6 +147,16 @@ function Bounties() {
               updateFilters({ relationship: value ? value : null });
             }}
           />
+          <div className="flex flex-col gap-2">
+            <ButtonLink
+              href="/bounties/new"
+              variant="accent"
+              className="font-bold"
+            >
+              Create a bounty
+            </ButtonLink>
+            <ButtonLink href="/bounties/about">About bounties</ButtonLink>
+          </div>
         </div>
         <div className="w-full max-w-6xl h-1/2 flex place-content-center items-center">
           {queryStatus === "complete" ? (

@@ -1,10 +1,11 @@
+import type { AdditionalBountyFilters } from "@/lib/bounty-filters";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { getAllBounties, getBookmarkedBounties } from "@/lib/api/bounties";
-import type { ExtendedBounty } from "@marksman/contracts";
+import { getBountyTier, type ExtendedBounty } from "@marksman/contracts";
 import Fuse from "fuse.js";
 import { useEffect, useState } from "react";
 
-type BountiesFilter = {
+type BountiesFilter = AdditionalBountyFilters & {
   bookmarked: boolean;
   ownership: {
     filter: boolean;
@@ -95,7 +96,20 @@ function filterBounties(
       )
     : statusFiltered;
 
-  return { filteredBounties: ownershipFiltered, hasBounties };
+  const filteredBounties = ownershipFiltered.filter(bounty => {
+    if (filter.tiers.size && !filter.tiers.has(getBountyTier(bounty.rewardBp))) return false;
+    if (filter.goals.size && !filter.goals.has(bounty.goal.type)) return false;
+    if (!filter.mods.size) return true;
+
+    const requirement = bounty.goal.modRequirement;
+    if (filter.mods.has("NM")) {
+      return requirement.rule === "exact" && requirement.mods.length === 0;
+    }
+    if (requirement.rule !== "exact" && requirement.rule !== "includes") return false;
+    return [...filter.mods].every(mod => mod !== "NM" && requirement.mods.includes(mod));
+  });
+
+  return { filteredBounties, hasBounties };
 }
 
 function searchBounties(bounties: ExtendedBounty[], searchInput: string) {

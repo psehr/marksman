@@ -59,10 +59,6 @@ export default function NavBar() {
         ) : (
           <AuthButton />
         )}
-        <span className="text-border">•</span>
-        <ButtonLink href="/bounties/new" variant="confirm">
-          Create a bounty
-        </ButtonLink>
       </div>
     </nav>
   );

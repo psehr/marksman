@@ -5,7 +5,7 @@ type RequiredMod = Extract<
   { mods: unknown }
 >["mods"][number];
 
-type ModAcronym = RequiredMod | "NM" | "ANY";
+export type ModAcronym = RequiredMod | "NM" | "ANY";
 
 const modNames = {
   EZ: "Easy",
