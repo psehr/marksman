@@ -20,6 +20,8 @@ import { huntsRouter } from "./routes/hunt";
 
 export const app = express();
 
+app.set("trust proxy", config.TRUST_PROXY_HOPS);
+
 app.use(
   cors({
     origin: new URL(config.FRONTEND_URL).origin,

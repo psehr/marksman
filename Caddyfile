@@ -1,0 +1,7 @@
+{$FRONTEND_URL} {
+    reverse_proxy web:3000
+}
+
+{$NEXT_PUBLIC_API_URL} {
+    reverse_proxy api:3001
+}

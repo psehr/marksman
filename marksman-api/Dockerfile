@@ -8,6 +8,15 @@ COPY . .
 RUN npm ci
 RUN npm run build --workspace=marksman-api
 
+# MIGRATION STAGE
+FROM build AS migrations
+
+WORKDIR /app/marksman-api
+
+USER node
+
+CMD ["npm", "run", "db:migrate"]
+
 # RUNTIME STAGE
 FROM node:24-bookworm-slim AS runtime
 

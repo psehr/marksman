@@ -9,6 +9,7 @@ const envSchema = z.object({
   OSU_CLIENT_SECRET: z.string().min(1),
   OSU_REDIRECT_URI: z.url(),
   SESSION_SECRET: z.string().min(32),
+  TRUST_PROXY_HOPS: z.coerce.number().int().min(0).max(1).default(0),
 });
 
 export const config = envSchema.parse(process.env);

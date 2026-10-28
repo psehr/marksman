@@ -1,0 +1,13 @@
+{
+    auto_https disable_redirects
+}
+
+https://marksman.localhost {
+    tls internal
+    reverse_proxy web:3000
+}
+
+https://api.marksman.localhost {
+    tls internal
+    reverse_proxy api:3001
+}
