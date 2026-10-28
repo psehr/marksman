@@ -6,9 +6,9 @@ import NavBar from "@/components/layout/NavBar";
 import { base_font } from "@/lib/fonts";
 
 export const metadata: Metadata = {
-  title: "Marksman",
+  title: "🎯 Marksman - osu! bounties",
   description:
-    "Create and complete osu! beatmap bounties to earn Bounty Points.",
+    "Create and complete osu! bounties, earn Bounty Points and compete against other hunters.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

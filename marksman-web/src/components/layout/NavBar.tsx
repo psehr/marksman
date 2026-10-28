@@ -1,10 +1,10 @@
 "use client";
 
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { useAuth } from "../auth/AuthProvider";
 import { AuthButton } from "../auth/AuthButton";
-import ButtonLink from "@/components/ui/ButtonLink";
+import MarksmanLogo from "../ui/MarksmanLogo";
 
 function RouteLink({
   url,
@@ -33,17 +33,12 @@ export default function NavBar() {
   const { user } = useAuth();
 
   return (
-    <nav className="flex min-h-16 w-full flex-wrap items-center justify-between gap-3 border-b border-border bg-surface px-4 py-3 sm:px-8">
-      <div className="flex gap-3 sm:gap-8 items-center">
-        <RouteLink
-          url="/"
-          title="Marksman"
-          selected
-          className="font-bold text-xl"
-        />
-      </div>
+    <nav className="border-border bg-surface flex min-h-16 w-full flex-wrap items-center justify-between gap-3 border-b px-4 py-3">
+      <Link href="/" aria-current={path === "/" ? "page" : undefined}>
+        <MarksmanLogo />
+      </Link>
 
-      <div className="flex gap-3 sm:gap-8 items-center text-center">
+      <div className="flex items-center gap-3 text-center sm:gap-8">
         <RouteLink
           url="/bounties"
           title="Bounties"
@@ -54,7 +49,7 @@ export default function NavBar() {
           <RouteLink
             url={`/users/${user.identity.id}`}
             title="Profile"
-            selected={path.startsWith("/users")}
+            selected={path.startsWith("/users/" + user.identity.id)}
           />
         ) : (
           <AuthButton />
