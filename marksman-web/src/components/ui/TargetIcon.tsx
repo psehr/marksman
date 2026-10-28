@@ -2,6 +2,7 @@ const sizes = {
   sm: 16,
   md: 24,
   lg: 32,
+  hero: "clamp(2.5rem, 6vw, 4.5rem)",
 };
 
 export default function TargetIcon({

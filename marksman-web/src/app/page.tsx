@@ -1,61 +1,40 @@
-import BountyCard from "@/components/bounties/BountyCard";
-import Button from "@/components/ui/Button";
-import { Anonymous_Pro, Encode_Sans } from "next/font/google";
+import ButtonLink from "@/components/ui/ButtonLink";
+import { InfoSection } from "@/components/ui/InfoSection";
+import MarksmanLogo from "@/components/ui/MarksmanLogo";
 
-const ano = Anonymous_Pro({ subsets: ["latin"], weight: "400" });
-const enc = Encode_Sans({ subsets: ["latin"], weight: ["400", "700"] });
-
-function InfoSection({
-  title,
-  children,
-}: {
-  title: string;
-  children: React.ReactNode;
-}) {
+export default function Home() {
   return (
-    <div className="bg-surface w-full max-w-2xl space-y-2 rounded p-4">
-      <h1 className="text-2xl font-bold">{title}</h1>
-      {children}
-    </div>
-  );
-}
-
-export default async function Home() {
-  return (
-    <div
-      className={`flex min-h-screen flex-col items-center p-16 ${enc.className} text-foreground space-y-6`}
-    >
-      <InfoSection title={"Example container"}>
-        <p>This is a standard descriptive paragraph.</p>
-        <p className="text-foreground-muted">
-          This is a secondary descriptive paragraph.
-        </p>
-      </InfoSection>
-
-      <span className="border-border w-1/3 border"></span>
-
-      <div className="flex flex-wrap justify-center gap-4">
-        <Button size="md" variant="accent">
-          Start hunting
-        </Button>
-        <Button>Bookmark bounty</Button>
-        <Button size="md" variant="confirm">
-          Confirm
-        </Button>
-        <Button size="md" variant="danger">
-          Cancel bounty
-        </Button>
+    <main className="flex flex-col items-center py-12 sm:py-32 gap-16 px-4">
+      <div className="flex flex-col items-center gap-2 sm:gap-8 p-6 sm:p-12 text-center border border-border rounded w-full max-w-2xl bg-surface">
+        <h1>
+          <MarksmanLogo size="lg" />
+        </h1>
+        <div className="text-foreground-muted max-w-lg text-lg sm:text-xl">
+          <p>Create and complete osu! bounties.</p>
+          <p>Hunt user-made challenges and earn Bounty Points.</p>
+          <p>Compete against other hunters in the leaderboards.</p>
+        </div>
+        <div className="flex flex-col sm:flex-row gap-2 sm:gap-8 items-center">
+          <div className="text-foreground-muted flex flex-col gap-2">
+            <p>Start hunting now</p>
+            <ButtonLink href="/bounties" size="lg" variant="accent">
+              Browse bounties
+            </ButtonLink>
+          </div>
+          <p className="text-xl font-bold text-foreground-muted">or...</p>
+          <div className="text-foreground-muted flex flex-col gap-2">
+            <p>Fund a new challenge</p>
+            <ButtonLink href="/bounties/new" size="lg" variant="accent">
+              Create a bounty
+            </ButtonLink>
+          </div>
+        </div>
       </div>
-
-      <span className="border-border w-1/3 border"></span>
-
-      <InfoSection title="Message examples">
-        <p className="text-success">
-          This message describes a successful event.
-        </p>
-        <p className="text-warning">This message describes a warning event.</p>
-        <p className="text-danger">This message describes a dangerous event.</p>
+      <InfoSection title="Disclaimer" className="w-full max-w-lg">
+        <p>This project is currently in Alpha-Release.</p>
+        <p>Expect game-breaking bugs and potential resets along the way.</p>
+        <p>Have fun!</p>
       </InfoSection>
-    </div>
+    </main>
   );
 }
