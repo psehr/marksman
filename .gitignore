@@ -15,8 +15,11 @@ npm-debug.log*
 *.key
 
 # Local database backups (SQL migrations remain tracked).
+backups/
 *.dump
 *.backup
+*.partial
+__pycache__/
 
 # Operating-system files
 .DS_Store

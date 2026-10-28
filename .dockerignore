@@ -18,3 +18,9 @@ docs
 
 **/playwright-report
 **/test-results
+
+backups
+**/*.dump
+**/*.backup
+**/*.partial
+**/__pycache__
