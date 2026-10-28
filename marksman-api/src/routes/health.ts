@@ -1,23 +1,18 @@
 import { Router } from "express";
-import { getDatabaseContainerStatus } from "../docker";
+import { checkDatabaseHealth } from "../db/health";
 
 export const healthRouter = Router();
 
 healthRouter.get("/", async (_req, res) => {
   try {
-    const database = await getDatabaseContainerStatus();
-    const isHealthy =
-      database.state === "running" && database.health === "healthy";
+    await checkDatabaseHealth();
 
-    return res.status(isHealthy ? 200 : 503).json({
-      status: isHealthy ? "ok" : "unhealthy",
-      database,
-    });
+    return res.status(200).json({ status: "ok", database: "available" });
   } catch (error) {
-    console.error("Unable to read the PostgreSQL container status:", error);
+    console.error("Database check failed:", error);
     return res.status(503).json({
       status: "unhealthy",
-      database: { state: "unavailable", health: null },
+      database: "unavailable",
     });
   }
 });

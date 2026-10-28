@@ -9,7 +9,10 @@ if (!connectionString) {
   throw new Error("DATABASE_URL is required");
 }
 
-export const pool = new Pool({ connectionString });
+export const pool = new Pool({
+  connectionString,
+  connectionTimeoutMillis: 2000,
+});
 
 export const db = drizzle({ client: pool, schema });
 
