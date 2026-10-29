@@ -29,6 +29,29 @@ retries missing maps. Failed IDs are printed and cause exit status 1. Deleted or
 unavailable maps may continue to fail; review those IDs before switching reads
 entirely to stored metadata. The script closes its database pool when finished.
 
+## Deploy an update
+
+After reviewing/testing locally and pushing `main`, run on the VPS as the checkout
+owner (for example `psehr`), **without sudo**:
+
+```sh
+cd ~/apps/marksman
+bash scripts/deploy.sh
+```
+
+The script uses sudo for Docker and backup access. It requires `.env.deploy`, a
+clean `main` checkout tracking `origin/main`, and a running production database.
+It prevents overlapping deployments, validates Compose without printing secrets,
+backs up the database, pulls with `--ff-only`, then rebuilds and starts services
+with `--wait`. Compose runs pending migrations before starting the API. It prints
+service status and the deployed commit. Backups remain private and root-owned.
+
+On first use, pull the commit containing this script with `git pull --ff-only`.
+After each deployment, check HTTPS/login and the changed behavior, then copy the
+backup off-server. A failure stops the script but does not automatically roll back
+code, containers or migrations. Inspect status/logs before retrying; incompatible
+schema changes need a separately planned rollout.
+
 ## Database backup and restore
 
 With deployment PostgreSQL running and `.env.deploy` configured, save a backup:
