@@ -51,6 +51,12 @@ export const bountyBeatmapMetadataSchema = z.object({
   }),
 });
 
+export const beatmapSchema = z.object({
+  beatmapId: z.number().int().positive(),
+  metadata: bountyBeatmapMetadataSchema,
+  updatedAt: z.iso.datetime(),
+});
+
 export const osuBeatmapMetadataSchema = z.object({
   version: z.string().min(1),
   difficulty_rating: z.number(),
@@ -95,3 +101,4 @@ export const osuBeatmapMetadataSchema = z.object({
 
 export type OsuBeatmapMetadata = z.infer<typeof osuBeatmapMetadataSchema>;
 export type BountyBeatmapMetadata = z.infer<typeof bountyBeatmapMetadataSchema>;
+export type Beatmap = z.infer<typeof beatmapSchema>;

@@ -20,6 +20,7 @@ import {
   huntAttemptStatusEnum,
   HuntAttemptScoreEvidence,
   HuntAttemptVerificationResult,
+  BountyBeatmapMetadata,
 } from "@marksman/contracts";
 import { primaryKey } from "drizzle-orm/pg-core";
 import { date } from "drizzle-orm/pg-core";
@@ -33,6 +34,7 @@ export const bountyStatus = pgEnum("bounty_status", [
   "cancelled",
 ]);
 
+// This table stores all the bounties, data not enriched
 export const bounties = pgTable(
   "bounties",
   {
@@ -52,6 +54,7 @@ export const bounties = pgTable(
   (table) => [check("bounties_reward_bp_positive", sql`${table.rewardBp} > 0`)],
 );
 
+// This table stores all the users, data not enriched
 export const users = pgTable(
   "users",
   {
@@ -66,6 +69,7 @@ export const users = pgTable(
   (table) => [check("bp_balance", sql`${table.bpBalance} >= 0`)],
 );
 
+// This table stores all user sessions, for login persistence with a cookie
 export const sessions = pgTable(
   "sessions",
   {
@@ -79,6 +83,7 @@ export const sessions = pgTable(
   (table) => [index("sessions_expire_idx").on(table.expire)],
 );
 
+// This table stores user-bounty bookmarks
 export const bountyBookmarks = pgTable(
   "bounty_bookmarks",
   {
@@ -103,6 +108,7 @@ export const ledgerEntryReasonEnum = pgEnum(
   ledgerEntryReasonSchema.enum,
 );
 
+// This table stores all BP transactions for tracability
 export const ledgerEntries = pgTable(
   "ledger_entries",
   {
@@ -143,6 +149,7 @@ export const ledgerEntries = pgTable(
   ],
 );
 
+// This table stores the last daily BP claim for every user
 export const dailyClaims = pgTable(
   "daily_claims",
   {
@@ -159,6 +166,7 @@ export const bountyHuntStatus = pgEnum(
   huntStatusEnum.enum,
 );
 
+// This tables stores all the user-bounty hunts
 export const bountyHunts = pgTable(
   "bounty_hunts",
   {
@@ -202,6 +210,7 @@ export const verificationStatusEnum = pgEnum(
   huntAttemptStatusEnum.enum,
 );
 
+// This table stores all the possible current attempts on ongoing bounty-hunts
 export const huntAttempts = pgTable(
   "hunt_attempts",
   {
@@ -242,6 +251,7 @@ export const huntAttempts = pgTable(
   ],
 );
 
+// This table stores the osu! scorefeed lookup cursor position, to recover from eventual outages or API throttling
 export const scoreDiscoveryCursors = pgTable("score_discovery_cursors", {
   stream: text("stream").primaryKey(),
   cursor: text("cursor").notNull(),
@@ -250,6 +260,7 @@ export const scoreDiscoveryCursors = pgTable("score_discovery_cursors", {
     .defaultNow(),
 });
 
+// This table stores all the bounty settlements, which happens when a valid candidate for bounty completion is found in the hunt attempts
 export const bountySettlements = pgTable("bounty_settlements", {
   bountyId: uuid("bounty_id")
     .notNull()
@@ -261,4 +272,13 @@ export const bountySettlements = pgTable("bounty_settlements", {
   attempts: integer("attempts").default(0).notNull(),
   lastError: text("last_error"),
   settledAt: timestamp("settled_at", { withTimezone: true }),
+});
+
+// This table stores the beatmap metadata of all the bounties, this is for filtering and searching bounties by osu! metadata
+export const bountyBeatmaps = pgTable("bounty_beatmaps", {
+  beatmapId: integer("beatmap_id").notNull().primaryKey(),
+  metadata: jsonb("metadata").notNull().$type<BountyBeatmapMetadata>(),
+  updatedAt: timestamp("updated_at", { withTimezone: true })
+    .notNull()
+    .defaultNow(),
 });
