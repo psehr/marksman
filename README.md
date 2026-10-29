@@ -12,6 +12,23 @@ An osu! bounty application built with Next.js, Express, PostgreSQL, and shared T
 
 Run `npm run typecheck` to check application types.
 
+## Backfill beatmap metadata
+
+After applying migrations, run from the repository root:
+
+```sh
+npm run db:backfill:beatmaps --workspace=marksman-api
+```
+
+Uses the API's configured environment (`marksman-api/.env` for local development)
+and makes live osu! API requests. The target database must already be running.
+It fills missing metadata for distinct beatmap IDs across all bounty statuses,
+processing one map at a time. Existing metadata, bounty checksums and balances
+are unchanged. Successes are saved independently; rerunning skips saved rows and
+retries missing maps. Failed IDs are printed and cause exit status 1. Deleted or
+unavailable maps may continue to fail; review those IDs before switching reads
+entirely to stored metadata. The script closes its database pool when finished.
+
 ## Database backup and restore
 
 With deployment PostgreSQL running and `.env.deploy` configured, save a backup:

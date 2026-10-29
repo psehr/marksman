@@ -18,6 +18,8 @@
     "db:test:start": "docker compose -p marksman-api-tests -f compose.test.yaml up -d --wait",
     "db:test:stop": "docker compose -p marksman-api-tests -f compose.test.yaml down",
     "start": "node dist/index.js",
+    "db:backfill:beatmaps": "tsx src/scripts/backfill-beatmaps.ts",
+    "predb:backfill:beatmaps": "npm --prefix .. run build:contracts",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
     "db:start": "docker compose up -d",
