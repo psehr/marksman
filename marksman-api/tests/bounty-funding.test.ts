@@ -1,10 +1,11 @@
 import assert from "node:assert/strict";
+import { toBountyBeatmapMetadata } from "../src/adapters/beatmap";
 import { metadata } from "./fixtures/completion";
 import { createTestDatabase } from "./fixtures/test-database";
 import { after, before, beforeEach, mock, test } from "node:test";
 import { setTimeout as delay } from "node:timers/promises";
 import { eq, sql } from "drizzle-orm";
-import { bounties, ledgerEntries, users } from "../src/db/schema";
+import { bounties, bountyBeatmaps, ledgerEntries, users } from "../src/db/schema";
 import { createBountySchema } from "@marksman/contracts";
 import { InsufficientBpError } from "../src/services/errors";
 
@@ -76,7 +77,7 @@ before(async () => {
     if (url === "https://osu.ppy.sh/oauth/token") {
       return Response.json({ access_token: "fixture-token", token_type: "Bearer", expires_in: 3600 });
     }
-    if (url === "https://osu.ppy.sh/api/v2/beatmaps/123") return Response.json(metadata);
+    if (url === "https://osu.ppy.sh/api/v2/beatmaps/123") return Response.json({ ...metadata, id: 123 });
     throw new Error(`Unexpected fetch: ${url}; live requests are disabled`);
   });
   await testDatabase.prepare();
@@ -86,11 +87,13 @@ before(async () => {
 // test below deliberately executes two service calls at the same time.
 beforeEach(async () => {
   await testDatabase.clear();
+  await db.delete(bountyBeatmaps);
 });
 
 after(async () => {
   try {
     await testDatabase.clearIfMigrated();
+    await db.delete(bountyBeatmaps);
   } finally {
     mock.restoreAll();
     await db.$client.end();
@@ -111,6 +114,11 @@ test("funding creates one bounty and deducts reward plus fee", async () => {
   assert.equal(stored.creatorOsuUserId, creatorOsuUserId);
   assert.deepEqual(stored.goal, { ...input.goal, beatmapChecksum: metadata.checksum });
   assert.equal(created.goal.beatmapChecksum, metadata.checksum);
+  const [savedMetadata] = await db.select().from(bountyBeatmaps);
+  assert.equal(savedMetadata.beatmapId, input.goal.beatmapId);
+  assert.equal(savedMetadata.metadata.version.name, metadata.version);
+  assert.equal(savedMetadata.metadata.specs.od, metadata.accuracy);
+  assert.equal(savedMetadata.metadata.song, null);
 });
 
 test("insufficient funds leave the balance and bounties unchanged", async () => {
@@ -239,6 +247,7 @@ test("funding ledger failure rolls back all changes and allows retry", async () 
     users: await db.select().from(users).orderBy(users.id),
     bounties: await db.select().from(bounties).orderBy(bounties.id),
     ledger: await db.select().from(ledgerEntries).orderBy(ledgerEntries.id),
+    beatmaps: await db.select().from(bountyBeatmaps).orderBy(bountyBeatmaps.beatmapId),
   });
   const original = await snapshot();
   await db.execute(sql`
@@ -307,6 +316,7 @@ test("fee ledger failure rolls back debit, bounty and funding entry and allows r
     users: await db.select().from(users).orderBy(users.id),
     bounties: await db.select().from(bounties).orderBy(bounties.id),
     ledger: await db.select().from(ledgerEntries).orderBy(ledgerEntries.id),
+    beatmaps: await db.select().from(bountyBeatmaps).orderBy(bountyBeatmaps.beatmapId),
   });
   const original = await snapshot();
   await db.execute(sql`
@@ -344,4 +354,21 @@ test("fee ledger failure rolls back debit, bounty and funding entry and allows r
   }
   await createFundedBounty(bountyInput(25), creatorOsuUserId);
   await assertDatabaseState(72, 1);
+});
+
+
+test("creating another bounty refreshes the shared metadata without duplicating it", async () => {
+  await seedCreator(100);
+  await db.insert(bountyBeatmaps).values({
+    beatmapId: 123,
+    metadata: toBountyBeatmapMetadata({ ...metadata, id: 123, version: "Old version" }),
+    updatedAt: new Date("2020-01-01T00:00:00Z"),
+  });
+  await createFundedBounty(bountyInput(10), creatorOsuUserId);
+  await createFundedBounty(bountyInput(10), creatorOsuUserId);
+  const rows = await db.select().from(bountyBeatmaps);
+  assert.equal(rows.length, 1);
+  assert.equal(rows[0].metadata.version.name, metadata.version);
+  assert.ok(rows[0].updatedAt.getTime() > new Date("2020-01-01T00:00:00Z").getTime());
+  await assertDatabaseState(78, 2);
 });

@@ -5,6 +5,7 @@ import {
   countBookmarksByBountyIds,
   isBountyBookmarkedByUser,
 } from "../db/bounty-bookmarks";
+import { toBountyBeatmapMetadata } from "../adapters/beatmap";
 
 async function buildExtendedBounty(
   bounty: Bounty,
@@ -23,49 +24,8 @@ async function buildExtendedBounty(
   };
 
   try {
-    const beatmapMetadata = await getBeatmap(beatmapId);
-    extendedBounty.beatmap = {
-      url: beatmapMetadata.url,
-      version: {
-        id: beatmapMetadata.id,
-        name: beatmapMetadata.version,
-      },
-      song: beatmapMetadata.beatmapset
-        ? {
-            title: beatmapMetadata.beatmapset.title,
-            artist: beatmapMetadata.beatmapset.artist,
-          }
-        : null,
-      specs: {
-        sr: beatmapMetadata.difficulty_rating,
-        ar: beatmapMetadata.ar,
-        od: beatmapMetadata.accuracy,
-        cs: beatmapMetadata.cs,
-        hp: beatmapMetadata.drain,
-        bpm: beatmapMetadata.bpm,
-        length: {
-          total: beatmapMetadata.total_length,
-          drain: beatmapMetadata.hit_length,
-        },
-        maxCombo: beatmapMetadata.max_combo,
-      },
-      covers: beatmapMetadata.beatmapset
-        ? {
-            cover: beatmapMetadata.beatmapset.covers.cover,
-            card: beatmapMetadata.beatmapset.covers.card,
-          }
-        : null,
-      creator: beatmapMetadata.beatmapset
-        ? {
-            id: beatmapMetadata.beatmapset.user_id,
-            username: beatmapMetadata.beatmapset.creator,
-          }
-        : null,
-      stats: {
-        status: beatmapMetadata.status,
-        playcount: beatmapMetadata.playcount,
-      },
-    };
+    const osuBeatmapMetadata = await getBeatmap(beatmapId);
+    extendedBounty.beatmap = toBountyBeatmapMetadata(osuBeatmapMetadata);
   } catch (error) {
     console.error(
       `Could not enrich bounty ${bounty.id} with beatmap data`,

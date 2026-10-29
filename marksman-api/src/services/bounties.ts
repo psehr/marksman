@@ -20,17 +20,21 @@ import {
 } from "../db/ledger";
 import { getBeatmap } from "../integrations/osu/beatmaps";
 import { closeOngoingHuntsForBounty } from "../db/bounty-hunts";
+import { toBountyBeatmapMetadata } from "../adapters/beatmap";
+import { upsertBountyBeatmap } from "../db/bounty-beatmaps";
 
 export async function createFundedBounty(
   input: CreateBountyInput,
   creatorOsuUserId: number,
 ): Promise<Bounty> {
   // populating beatmap checksum from osu! API
-  const beatmapMetadata = await getBeatmap(input.goal.beatmapId);
+  const osuBeatmapMetadata = await getBeatmap(input.goal.beatmapId);
   const extendedInput = {
     ...input,
-    goal: { ...input.goal, beatmapChecksum: beatmapMetadata.checksum },
+    goal: { ...input.goal, beatmapChecksum: osuBeatmapMetadata.checksum },
   };
+
+  const bountyBeatmapMetadata = toBountyBeatmapMetadata(osuBeatmapMetadata);
 
   return db.transaction(async (tx) => {
     const FUNDING_FEE_PERCENTAGE = 10;
@@ -57,6 +61,8 @@ export async function createFundedBounty(
     }
 
     const bounty = await createBounty(tx, extendedInput, creatorOsuUserId);
+
+    await upsertBountyBeatmap(tx, bountyBeatmapMetadata);
 
     await createFundingLedgerEntry(
       tx,
