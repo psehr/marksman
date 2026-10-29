@@ -1,7 +1,8 @@
 import assert from "node:assert/strict";
-import { after, before, beforeEach, test } from "node:test";
+import { after, before, beforeEach, mock, test } from "node:test";
 import type { BountyBeatmapMetadata } from "@marksman/contracts";
-import { bountyBeatmaps } from "../src/db/schema";
+import { qualifyingBounty } from "./fixtures/completion";
+import { bountyBeatmaps, users } from "../src/db/schema";
 import { createTestDatabase } from "./fixtures/test-database";
 
 Object.assign(process.env, {
@@ -11,13 +12,14 @@ Object.assign(process.env, {
   SESSION_SECRET: "fixture-session-secret-at-least-32-characters",
 });
 const { db } = require("../src/db") as typeof import("../src/db");
-const { upsertBountyBeatmap } = require("../src/db/bounty-beatmaps") as typeof import("../src/db/bounty-beatmaps");
+const { enrichBounty, enrichBounties } = require("../src/services/bounty-enrichment") as typeof import("../src/services/bounty-enrichment");
+const { upsertBountyBeatmap, findBeatmapById } = require("../src/db/bounty-beatmaps") as typeof import("../src/db/bounty-beatmaps");
 const database = createTestDatabase(db);
 let prepared = false;
 before(async () => { await database.prepare(); prepared = true; });
-beforeEach(async () => { await db.delete(bountyBeatmaps); });
+beforeEach(async () => { await database.clear(); await db.delete(bountyBeatmaps); });
 after(async () => {
-  try { if (prepared) await db.delete(bountyBeatmaps); }
+  try { if (prepared) { await database.clear(); await db.delete(bountyBeatmaps); } }
   finally { await db.$client.end(); }
 });
 const metadata: BountyBeatmapMetadata = {
@@ -65,4 +67,39 @@ test("upserts participate in the caller's transaction and leave other beatmaps u
   const rows = await db.select().from(bountyBeatmaps);
   assert.equal(rows.length, 2);
   assert.deepEqual(rows.find(row => row.beatmapId === 123), original);
+});
+
+
+test("lookup returns undefined for a missing difficulty without creating a row", async () => {
+  assert.equal(await findBeatmapById(db, 123), undefined);
+  assert.deepEqual(await db.select().from(bountyBeatmaps), []);
+});
+
+test("lookup selects the requested ID and serializes the timestamp", async () => {
+  const original = await upsertBountyBeatmap(db, metadata);
+  await upsertBountyBeatmap(db, { ...metadata, version: { id: 456, name: "Extra" } });
+  assert.deepEqual(await findBeatmapById(db, 123), {
+    beatmapId: 123, metadata, updatedAt: original.updatedAt.toISOString(),
+  });
+  await db.transaction(async tx => {
+    assert.equal((await findBeatmapById(tx, 456))?.metadata.version.name, "Extra");
+  });
+});
+
+test("single and list enrichment use stored metadata with no upstream requests, or null when missing", async () => {
+  const bounty = qualifyingBounty();
+  await db.insert(users).values({ osuUserId: bounty.creatorOsuUserId, username: "Fixture owner", bpBalance: 0 });
+  await upsertBountyBeatmap(db, { ...metadata, version: { id: bounty.goal.beatmapId, name: "Stored difficulty" } });
+  const fetch = mock.method(globalThis, "fetch", async () => { throw new Error("Unexpected upstream request"); });
+  try {
+    const single = await enrichBounty(bounty);
+    assert.equal(single.beatmap?.version.name, "Stored difficulty");
+    assert.equal(single.owner?.username, "Fixture owner");
+    const [listed] = await enrichBounties([bounty]);
+    assert.deepEqual(listed.beatmap, single.beatmap);
+    await db.delete(bountyBeatmaps);
+    assert.equal((await enrichBounty(bounty)).beatmap, null);
+    assert.equal((await enrichBounties([bounty]))[0].beatmap, null);
+    assert.equal(fetch.mock.callCount(), 0);
+  } finally { fetch.mock.restore(); }
 });

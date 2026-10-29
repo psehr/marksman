@@ -1,11 +1,11 @@
 import { Bounty, BountyEngagement, ExtendedBounty } from "@marksman/contracts";
-import { getBeatmap } from "../integrations/osu/beatmaps";
 import { findUserByOsuId } from "../db/users";
 import {
   countBookmarksByBountyIds,
   isBountyBookmarkedByUser,
 } from "../db/bounty-bookmarks";
-import { toBountyBeatmapMetadata } from "../adapters/beatmap";
+import { findBeatmapById } from "../db/bounty-beatmaps";
+import { db } from "../db";
 
 async function buildExtendedBounty(
   bounty: Bounty,
@@ -24,8 +24,8 @@ async function buildExtendedBounty(
   };
 
   try {
-    const osuBeatmapMetadata = await getBeatmap(beatmapId);
-    extendedBounty.beatmap = toBountyBeatmapMetadata(osuBeatmapMetadata);
+    const beatmap = await findBeatmapById(db, beatmapId);
+    extendedBounty.beatmap = beatmap?.metadata ?? null;
   } catch (error) {
     console.error(
       `Could not enrich bounty ${bounty.id} with beatmap data`,
