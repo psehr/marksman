@@ -13,7 +13,7 @@ export function InfoSection({
     <section
       className={`flex flex-col rounded border border-border bg-surface text-center ${className}`}
     >
-      <h1 className="bg-linear-to-l from-background to-transparent rounded-t px-4 p-2 font-bold text-lg text-right border-b border-dashed border-border">
+      <h1 className="bg-linear-to-br from-transparent to-background rounded-t px-4 p-2 font-bold text-lg text-right border-b border-dashed border-border">
         {title}
       </h1>
       <div

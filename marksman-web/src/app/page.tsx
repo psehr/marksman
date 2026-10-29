@@ -1,10 +1,11 @@
 import ButtonLink from "@/components/ui/ButtonLink";
 import { InfoSection } from "@/components/ui/InfoSection";
 import MarksmanLogo from "@/components/ui/MarksmanLogo";
+import Link from "next/link";
 
 export default function Home() {
   return (
-    <main className="flex flex-col items-center py-12 sm:py-32 gap-16 px-4">
+    <main className="flex flex-col items-center py-12 sm:py-24 gap-12 px-4">
       <div className="flex flex-col items-center gap-2 sm:gap-8 p-6 sm:p-12 text-center border border-border rounded w-full max-w-2xl bg-surface">
         <h1>
           <MarksmanLogo size="lg" />
@@ -29,11 +30,14 @@ export default function Home() {
             </ButtonLink>
           </div>
         </div>
+        <Link href="/about" className="text-foreground-muted text-xs underline">
+          How does it work?
+        </Link>
       </div>
-      <InfoSection title="Disclaimer" className="w-full max-w-lg">
-        <p>This project is currently in Alpha-Release.</p>
-        <p>Expect game-breaking bugs and potential resets along the way.</p>
-        <p>Have fun!</p>
+      <InfoSection title="Disclaimer ⚠️" className="w-full max-w-lg text-sm">
+        <p>This project is currently in alpha-state.</p>
+        <p>Expect game-breaking bugs and potential resets.</p>
+        <p className="font-bold">Have fun!</p>
       </InfoSection>
     </main>
   );
