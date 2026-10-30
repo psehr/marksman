@@ -1,4 +1,10 @@
-import { bountySchema, extendedBountySchema } from "@marksman/contracts";
+import {
+  bountyListResponseSchema,
+  bountySchema,
+  extendedBountySchema,
+  type BountyListResponse,
+  type BountySearchQuery,
+} from "@marksman/contracts";
 import { apiFetch } from "./client";
 import { z } from "zod";
 
@@ -18,10 +24,18 @@ export async function getBounty(bountyId: string) {
   );
 }
 
-export async function getAllBounties() {
-  return extendedBountySchema
-    .array()
-    .parse(await apiFetch(`/bounties`, { method: "GET" }));
+export async function getBounties(
+  query: Partial<BountySearchQuery> = {},
+): Promise<BountyListResponse> {
+  const params = new URLSearchParams();
+  for (const [key, value] of Object.entries(query)) {
+    if (value === undefined) continue;
+    params.set(key, Array.isArray(value) ? value.join(",") : String(value));
+  }
+  const search = params.toString();
+  return bountyListResponseSchema.parse(
+    await apiFetch(`/bounties${search ? `?${search}` : ""}`, { method: "GET" }),
+  );
 }
 
 export async function getBookmarkedBounties() {

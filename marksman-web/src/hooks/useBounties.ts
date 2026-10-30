@@ -1,164 +1,46 @@
-import type { AdditionalBountyFilters } from "@/lib/bounty-filters";
 import { useAuth } from "@/components/auth/AuthProvider";
-import { getAllBounties, getBookmarkedBounties } from "@/lib/api/bounties";
-import { getBountyTier, type ExtendedBounty } from "@marksman/contracts";
-import Fuse from "fuse.js";
+import { getBounties } from "@/lib/api/bounties";
+import type { BountyListResponse, BountySearchQuery } from "@marksman/contracts";
 import { useEffect, useState } from "react";
 
-type BountiesFilter = AdditionalBountyFilters & {
-  bookmarked: boolean;
-  ownership: {
-    filter: boolean;
-    ownerOsuId?: number;
-  };
-  status: {
-    filter: boolean;
-    selectedStatus?: Extract<ExtendedBounty["status"], "open" | "completed">;
-  };
-};
-
-type BountySorting = {
-  type: "date" | "bpReward";
-  order: "asc" | "desc";
-};
-
-export function useBounties(
-  filter: BountiesFilter,
-  searchInput: string,
-  sortMethod: BountySorting,
-) {
-  const [bounties, setBounties] = useState<ExtendedBounty[]>([]);
-  const [queryStatus, setQueryStatus] = useState<
-    "loading" | "errored" | "complete"
-  >("loading");
-
+export function useBounties(query: BountySearchQuery) {
   const { user, loading: authLoading } = useAuth();
   const userId = user?.identity.id;
-  const bookmarked = Boolean(userId) && filter.bookmarked;
+  // A primitive key prevents equivalent URL-derived arrays from refetching.
+  const queryKey = JSON.stringify({
+    ...query,
+    relationship: userId ? query.relationship : "all",
+  });
+  const requestKey = `${userId ?? "anonymous"}:${queryKey}`;
+  const [state, setState] = useState<{
+    key: string;
+    status: "loading" | "errored" | "complete";
+    data?: BountyListResponse;
+  }>({ key: "", status: "loading" });
 
   useEffect(() => {
     if (authLoading) return;
     let ignore = false;
-
-    async function load() {
+    setState({ key: requestKey, status: "loading" });
+    const timer = setTimeout(async () => {
       try {
-        const bounties: ExtendedBounty[] = bookmarked
-          ? await getBookmarkedBounties()
-          : await getAllBounties();
-
-        if (!ignore) {
-          setBounties(bounties);
-          setQueryStatus("complete");
-        }
+        const data = await getBounties(JSON.parse(queryKey) as BountySearchQuery);
+        if (!ignore) setState({ key: requestKey, status: "complete", data });
       } catch {
-        if (!ignore) {
-          setQueryStatus("errored");
-        }
+        if (!ignore) setState({ key: requestKey, status: "errored" });
       }
-    }
-    setQueryStatus("loading");
-
-    void load();
-
+    }, 250);
     return () => {
       ignore = true;
+      clearTimeout(timer);
     };
-  }, [userId, authLoading, bookmarked]);
+  }, [authLoading, queryKey, requestKey]);
 
-  const { filteredBounties, hasBounties } = filterBounties(bounties, {
-    ...filter,
-    ownership: {
-      ...filter.ownership,
-      filter: Boolean(userId) && filter.ownership.filter,
-    },
-  });
-  const searchedBounties = searchBounties(filteredBounties, searchInput);
-  const sortedBounties = sortBounties(searchedBounties, sortMethod);
-
-  return { bounties: sortedBounties, queryStatus, hasBounties };
-}
-
-function filterBounties(
-  bounties: ExtendedBounty[],
-  filter: BountiesFilter,
-): { filteredBounties: ExtendedBounty[]; hasBounties: boolean } {
-  const statusFiltered = filter.status.filter
-    ? bounties.filter(
-        (bounty) => bounty.status === filter.status.selectedStatus,
-      )
-    : bounties;
-
-  const hasBounties = statusFiltered.length > 0;
-
-  const ownershipFiltered = filter.ownership.filter
-    ? statusFiltered.filter(
-        (bounty) => bounty.creatorOsuUserId === filter.ownership.ownerOsuId,
-      )
-    : statusFiltered;
-
-  const filteredBounties = ownershipFiltered.filter(bounty => {
-    if (filter.tiers.size && !filter.tiers.has(getBountyTier(bounty.rewardBp))) return false;
-    if (filter.goals.size && !filter.goals.has(bounty.goal.type)) return false;
-    if (!filter.mods.size) return true;
-
-    const requirement = bounty.goal.modRequirement;
-    if (filter.mods.has("NM")) {
-      return requirement.rule === "exact" && requirement.mods.length === 0;
-    }
-    if (requirement.rule !== "exact" && requirement.rule !== "includes") return false;
-    return [...filter.mods].every(mod => mod !== "NM" && requirement.mods.includes(mod));
-  });
-
-  return { filteredBounties, hasBounties };
-}
-
-function searchBounties(bounties: ExtendedBounty[], searchInput: string) {
-  const fuse = new Fuse(bounties, {
-    keys: [
-      "beatmap.song.title",
-      "beatmap.song.artist",
-      "beatmap.version.name",
-      "owner.username",
-    ],
-    threshold: 0.3,
-    ignoreLocation: true,
-  });
-
-  const searchedBounties = searchInput.trim()
-    ? fuse.search(searchInput.trim()).map((result) => result.item)
-    : bounties;
-
-  return searchedBounties;
-}
-
-function sortBounties(bounties: ExtendedBounty[], sortMethod: BountySorting) {
-  let sortedBounties: ExtendedBounty[] = [...bounties];
-
-  switch (sortMethod.type) {
-    case "date":
-      if (sortMethod.order === "asc") {
-        sortedBounties = bounties.toSorted(
-          (a, b) => Date.parse(a.createdAt) - Date.parse(b.createdAt),
-        );
-      } else if (sortMethod.order === "desc") {
-        sortedBounties = bounties.toSorted(
-          (a, b) => Date.parse(b.createdAt) - Date.parse(a.createdAt),
-        );
-      }
-      break;
-
-    case "bpReward":
-      if (sortMethod.order === "asc") {
-        sortedBounties = bounties.toSorted((a, b) => {
-          return a.rewardBp - b.rewardBp;
-        });
-      } else if (sortMethod.order === "desc") {
-        sortedBounties = bounties.toSorted((a, b) => {
-          return b.rewardBp - a.rewardBp;
-        });
-      }
-      break;
-  }
-
-  return sortedBounties;
+  const current = !authLoading && state.key === requestKey;
+  return {
+    bounties: current ? state.data?.items ?? [] : [],
+    total: current ? state.data?.total ?? 0 : 0,
+    pageSize: current ? state.data?.pageSize : undefined,
+    queryStatus: current ? state.status : "loading" as const,
+  };
 }

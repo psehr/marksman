@@ -2,6 +2,7 @@
 
 import { useAuth } from "@/components/auth/AuthProvider";
 import BountyList from "@/components/bounties/BountyList";
+import Button from "@/components/ui/Button";
 import ButtonLink from "@/components/ui/ButtonLink";
 import BountyFilters, {
   type BountySortingMethod,
@@ -56,26 +57,27 @@ function Bounties() {
     order: searchParams.get("order") === "asc" ? "asc" : "desc",
   };
 
-  const {
-    bounties: sortedBounties,
-    queryStatus,
-    hasBounties,
-  } = useBounties(
-    {
-      ...selectedFilters,
-      bookmarked: relationship === "bookmarked",
-      ownership: {
-        filter: relationship === "created",
-        ownerOsuId: user?.identity.osuUserId,
-      },
-      status: {
-        filter: true,
-        selectedStatus: bountyType,
-      },
-    },
-    searchInput,
-    selectedSortingMethod,
+  const rawPage = Number(searchParams.get("page") ?? 1);
+  const page = Number.isSafeInteger(rawPage) && rawPage > 0 ? rawPage : 1;
+  const { bounties, queryStatus, total, pageSize } = useBounties({
+    status: bountyType,
+    relationship: relationship ?? "all",
+    search: searchInput.trim(),
+    sort: selectedSortingMethod.type === "bpReward" ? "reward" : "date",
+    order: selectedSortingMethod.order,
+    tiers: [...selectedFilters.tiers],
+    goals: [...selectedFilters.goals],
+    mods: [...selectedFilters.mods],
+    page,
+  });
+  const hasFilters = Boolean(
+    searchInput.trim() ||
+    selectedFilters.tiers.size ||
+    selectedFilters.goals.size ||
+    selectedFilters.mods.size ||
+    (user && relationship),
   );
+  const totalPages = pageSize ? Math.max(1, Math.ceil(total / pageSize)) : 1;
 
   function updateFilters(
     values: Record<string, string | null>,
@@ -83,6 +85,7 @@ function Bounties() {
   ) {
     // Read the current URL so consecutive changes preserve each other.
     const url = new URL(window.location.href);
+    if (!("page" in values)) url.searchParams.delete("page");
     for (const [key, value] of Object.entries(values)) {
       if (value === null) url.searchParams.delete(key);
       else url.searchParams.set(key, value);
@@ -157,7 +160,7 @@ function Bounties() {
             }
             setSelectedSortingMethod={setSelectedSortingMethod}
             selectedSortingMethod={selectedSortingMethod}
-            foundBountiesCount={sortedBounties.length}
+            foundBountiesCount={total}
             relationship={relationship}
             setRelationship={(value) => {
               updateFilters({ relationship: value ? value : null });
@@ -166,11 +169,43 @@ function Bounties() {
         </div>
         <div className="w-full max-w-6xl h-1/2 flex place-content-center items-center">
           {queryStatus === "complete" ? (
-            <BountyList bounties={sortedBounties} hasBounties={hasBounties} />
+            <BountyList
+              bounties={bounties}
+              hasBounties={hasFilters || total > 0 || page > 1}
+            />
           ) : null}
           {queryStatus === "loading" ? <p>Loading bounties</p> : null}
           {queryStatus === "errored" ? <p>Failed to load bounties</p> : null}
         </div>
+        {queryStatus === "complete" && (totalPages > 1 || page > 1) ? (
+          <nav
+            aria-label="Bounty pagination"
+            className="flex flex-wrap items-center justify-center gap-4"
+          >
+            <Button
+              disabled={page <= 1}
+              onClick={() =>
+                updateFilters({ page: page === 2 ? null : String(page - 1) })
+              }
+            >
+              Previous
+            </Button>
+            <span>
+              Page {page} of {totalPages}
+            </span>
+            <Button
+              disabled={page >= totalPages}
+              onClick={() => updateFilters({ page: String(page + 1) })}
+            >
+              Next
+            </Button>
+            {page > totalPages ? (
+              <Button onClick={() => updateFilters({ page: null })}>
+                First page
+              </Button>
+            ) : null}
+          </nav>
+        ) : null}
       </div>
     </div>
   );
