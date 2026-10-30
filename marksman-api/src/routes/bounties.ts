@@ -3,6 +3,7 @@ import { db } from "../db";
 import { findBountyById, listBounties } from "../db/bounties";
 import {
   bountyCompletionRequestSchema,
+  bountySearchQuerySchema,
   createBountySchema,
 } from "@marksman/contracts";
 import { osuIdParamSchema, uuidSchema } from "../models/common";
@@ -34,13 +35,29 @@ import { enrichBounties, enrichBounty } from "../services/bounty-enrichment";
 import { getBountyRecentScores } from "../services/bounty-recent-scores";
 import { getBountyScorePreview } from "../services/bounty-score-preview";
 import { startHunt } from "../services/bounty-hunts";
+import { findUserById } from "../db/users";
 
 export const bountiesRouter = Router();
 
-bountiesRouter.get("/", async (_req, res) => {
-  const bounties = await listBounties();
-  const extendedBounties = await enrichBounties(bounties);
-  return res.json(extendedBounties);
+bountiesRouter.get("/", async (req, res) => {
+  const parsedQuery = bountySearchQuerySchema.safeParse(req.query);
+
+  if (!parsedQuery.success) {
+    return res.status(400).json({
+      code: "INVALID_BOUNTY_LIST_QUERY",
+      error: "Invalid bounty list query",
+    });
+  }
+
+  const identity = req.session.userId
+    ? (await findUserById(req.session.userId))?.identity
+    : undefined;
+
+  const bounties = await listBounties(parsedQuery.data, identity);
+
+  const extendedBounties = await enrichBounties(bounties.items);
+
+  return res.json({ ...bounties, items: extendedBounties });
 });
 
 bountiesRouter.get("/:id", async (req, res) => {

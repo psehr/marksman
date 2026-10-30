@@ -1,8 +1,9 @@
 import { z } from "zod";
-import { modRequirementSchema, modsSchema } from "./mods";
+import { bountyModFilterSchema, modRequirementSchema } from "./mods";
 import { bountyBeatmapMetadataSchema } from "./beatmap";
-import { userIdentitySchema, userSchema } from "./user";
+import { userIdentitySchema } from "./user";
 import { osuGradeSchema, scoreResponseSchema } from "./score";
+import { bountyTierSchema } from "./bounty-tiers";
 
 const baseGoalSchema = z.object({
   beatmapId: z.number().int().positive(),
@@ -110,6 +111,42 @@ export const bountyScoreCandidateSchema = scoreResponseSchema.extend({
   validity: bountyCompletionValiditySchema,
 });
 
+const bountyTypeEnum = z.enum(["full_combo", "minimum_grade"]);
+
+export const bountySearchQuerySchema = z.object({
+  status: z.enum(["open", "completed"]).default("open"),
+  goals: z
+    .string()
+    .default("")
+    .transform((value) => (value === "" ? [] : value.split(",")))
+    .pipe(z.array(bountyTypeEnum)),
+  tiers: z
+    .string()
+    .default("")
+    .transform((value) => (value === "" ? [] : value.split(",")))
+    .pipe(z.array(bountyTierSchema)),
+  mods: z
+    .string()
+    .default("")
+    .transform((value) => (value === "" ? [] : value.split(",")))
+    .pipe(z.array(bountyModFilterSchema))
+    .transform((mods) =>
+      mods.includes("NM") ? ["NM" as const] : [...new Set(mods)],
+    ),
+  search: z.string().trim().default(""),
+  sort: z.enum(["date", "reward"]).default("date"),
+  order: z.enum(["asc", "desc"]).default("desc"),
+  relationship: z.enum(["all", "created", "bookmarked"]).default("all"),
+  page: z.coerce.number().int().positive().default(1),
+});
+
+export const bountyListResponseSchema = z.object({
+  items: z.array(extendedBountySchema),
+  total: z.number().int().nonnegative(),
+  page: z.number().int().positive(),
+  pageSize: z.number().int().positive(),
+});
+
 export type Bounty = z.infer<typeof bountySchema>;
 export type CreateBountyInput = z.infer<typeof createBountySchema>;
 export type ExtendedBounty = z.infer<typeof extendedBountySchema>;
@@ -118,3 +155,5 @@ export type BountyCompletionValidity = z.infer<
 >;
 export type BountyScoreCandidate = z.infer<typeof bountyScoreCandidateSchema>;
 export type BountyEngagement = z.infer<typeof bountyEngagementSchema>;
+export type BountySearchQuery = z.infer<typeof bountySearchQuerySchema>;
+export type BountyListResponse = z.infer<typeof bountyListResponseSchema>;

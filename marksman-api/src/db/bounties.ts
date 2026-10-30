@@ -1,7 +1,25 @@
-import { PROFILE_HISTORY_PAGE_SIZE } from "@marksman/contracts";
-import { and, desc, eq, or } from "drizzle-orm";
+import {
+  BOUNTIES_LIST_PAGE_SIZE,
+  bountyTiers,
+  PROFILE_HISTORY_PAGE_SIZE,
+} from "@marksman/contracts";
+import {
+  and,
+  asc,
+  count,
+  desc,
+  eq,
+  exists,
+  getTableColumns,
+  gte,
+  ilike,
+  inArray,
+  lt,
+  or,
+  sql,
+} from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
-import { bounties, users } from "./schema";
+import { bounties, bountyBeatmaps, bountyBookmarks, users } from "./schema";
 
 const creator = alias(users, "creator");
 const winner = alias(users, "winner");
@@ -9,6 +27,7 @@ const winner = alias(users, "winner");
 import type {
   Bounty,
   BountyEvent,
+  BountySearchQuery,
   CreateBountyInput,
   UserIdentity,
 } from "@marksman/contracts";
@@ -29,13 +48,161 @@ export function toBounty(row: typeof bounties.$inferSelect): Bounty {
   };
 }
 
-export async function listBounties(): Promise<Bounty[]> {
-  const rows = await db
-    .select()
-    .from(bounties)
-    .orderBy(desc(bounties.createdAt));
+export async function listBounties(
+  query: BountySearchQuery,
+  identity?: UserIdentity,
+): Promise<{
+  items: Bounty[];
+  total: number;
+  page: number;
+  pageSize: number;
+}> {
+  const pageNumber =
+    Number.isInteger(query.page) && query.page > 0 ? query.page : 1;
+  const pageSize = BOUNTIES_LIST_PAGE_SIZE;
 
-  return rows.map(toBounty);
+  const statusFilter = eq(bounties.status, query.status);
+
+  const goalFilter = query.goals.length
+    ? inArray(sql`${bounties.goal}->>'type'`, query.goals)
+    : undefined;
+
+  const tierRanges = bountyTiers.flatMap((tier, index) => {
+    if (!query.tiers.includes(tier.name)) return [];
+
+    const upperBound = bountyTiers[index - 1];
+
+    return [
+      and(
+        gte(bounties.rewardBp, tier.minimumBp),
+        upperBound ? lt(bounties.rewardBp, upperBound.minimumBp) : undefined,
+      ),
+    ];
+  });
+  const tierFilter = tierRanges.length ? or(...tierRanges) : undefined;
+
+  const modRule = sql<string>`${bounties.goal}->'modRequirement'->>'rule'`;
+  const requiredMods = sql`${bounties.goal}->'modRequirement'->'mods'`;
+
+  const modsFilter = !query.mods.length
+    ? undefined
+    : query.mods.includes("NM")
+      ? and(eq(modRule, "exact"), sql`${requiredMods} = '[]'::jsonb`)
+      : and(
+          inArray(modRule, ["exact", "includes"]),
+          sql`${requiredMods} @> ${JSON.stringify(query.mods)}::jsonb`,
+        );
+
+  const escapedSearch = query.search.replace(/[\\%_]/g, "\\$&");
+  const searchPattern = `%${escapedSearch}%`;
+  const searchFilter =
+    query.search.length > 0
+      ? or(
+          ilike(
+            sql<string>`${bountyBeatmaps.metadata}->'song'->>'title'`,
+            searchPattern,
+          ),
+          ilike(
+            sql<string>`${bountyBeatmaps.metadata}->'song'->>'artist'`,
+            searchPattern,
+          ),
+          ilike(
+            sql<string>`${bountyBeatmaps.metadata}->'version'->>'name'`,
+            searchPattern,
+          ),
+          ilike(
+            sql<string>`${bountyBeatmaps.metadata}->'creator'->>'username'`,
+            searchPattern,
+          ),
+          ilike(creator.username, searchPattern),
+        )
+      : undefined;
+
+  let relationshipFilter;
+  if (identity) {
+    switch (query.relationship) {
+      case "all":
+        break;
+      case "bookmarked":
+        relationshipFilter = exists(
+          db
+            .select()
+            .from(bountyBookmarks)
+            .where(
+              and(
+                eq(bountyBookmarks.bountyId, bounties.id),
+                eq(bountyBookmarks.userId, identity.id),
+              ),
+            ),
+        );
+        break;
+      case "created":
+        relationshipFilter = eq(bounties.creatorOsuUserId, identity.osuUserId);
+        break;
+    }
+  }
+
+  const filters = and(
+    statusFilter,
+    searchFilter,
+    relationshipFilter,
+    goalFilter,
+    tierFilter,
+    modsFilter,
+  );
+
+  let sortMethod;
+  switch (query.sort) {
+    case "date":
+      sortMethod =
+        query.order === "asc"
+          ? asc(bounties.createdAt)
+          : desc(bounties.createdAt);
+      break;
+
+    case "reward":
+      sortMethod =
+        query.order === "asc"
+          ? asc(bounties.rewardBp)
+          : desc(bounties.rewardBp);
+      break;
+  }
+
+  const rows = await db
+    .select({ ...getTableColumns(bounties) })
+    .from(bounties)
+    .leftJoin(
+      bountyBeatmaps,
+      eq(
+        bountyBeatmaps.beatmapId,
+        sql<number>`(${bounties.goal}->>'beatmapId')::integer`,
+      ),
+    )
+    .leftJoin(creator, eq(bounties.creatorOsuUserId, creator.osuUserId))
+    .where(filters)
+    .orderBy(sortMethod, bounties.id)
+    .limit(pageSize)
+    .offset((pageNumber - 1) * pageSize);
+
+  const [result] = await db
+    .select({ total: count() })
+    .from(bounties)
+    .leftJoin(
+      bountyBeatmaps,
+      eq(
+        bountyBeatmaps.beatmapId,
+        sql<number>`(${bounties.goal}->>'beatmapId')::integer`,
+      ),
+    )
+    .leftJoin(creator, eq(bounties.creatorOsuUserId, creator.osuUserId))
+    .where(filters);
+
+  return {
+    items: rows.map(toBounty),
+    total: result.total,
+    page: pageNumber,
+    pageSize,
+  };
 }
 
 export async function findBountyById(

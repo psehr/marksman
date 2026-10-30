@@ -1,4 +1,6 @@
-const bountyTiers = [
+import { z } from "zod";
+
+export const bountyTiers = [
   { name: "Phantasm", minimumBp: 10_000 },
   { name: "Extra", minimumBp: 3_000 },
   { name: "Lunatic", minimumBp: 1_000 },
@@ -8,6 +10,8 @@ const bountyTiers = [
 ] as const;
 
 export type BountyTier = (typeof bountyTiers)[number]["name"];
+
+export const bountyTierSchema = z.enum(bountyTiers.map((tier) => tier.name));
 
 export function getBountyTier(rewardBp: number): BountyTier {
   const tier = bountyTiers.find(({ minimumBp }) => rewardBp >= minimumBp);

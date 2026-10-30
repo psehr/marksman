@@ -49,3 +49,5 @@ export const osuModSchema = z.object({
   acronym: z.string().min(1),
   settings: z.record(z.string(), z.unknown()).optional(),
 });
+
+export const bountyModFilterSchema = z.enum([...supportedMods, "NM"]);
