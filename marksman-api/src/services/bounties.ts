@@ -12,6 +12,8 @@ import {
   BountyNotOwnedError,
   CreatorNotFoundError,
   InsufficientBpError,
+  UnsupportedBeatmapStatusError,
+  UnsupportedGameModeError,
 } from "./errors";
 import {
   createBountyFeeLedgerEntry,
@@ -35,6 +37,14 @@ export async function createFundedBounty(
   };
 
   const bountyBeatmapMetadata = toBountyBeatmapMetadata(osuBeatmapMetadata);
+
+  const SUPPORTED_GAME_MODES = ["osu"];
+  if (!SUPPORTED_GAME_MODES.includes(osuBeatmapMetadata.mode))
+    throw new UnsupportedGameModeError();
+
+  const SUPPORTED_BEATMAP_STATUSES = ["ranked", "approved", "loved"];
+  if (!SUPPORTED_BEATMAP_STATUSES.includes(osuBeatmapMetadata.status))
+    throw new UnsupportedBeatmapStatusError();
 
   return db.transaction(async (tx) => {
     const FUNDING_FEE_PERCENTAGE = 10;

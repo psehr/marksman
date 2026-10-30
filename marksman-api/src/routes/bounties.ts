@@ -25,6 +25,8 @@ import {
   OsuApiError,
   PayoutRecipientNotFoundError,
   ScoreNotFoundError,
+  UnsupportedBeatmapStatusError,
+  UnsupportedGameModeError,
   UserNotFoundError,
 } from "../services/errors";
 import { requireAuth } from "../middleware/requireAuth";
@@ -228,6 +230,20 @@ bountiesRouter.post(
       if (error instanceof InsufficientBpError) {
         return res.status(409).json({
           code: "INSUFFICIENT_BP",
+          error: error.message,
+        });
+      }
+
+      if (error instanceof UnsupportedGameModeError) {
+        return res.status(422).json({
+          code: "UNSUPPORTED_MODE",
+          error: error.message,
+        });
+      }
+
+      if (error instanceof UnsupportedBeatmapStatusError) {
+        return res.status(422).json({
+          code: "UNSUPPORTED_BEATMAP_STATUS",
           error: error.message,
         });
       }

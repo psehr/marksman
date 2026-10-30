@@ -134,3 +134,15 @@ export class OsuCursorExpiredError extends Error {
     super("Expired osu! score feed cursor");
   }
 }
+
+export class UnsupportedGameModeError extends Error {
+  constructor() {
+    super("Only osu!standard beatmaps are supported");
+  }
+}
+
+export class UnsupportedBeatmapStatusError extends Error {
+  constructor() {
+    super("Only Ranked, Approved or Loved beatmaps are supported");
+  }
+}
