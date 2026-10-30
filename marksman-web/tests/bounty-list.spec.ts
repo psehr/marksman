@@ -1,3 +1,4 @@
+import { listResponse, listUrl } from "./fixtures/bounty-list-api";
 import { expect, test, type Page } from "@playwright/test";
 import type { ExtendedBounty, User } from "@marksman/contracts";
 
@@ -20,13 +21,14 @@ function bounty(index: number, username: string, status: ExtendedBounty["status"
 const rows = [bounty(1, "Alpha", "open", 300), bounty(2, "Beta", "open", 100), bounty(3, "Gamma", "completed", 200)];
 const creators = (page: Page) => page.locator('a[href^="/bounties/"]').filter({ hasText: /Created by|Completed|Cancelled/ });
 async function setup(page: Page, signedIn = true) {
+  await page.route("**/*", route => new URL(route.request().url()).origin === "http://127.0.0.1:3100" ? route.continue() : route.abort());
   let all = 0;
   let bookmarked = 0;
   await page.route("**/auth/me", route => route.fulfill({ status: signedIn ? 200 : 401, json: signedIn ? user : {} }));
-  await page.route("**/bounties", route => {
-    if (route.request().isNavigationRequest()) return route.fallback();
+  await page.route(listUrl, route => {
+    if (route.request().isNavigationRequest() || route.request().headers()["rsc"]) return route.fallback();
     all++;
-    return route.fulfill({ json: rows });
+    return route.fulfill({ json: listResponse(rows, route.request().url(), user.identity.osuUserId, [rows[1].id, rows[2].id]) });
   });
   await page.route("**/users/me/bookmarked-bounties", route => {
     bookmarked++;
@@ -35,7 +37,7 @@ async function setup(page: Page, signedIn = true) {
   return () => ({ all, bookmarked });
 }
 
-test("local controls update results without refetching or losing the original data", async ({ page }) => {
+test("controls request filtered server results and preserve history", async ({ page }) => {
   const reads = await setup(page);
   await page.goto("/bounties");
   await expect(creators(page)).toHaveText([/Beta/, /Alpha/]);
@@ -46,23 +48,24 @@ test("local controls update results without refetching or losing the original da
   await page.getByRole("button", { name: "Created", exact: true }).click();
   await expect(creators(page)).toHaveText([/Alpha/]);
   await page.getByRole("button", { name: "All", exact: true }).click();
-  await page.getByRole("textbox", { name: "Search bounties" }).fill("zzzzzzzz");
+  await page.getByRole("textbox", { name: "Search bounties..." }).fill("zzzzzzzz");
   await expect(page.getByText("No bounties found", { exact: true })).toBeVisible();
-  await page.getByRole("textbox", { name: "Search bounties" }).fill("Alpha");
+  await page.getByRole("textbox", { name: "Search bounties..." }).fill("Alpha");
   await expect(creators(page)).toHaveText([/Alpha/]);
-  await page.getByRole("textbox", { name: "Search bounties" }).fill("");
+  await page.getByRole("textbox", { name: "Search bounties..." }).fill("");
   await page.getByRole("button", { name: "Completed", exact: true }).click();
   await expect(creators(page)).toHaveText([/Completed/]);
   await page.goBack();
   await expect(creators(page)).toHaveText([/Beta/, /Alpha/]);
   await page.goForward();
   await expect(creators(page)).toHaveText([/Completed/]);
-  expect(reads()).toEqual({ all: 1, bookmarked: 0 });
+  expect(reads().all).toBeGreaterThan(1);
+  expect(reads().bookmarked).toBe(0);
   await page.reload();
   await expect(creators(page)).toHaveText([/Completed/]);
 });
 
-test("bookmark switching fetches the selected endpoint and filters its statuses", async ({ page }) => {
+test("bookmark switching uses list query parameters for each status", async ({ page }) => {
   const reads = await setup(page);
   await page.goto("/bounties");
   await expect(creators(page)).toHaveCount(2);
@@ -71,7 +74,8 @@ test("bookmark switching fetches the selected endpoint and filters its statuses"
   await page.getByRole("button", { name: "Completed", exact: true }).click();
   await expect(creators(page)).toHaveText([/Completed/]);
   await page.getByRole("button", { name: "All", exact: true }).click();
-  await expect.poll(reads).toEqual({ all: 2, bookmarked: 1 });
+  await expect.poll(() => reads().all).toBe(4);
+  expect(reads().bookmarked).toBe(0);
   await expect(creators(page)).toHaveText([/Completed/]);
 });
 
@@ -86,8 +90,8 @@ for (const relationship of ["created", "bookmarked"]) {
 
 test("empty status has the no-bounties message", async ({ page }) => {
   await setup(page);
-  await page.route("**/bounties", route => route.request().isNavigationRequest()
-    ? route.fallback() : route.fulfill({ json: [rows[0]] }));
+  await page.route(listUrl, route => (route.request().isNavigationRequest() || route.request().headers()["rsc"])
+    ? route.fallback() : route.fulfill({ json: listResponse([rows[0]], route.request().url()) }));
   await page.goto("/bounties?status=completed");
   await expect(page.getByText("No bounties to display", { exact: true })).toBeVisible();
 });
@@ -95,8 +99,8 @@ test("empty status has the no-bounties message", async ({ page }) => {
 for (const failure of ["http", "network", "schema"]) {
   test(`list reports ${failure} failure`, async ({ page }) => {
     await setup(page);
-    await page.route("**/bounties", route => {
-      if (route.request().isNavigationRequest()) return route.fallback();
+    await page.route(listUrl, route => {
+      if (route.request().isNavigationRequest() || route.request().headers()["rsc"]) return route.fallback();
       if (failure === "network") return route.abort("failed");
       return route.fulfill({ status: failure === "http" ? 503 : 200, json: {} });
     });
@@ -122,15 +126,15 @@ test("official mod badges load local SVGs and retain labels, sizes and exclusion
     ...rows[0], id: `00000000-0000-4000-8000-${String(index + 20).padStart(12, "0")}`,
     goal: { ...rows[0].goal, modRequirement },
   }));
-  await page.route("**/bounties", route => route.request().isNavigationRequest()
-    ? route.fallback() : route.fulfill({ json: [...fixtures, ...extra] }));
+  await page.route(listUrl, route => (route.request().isNavigationRequest() || route.request().headers()["rsc"])
+    ? route.fallback() : route.fulfill({ json: listResponse([...fixtures, ...extra] as ExtendedBounty[], route.request().url()) }));
   await page.goto("/bounties");
   for (const name of [...names, "No mods", "Hard Rock forbidden"]) {
     const icon = page.getByRole("img", { name, exact: true });
     await expect(icon).toBeVisible();
     await expect(icon).toHaveAttribute("title", name);
     const box = await icon.boundingBox();
-    expect(box!.height).toBe(24);
+    expect(box!.height).toBe(20);
     expect(box!.width / box!.height).toBeCloseTo(120 / 84, 1);
   }
   await expect(page.getByRole("img", { name: "Hard Rock forbidden", exact: true }).locator("svg")).toHaveCount(1);
@@ -157,8 +161,8 @@ test("missing metadata and missing covers render cards without invalid images", 
   await setup(page);
   const errors: string[] = [];
   page.on("pageerror", error => errors.push(error.message));
-  await page.route("**/bounties", route => route.request().isNavigationRequest()
-    ? route.fallback() : route.fulfill({ json: [rows[0], { ...rows[1], beatmap: metadata }] }));
+  await page.route(listUrl, route => (route.request().isNavigationRequest() || route.request().headers()["rsc"])
+    ? route.fallback() : route.fulfill({ json: listResponse([rows[0], { ...rows[1], beatmap: metadata }], route.request().url()) }));
   await page.goto("/bounties");
   await expect(creators(page)).toHaveCount(2);
   await expect(creators(page).locator('img[data-nimg="fill"]')).toHaveCount(0);
@@ -168,13 +172,14 @@ test("missing metadata and missing covers render cards without invalid images", 
 test("cards support Tab, visible focus, hover and Enter and expose accuracy", async ({ page }) => {
   await setup(page);
   const fixture = { ...rows[0], goal: { ...rows[0].goal, minimumAccuracy: 98.5 } };
-  await page.route("**/bounties", route => route.request().isNavigationRequest()
-    ? route.fallback() : route.fulfill({ json: [fixture, rows[1]] }));
+  await page.route(listUrl, route => (route.request().isNavigationRequest() || route.request().headers()["rsc"])
+    ? route.fallback() : route.fulfill({ json: listResponse([fixture, rows[1]], route.request().url()) }));
   await page.goto("/bounties");
   const cards = creators(page);
   await expect(cards).toHaveCount(2);
-  await expect(cards.nth(1)).toHaveAccessibleName(/Accuracy >=98.5%/);
-  await page.getByRole("button", { name: "Desc ↓", exact: true }).focus();
+  await expect(cards.nth(1)).toHaveAccessibleName(/Acc\. ≥98\.5%/);
+  await page.getByRole("button", { name: "Descending order; switch to ascending", exact: true }).focus();
+  await page.keyboard.press("Tab");
   await page.keyboard.press("Tab");
   await expect(cards.first()).toBeFocused();
   await expect(cards.first()).toHaveCSS("border-top-color", "rgb(230, 198, 91)");
@@ -190,10 +195,10 @@ for (const width of [375, 1280]) {
   test(`card grid fits viewport at ${width}px`, async ({ page }) => {
     await page.setViewportSize({ width, height: 900 });
     await setup(page);
-    await page.route("**/bounties", route => route.request().isNavigationRequest()
-      ? route.fallback() : route.fulfill({ json: rows.slice(0, 2).map(row => ({
+    await page.route(listUrl, route => (route.request().isNavigationRequest() || route.request().headers()["rsc"])
+      ? route.fallback() : route.fulfill({ json: listResponse(rows.slice(0, 2).map(row => ({
         ...row, beatmap: metadata, goal: { ...row.goal, minimumAccuracy: 98.5, modRequirement: { rule: "exact", mods: ["HD", "HR", "DT"] } },
-      })) }));
+      })), route.request().url()) }));
     await page.goto("/bounties");
     const cards = creators(page);
     await expect(cards).toHaveCount(2);
@@ -244,18 +249,18 @@ test("official grade badges preserve minimum labels and load all grade variants"
   const fullCombo = { ...bounty(9, "FC player", "open", 100),
     goal: { type: "full_combo", beatmapId: 42, beatmapChecksum: null,
       minimumComboRatio: 0.99, modRequirement: { rule: "any" } } };
-  await page.route("**/bounties", route => route.request().isNavigationRequest()
-    ? route.fallback() : route.fulfill({ json: [...fixtures, fullCombo] }));
+  await page.route(listUrl, route => (route.request().isNavigationRequest() || route.request().headers()["rsc"])
+    ? route.fallback() : route.fulfill({ json: listResponse([...fixtures, fullCombo] as ExtendedBounty[], route.request().url()) }));
   await page.goto("/bounties");
   for (const [index, label] of labels.entries()) {
     const badge = page.getByRole("img", { name: `Minimum grade: ${label}`, exact: true });
     await expect(badge).toBeVisible();
-    await expect(badge).toHaveText("≥");
+    await expect(badge).toHaveAccessibleName(`Minimum grade: ${label}`);
     const artwork = badge.locator("span").last();
     await expect(artwork).toHaveCSS("background-image", new RegExp(`GradeSmall-${files[index]}\\.svg`));
     const box = await artwork.boundingBox();
-    expect(box?.height).toBe(24);
-    expect(box?.width).toBe(48);
+    expect(box?.height).toBe(16);
+    expect(box?.width).toBe(32);
     const response = await page.request.get(`/images/grades/GradeSmall-${files[index]}.svg`);
     expect(response.ok()).toBeTruthy();
     expect(await response.text()).toContain('<svg width="32" height="16"');

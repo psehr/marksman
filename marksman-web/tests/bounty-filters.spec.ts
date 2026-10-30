@@ -1,3 +1,4 @@
+import { listResponse, listUrl } from "./fixtures/bounty-list-api";
 import { expect, test, type Page } from "@playwright/test";
 import type { ExtendedBounty } from "@marksman/contracts";
 
@@ -31,10 +32,10 @@ async function setup(page: Page) {
   await page.route("**/*", route => new URL(route.request().url()).origin === "http://127.0.0.1:3100"
     ? route.continue() : route.abort());
   await page.route("**/auth/me", route => route.fulfill({ status: 401, json: {} }));
-  await page.route("**/bounties", route => {
+  await page.route(listUrl, route => {
     if (route.request().isNavigationRequest() || route.request().headers()["rsc"]) return route.fallback();
     reads++;
-    return route.fulfill({ json: fixtures });
+    return route.fulfill({ json: listResponse(fixtures, route.request().url()) });
   });
   return () => reads;
 }
@@ -42,7 +43,7 @@ async function openFilters(page: Page) {
   await page.getByText("Show additional filters", { exact: true }).click();
 }
 
-test("tier multiselection follows URL history, preserves other parameters and does not refetch", async ({ page }) => {
+test("tier multiselection follows URL history, preserves other parameters and refetches", async ({ page }) => {
   const reads = await setup(page);
   await page.goto("/bounties?sort=reward&order=asc&keep=yes");
   await expect(cards(page)).toHaveCount(6);
@@ -58,7 +59,7 @@ test("tier multiselection follows URL history, preserves other parameters and do
   await expect(cards(page)).toHaveCount(2);
   await page.goForward();
   await expect(cards(page)).toHaveCount(3);
-  expect(reads()).toBe(1);
+  expect(reads()).toBeGreaterThan(1);
   await page.reload();
   await expect(cards(page)).toHaveCount(3);
   await openFilters(page);
@@ -84,8 +85,8 @@ test("goals use OR within their group and AND with tiers, search and status", as
   await goal(page, "Full-Combo").click();
   await expect(cards(page)).toHaveText([/Player1/]);
   await page.getByRole("button", { name: "Completed", exact: true }).click();
-  await expect(page.getByText("No bounties to display", { exact: true })).toBeVisible();
-  expect(reads()).toBe(1);
+  await expect(page.getByText("No bounties found", { exact: true })).toBeVisible();
+  expect(reads()).toBeGreaterThan(1);
 });
 
 test("mods require every selected mod in exact/includes rules and combine with goal and tier", async ({ page }) => {
@@ -108,7 +109,7 @@ test("mods require every selected mod in exact/includes rules and combine with g
   await expect(cards(page)).toHaveCount(6);
   expect(new URL(page.url()).searchParams.has("mods")).toBe(false);
   expect(new URL(page.url()).searchParams.has("goals")).toBe(false);
-  expect(reads()).toBe(1);
+  expect(reads()).toBeGreaterThan(1);
 });
 
 test("NM is exact empty mods and mutually exclusive with other selections", async ({ page }) => {

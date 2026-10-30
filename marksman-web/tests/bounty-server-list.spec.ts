@@ -79,3 +79,21 @@ test("ignores an older search response and recovers an out of range page", async
   await page.waitForTimeout(350);
   await expect(cards(page)).toHaveText([/Player2/]);
 });
+
+for (const failure of ["http", "network", "schema"] as const) {
+  test(`recovers from ${failure} failure after a query change`, async ({ page }) => {
+    await setup(page, () => ({ items: [fixtures[0]], total: 1, page: 1, pageSize: 20 }));
+    let fail = true;
+    await page.route(/\/bounties(?:\?.*)?$/, route => {
+      if (route.request().isNavigationRequest() || route.request().headers()["rsc"] || !fail) return route.fallback();
+      if (failure === "network") return route.abort("failed");
+      return route.fulfill({ status: failure === "http" ? 503 : 200, json: {} });
+    });
+    await page.goto("/bounties");
+    await expect(page.getByText("Failed to load bounties", { exact: true })).toBeVisible();
+    fail = false;
+    await page.getByRole("textbox", { name: "Search bounties..." }).fill("retry");
+    await expect(cards(page)).toHaveCount(1);
+    await expect(page.getByText("Failed to load bounties", { exact: true })).toHaveCount(0);
+  });
+}
