@@ -53,7 +53,7 @@ export default function BeatmapStep({ props }: { props: BeatmapStepProps }) {
         placeholder="Enter beatmap URL or ID here..."
       />
       {beatmapMetadata ? (
-        <div className="flex flex-col gap-2">
+        <div className="flex flex-col gap-2 w-full min-w-0">
           <p className="font-bold">You selected:</p>
           <BeatmapCard beatmapMetadata={beatmapMetadata} />
           <div className="flex flex-col text-foreground-muted text-xs gap-1">
