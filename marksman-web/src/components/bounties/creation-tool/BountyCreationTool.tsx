@@ -1,84 +1,22 @@
 "use client";
 
-import { AuthButton } from "@/components/auth/AuthButton";
 import { useAuth } from "@/components/auth/AuthProvider";
-import Button from "@/components/ui/Button";
-import { useState } from "react";
-import LoginStep from "./LoginStep";
-import { OsuBeatmapMetadata, User } from "@marksman/contracts";
-import BeatmapStep from "./BeatmapStep";
 import { useBeatmapMetadata } from "@/hooks/useBeatmapMetadata";
 import { InfoSection } from "@/components/ui/InfoSection";
-
-export function beatmapIdFromInput(input: string): number | undefined {
-  const value = input.trim();
-  let digits: string | undefined;
-  if (/^\d+$/.test(value)) {
-    digits = value;
-  } else {
-    try {
-      const url = new URL(value);
-      if (url.hostname !== "osu.ppy.sh" || url.protocol !== "https:") return;
-      digits = /^\/(?:beatmaps|b)\/(\d+)\/?$/.exec(url.pathname)?.[1];
-      if (!digits && /^\/beatmapsets\/\d+\/?$/.test(url.pathname)) {
-        digits = /^#(?:osu|taiko|fruits|mania)\/(\d+)$/.exec(url.hash)?.[1];
-      }
-    } catch {
-      return;
-    }
-  }
-  const id = Number(digits);
-  return Number.isSafeInteger(id) && id > 0 ? id : undefined;
-}
-
-export type LoginStepProps = {
-  accountLoading: boolean;
-  accountError: string | null;
-  refreshUser: () => Promise<void>;
-  onContinue: () => void;
-  user: User | null;
-};
-
-type BeatmapValidity =
-  | { status: "valid" }
-  | { status: "invalid"; reasons: string[] };
-
-export type BeatmapStepProps = {
-  beatmapInput: string;
-  onBeatmapChange: (value: string) => void;
-  onBack: () => void;
-  onContinue: () => void;
-  beatmapMetadata: OsuBeatmapMetadata | null;
-  beatmapLookupStatus: "idle" | "loading" | "success" | "error";
-  beatmapLookupError: string | null;
-  retryLookup: () => void;
-  beatmapValidity: BeatmapValidity;
-  invalidInput: boolean;
-};
+import { useState } from "react";
+import LoginStep from "./LoginStep";
+import BeatmapStep from "./BeatmapStep";
+import GoalStep from "./GoalStep";
+import type { BeatmapStepProps, BountyCreationToolStep } from "./creation-tool.types";
+import {
+  beatmapIdFromInput,
+  formatStepTitle,
+  isSelectedBeatmapValid,
+} from "./creation-tool.utils";
 
 export default function BountyCreationTool() {
-  const FEE_PERCENTAGE = 10;
-  const FEE_MULT = FEE_PERCENTAGE / 100;
-  type BountyCreationToolStep =
-    | "login"
-    | "beatmap"
-    | "goal"
-    | "reward"
-    | "review";
-
   const [currentStep, setCurrentStep] =
     useState<BountyCreationToolStep>("login");
-
-  function formatStepTitle(step: BountyCreationToolStep): string {
-    switch (step) {
-      case "login":
-        return "Authentication Status";
-      case "beatmap":
-        return "Beatmap Selection";
-      default:
-        return "Info Section";
-    }
-  }
 
   const {
     user,
@@ -97,37 +35,26 @@ export default function BountyCreationTool() {
     retryLookup,
   } = useBeatmapMetadata(beatmapId);
 
-  function isSelectedBeatmapValid(): BeatmapValidity {
-    const reasons: string[] = [];
+  const beatmapValidity = isSelectedBeatmapValid({
+    beatmapInput,
+    beatmapLookupStatus,
+    beatmapMetadata,
+  });
 
-    if (!beatmapId) {
-      reasons.push("Invalid beatmap URL or ID provided.");
-    }
-
-    if (beatmapLookupStatus !== "success") {
-      reasons.push("Lookup did not finish yet.");
-    }
-
-    if (!beatmapMetadata || beatmapMetadata.id !== beatmapId) {
-      reasons.push("Error, no corresponding beatmap metadata available.");
-    }
-
-    if (beatmapMetadata && beatmapMetadata.mode !== "osu") {
-      reasons.push("Only osu!standard beatmaps are supported.");
-    }
-
-    if (
-      beatmapMetadata &&
-      !["ranked", "approved", "loved"].includes(beatmapMetadata.status)
-    ) {
-      reasons.push("Only Ranked, Approved or Loved beatmaps are supported.");
-    }
-
-    const status = reasons.length === 0 ? "valid" : "invalid";
-    return status === "valid"
-      ? { status: "valid" }
-      : { status: "invalid", reasons };
-  }
+  const beatmapStepProps: BeatmapStepProps = {
+    beatmapInput,
+    onBeatmapChange: (input: string) => setBeatmapInput(input),
+    onBack: () => setCurrentStep("login"),
+    onContinue: () => {
+      if (beatmapValidity.status === "valid") setCurrentStep("goal");
+    },
+    beatmapMetadata,
+    beatmapLookupStatus,
+    beatmapLookupError,
+    retryLookup,
+    beatmapValidity,
+    invalidInput: beatmapId === undefined,
+  };
 
   return (
     <InfoSection
@@ -149,23 +76,12 @@ export default function BountyCreationTool() {
       ) : null}
       {currentStep === "beatmap" ? (
         <>
-          <BeatmapStep
-            props={{
-              beatmapInput,
-              onBeatmapChange: (input: string) => setBeatmapInput(input),
-              onBack: () => setCurrentStep("login"),
-              onContinue: () => {
-                const validity = isSelectedBeatmapValid();
-                if (validity.status === "valid") setCurrentStep("goal");
-              },
-              beatmapMetadata,
-              beatmapLookupStatus,
-              beatmapLookupError,
-              retryLookup,
-              beatmapValidity: isSelectedBeatmapValid(),
-              invalidInput: beatmapId === undefined,
-            }}
-          />
+          <BeatmapStep props={beatmapStepProps} />
+        </>
+      ) : null}
+      {currentStep === "goal" ? (
+        <>
+          <GoalStep />
         </>
       ) : null}
     </InfoSection>

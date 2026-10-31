@@ -1,5 +1,5 @@
 import Button from "@/components/ui/Button";
-import type { BeatmapStepProps } from "./BountyCreationTool";
+import type { BeatmapStepProps } from "./creation-tool.types";
 import TextInput from "@/components/ui/TextInput";
 import { BeatmapCard } from "@/components/beatmaps/BeatmapCard";
 import { osuBeatmapMetadatatoBountyBeatmapMetadata } from "@marksman/contracts";

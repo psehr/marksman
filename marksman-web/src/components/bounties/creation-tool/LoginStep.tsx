@@ -1,6 +1,6 @@
 import { AuthButton } from "@/components/auth/AuthButton";
 import Button from "@/components/ui/Button";
-import { LoginStepProps } from "./BountyCreationTool";
+import type { LoginStepProps } from "./creation-tool.types";
 
 export default function LoginStep({ props }: { props: LoginStepProps }) {
   return (
