@@ -1,9 +1,11 @@
 import { asc, eq, isNull, sql } from "drizzle-orm";
-import { bountyBeatmapMetadataSchema } from "@marksman/contracts";
+import {
+  bountyBeatmapMetadataSchema,
+  osuBeatmapMetadatatoBountyBeatmapMetadata,
+} from "@marksman/contracts";
 import { db, pool } from "../db";
 import { bounties, bountyBeatmaps } from "../db/schema";
 import { getBeatmap } from "../integrations/osu/beatmaps";
-import { toBountyBeatmapMetadata } from "../adapters/beatmap";
 
 /** Fill missing metadata only; reruns preserve already stored metadata. */
 export async function backfillBeatmaps(
@@ -28,8 +30,11 @@ export async function backfillBeatmaps(
     try {
       const raw = await fetchBeatmap(id);
       if (raw.id !== id) throw new Error("Beatmap response ID mismatch");
-      const metadata = bountyBeatmapMetadataSchema.parse(toBountyBeatmapMetadata(raw));
-      const saved = await connection.insert(bountyBeatmaps)
+      const metadata = bountyBeatmapMetadataSchema.parse(
+        osuBeatmapMetadatatoBountyBeatmapMetadata(raw),
+      );
+      const saved = await connection
+        .insert(bountyBeatmaps)
         .values({ beatmapId: id, metadata, updatedAt: new Date() })
         // Creation may have saved fresher metadata while this request was pending.
         .onConflictDoNothing({ target: bountyBeatmaps.beatmapId })
@@ -47,8 +52,11 @@ export async function backfillBeatmaps(
     }
   }
 
-  report(`Finished: ${result.saved} saved, ${result.skipped} skipped, ${result.failedIds.length} failed.`);
-  if (result.failedIds.length) report(`Failed IDs: ${result.failedIds.join(", ")}`);
+  report(
+    `Finished: ${result.saved} saved, ${result.skipped} skipped, ${result.failedIds.length} failed.`,
+  );
+  if (result.failedIds.length)
+    report(`Failed IDs: ${result.failedIds.join(", ")}`);
   return result;
 }
 
@@ -58,7 +66,9 @@ if (require.main === module) {
       const result = await backfillBeatmaps();
       if (result.failedIds.length) process.exitCode = 1;
     } catch {
-      console.error("Backfill could not complete. Check database access, configuration and applied migrations.");
+      console.error(
+        "Backfill could not complete. Check database access, configuration and applied migrations.",
+      );
       process.exitCode = 1;
     } finally {
       await pool.end();

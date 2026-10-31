@@ -20,7 +20,7 @@ export function BeatmapCard({
   variant = "beatmap",
 }: {
   beatmapMetadata: BountyBeatmapMetadata | null;
-  variant?: "bounty" | "beatmap";
+  variant?: "bounty" | "beatmap" | "beatmapset";
 }) {
   const coverUrl = beatmapMetadata?.covers?.cover;
   const title = `${beatmapMetadata?.song?.title ?? "title"}`;

@@ -1,12 +1,19 @@
 import assert from "node:assert/strict";
-import { toBountyBeatmapMetadata } from "../src/adapters/beatmap";
 import { metadata } from "./fixtures/completion";
 import { createTestDatabase } from "./fixtures/test-database";
 import { after, before, beforeEach, mock, test } from "node:test";
 import { setTimeout as delay } from "node:timers/promises";
 import { eq, sql } from "drizzle-orm";
-import { bounties, bountyBeatmaps, ledgerEntries, users } from "../src/db/schema";
-import { createBountySchema } from "@marksman/contracts";
+import {
+  bounties,
+  bountyBeatmaps,
+  ledgerEntries,
+  users,
+} from "../src/db/schema";
+import {
+  createBountySchema,
+  osuBeatmapMetadatatoBountyBeatmapMetadata,
+} from "@marksman/contracts";
 import { InsufficientBpError } from "../src/services/errors";
 
 // Load the database and service only AFTER selecting the isolated test database.
@@ -14,8 +21,10 @@ import { InsufficientBpError } from "../src/services/errors";
 process.env.DATABASE_URL =
   "postgresql://marksman_test:marksman_test@127.0.0.1:5433/marksman_test?application_name=marksman_funding_tests&options=-c%20statement_timeout%3D10000";
 Object.assign(process.env, {
-  PORT: "3001", FRONTEND_URL: "http://localhost:3000",
-  OSU_CLIENT_ID: "123", OSU_CLIENT_SECRET: "fixture-client-secret",
+  PORT: "3001",
+  FRONTEND_URL: "http://localhost:3000",
+  OSU_CLIENT_ID: "123",
+  OSU_CLIENT_SECRET: "fixture-client-secret",
   OSU_REDIRECT_URI: "http://localhost:3001/auth/osu/callback",
   SESSION_SECRET: "fixture-session-secret-at-least-32-characters",
 });
@@ -39,9 +48,13 @@ function bountyInput(rewardBp: number) {
 }
 
 async function seedCreator(bpBalance: number) {
-  const [creator] = await db.insert(users)
-    .values({ osuUserId: creatorOsuUserId, username, bpBalance }).returning();
-  await db.insert(ledgerEntries).values({ userId: creator.id, amount: bpBalance, reason: "initial_grant" });
+  const [creator] = await db
+    .insert(users)
+    .values({ osuUserId: creatorOsuUserId, username, bpBalance })
+    .returning();
+  await db
+    .insert(ledgerEntries)
+    .values({ userId: creator.id, amount: bpBalance, reason: "initial_grant" });
 }
 
 async function assertDatabaseState(balance: number, bountyCount: number) {
@@ -54,32 +67,67 @@ async function assertDatabaseState(balance: number, bountyCount: number) {
   const rows = await db.select().from(bounties);
   assert.equal(rows.length, bountyCount);
   const entries = await db.select().from(ledgerEntries);
-  const funding = entries.filter(entry => entry.reason === "bounty_funding");
+  const funding = entries.filter((entry) => entry.reason === "bounty_funding");
   assert.equal(entries.length, 1 + 2 * bountyCount);
   assert.equal(funding.length, bountyCount);
-  const fees = entries.filter(entry => entry.reason === "bounty_fee");
+  const fees = entries.filter((entry) => entry.reason === "bounty_fee");
   assert.equal(fees.length, bountyCount);
   for (const bounty of rows) {
-    assert.deepEqual(fees.filter(entry => entry.bountyId === bounty.id).map(({ userId, amount }) => ({ userId, amount })), [{
-      userId: creator.id, amount: -Math.ceil(bounty.rewardBp / 10),
-    }]);
-    assert.deepEqual(funding.filter(entry => entry.bountyId === bounty.id).map(({ userId, amount, reason, bountyId }) => ({ userId, amount, reason, bountyId })), [{
-      userId: creator.id, amount: -bounty.rewardBp, reason: "bounty_funding", bountyId: bounty.id,
-    }]);
+    assert.deepEqual(
+      fees
+        .filter((entry) => entry.bountyId === bounty.id)
+        .map(({ userId, amount }) => ({ userId, amount })),
+      [
+        {
+          userId: creator.id,
+          amount: -Math.ceil(bounty.rewardBp / 10),
+        },
+      ],
+    );
+    assert.deepEqual(
+      funding
+        .filter((entry) => entry.bountyId === bounty.id)
+        .map(({ userId, amount, reason, bountyId }) => ({
+          userId,
+          amount,
+          reason,
+          bountyId,
+        })),
+      [
+        {
+          userId: creator.id,
+          amount: -bounty.rewardBp,
+          reason: "bounty_funding",
+          bountyId: bounty.id,
+        },
+      ],
+    );
   }
-  assert.equal(entries.reduce((sum, entry) => sum + entry.amount, 0), balance);
+  assert.equal(
+    entries.reduce((sum, entry) => sum + entry.amount, 0),
+    balance,
+  );
   return rows;
 }
 
 before(async () => {
-  mock.method(globalThis, "fetch", async (input: Parameters<typeof fetch>[0]) => {
-    const url = input instanceof Request ? input.url : String(input);
-    if (url === "https://osu.ppy.sh/oauth/token") {
-      return Response.json({ access_token: "fixture-token", token_type: "Bearer", expires_in: 3600 });
-    }
-    if (url === "https://osu.ppy.sh/api/v2/beatmaps/123") return Response.json({ ...metadata, id: 123 });
-    throw new Error(`Unexpected fetch: ${url}; live requests are disabled`);
-  });
+  mock.method(
+    globalThis,
+    "fetch",
+    async (input: Parameters<typeof fetch>[0]) => {
+      const url = input instanceof Request ? input.url : String(input);
+      if (url === "https://osu.ppy.sh/oauth/token") {
+        return Response.json({
+          access_token: "fixture-token",
+          token_type: "Bearer",
+          expires_in: 3600,
+        });
+      }
+      if (url === "https://osu.ppy.sh/api/v2/beatmaps/123")
+        return Response.json({ ...metadata, id: 123 });
+      throw new Error(`Unexpected fetch: ${url}; live requests are disabled`);
+    },
+  );
   await testDatabase.prepare();
 });
 
@@ -112,7 +160,10 @@ test("funding creates one bounty and deducts reward plus fee", async () => {
   assert.equal(stored.status, "open");
   assert.equal(stored.rewardBp, 30);
   assert.equal(stored.creatorOsuUserId, creatorOsuUserId);
-  assert.deepEqual(stored.goal, { ...input.goal, beatmapChecksum: metadata.checksum });
+  assert.deepEqual(stored.goal, {
+    ...input.goal,
+    beatmapChecksum: metadata.checksum,
+  });
   assert.equal(created.goal.beatmapChecksum, metadata.checksum);
   const [savedMetadata] = await db.select().from(bountyBeatmaps);
   assert.equal(savedMetadata.beatmapId, input.goal.beatmapId);
@@ -240,14 +291,16 @@ test("concurrent requests cannot spend the same available BP", async () => {
   }
 });
 
-
 test("funding ledger failure rolls back all changes and allows retry", async () => {
   await seedCreator(100);
   const snapshot = async () => ({
     users: await db.select().from(users).orderBy(users.id),
     bounties: await db.select().from(bounties).orderBy(bounties.id),
     ledger: await db.select().from(ledgerEntries).orderBy(ledgerEntries.id),
-    beatmaps: await db.select().from(bountyBeatmaps).orderBy(bountyBeatmaps.beatmapId),
+    beatmaps: await db
+      .select()
+      .from(bountyBeatmaps)
+      .orderBy(bountyBeatmaps.beatmapId),
   });
   const original = await snapshot();
   await db.execute(sql`
@@ -266,36 +319,54 @@ test("funding ledger failure rolls back all changes and allows retry", async () 
   try {
     await db.execute(sql`CREATE TRIGGER test_reject_funding_ledger BEFORE INSERT ON ledger_entries
       FOR EACH ROW EXECUTE FUNCTION test_reject_funding_ledger()`);
-    await assert.rejects(() => createFundedBounty(bountyInput(30), creatorOsuUserId), (error: unknown) => {
-      let cause = error;
-      while (cause instanceof Error) {
-        if (cause.message === "Forced funding ledger failure") return true;
-        cause = cause.cause;
-      }
-      return false;
-    });
+    await assert.rejects(
+      () => createFundedBounty(bountyInput(30), creatorOsuUserId),
+      (error: unknown) => {
+        let cause = error;
+        while (cause instanceof Error) {
+          if (cause.message === "Forced funding ledger failure") return true;
+          cause = cause.cause;
+        }
+        return false;
+      },
+    );
     assert.deepEqual(await snapshot(), original);
     await assertDatabaseState(100, 0);
   } finally {
-    await db.execute(sql`DROP TRIGGER IF EXISTS test_reject_funding_ledger ON ledger_entries`);
+    await db.execute(
+      sql`DROP TRIGGER IF EXISTS test_reject_funding_ledger ON ledger_entries`,
+    );
     await db.execute(sql`DROP FUNCTION test_reject_funding_ledger()`);
   }
   await createFundedBounty(bountyInput(30), creatorOsuUserId);
   await assertDatabaseState(67, 1);
 });
 
-for (const [reward, fee] of [[1, 1], [25, 3], [30, 3]] as const) {
+for (const [reward, fee] of [
+  [1, 1],
+  [25, 3],
+  [30, 3],
+] as const) {
   test(`reward ${reward} charges a rounded-up fee of ${fee}`, async () => {
     await seedCreator(100);
-    const bounty = await createFundedBounty(bountyInput(reward), creatorOsuUserId);
+    const bounty = await createFundedBounty(
+      bountyInput(reward),
+      creatorOsuUserId,
+    );
     await assertDatabaseState(100 - reward - fee, 1);
-    const entries = await db.select().from(ledgerEntries)
+    const entries = await db
+      .select()
+      .from(ledgerEntries)
       .where(eq(ledgerEntries.bountyId, bounty.id));
-    assert.deepEqual(entries.map(({ reason, amount }) => ({ reason, amount }))
-      .sort((a, b) => a.reason.localeCompare(b.reason)), [
-      { reason: "bounty_fee", amount: -fee },
-      { reason: "bounty_funding", amount: -reward },
-    ]);
+    assert.deepEqual(
+      entries
+        .map(({ reason, amount }) => ({ reason, amount }))
+        .sort((a, b) => a.reason.localeCompare(b.reason)),
+      [
+        { reason: "bounty_fee", amount: -fee },
+        { reason: "bounty_funding", amount: -reward },
+      ],
+    );
   });
 }
 
@@ -316,7 +387,10 @@ test("fee ledger failure rolls back debit, bounty and funding entry and allows r
     users: await db.select().from(users).orderBy(users.id),
     bounties: await db.select().from(bounties).orderBy(bounties.id),
     ledger: await db.select().from(ledgerEntries).orderBy(ledgerEntries.id),
-    beatmaps: await db.select().from(bountyBeatmaps).orderBy(bountyBeatmaps.beatmapId),
+    beatmaps: await db
+      .select()
+      .from(bountyBeatmaps)
+      .orderBy(bountyBeatmaps.beatmapId),
   });
   const original = await snapshot();
   await db.execute(sql`
@@ -338,30 +412,38 @@ test("fee ledger failure rolls back debit, bounty and funding entry and allows r
   try {
     await db.execute(sql`CREATE TRIGGER test_reject_fee_ledger BEFORE INSERT ON ledger_entries
       FOR EACH ROW EXECUTE FUNCTION test_reject_fee_ledger()`);
-    await assert.rejects(() => createFundedBounty(bountyInput(25), creatorOsuUserId), (error: unknown) => {
-      let cause = error;
-      while (cause instanceof Error) {
-        if (cause.message === "Forced fee ledger failure") return true;
-        cause = cause.cause;
-      }
-      return false;
-    });
+    await assert.rejects(
+      () => createFundedBounty(bountyInput(25), creatorOsuUserId),
+      (error: unknown) => {
+        let cause = error;
+        while (cause instanceof Error) {
+          if (cause.message === "Forced fee ledger failure") return true;
+          cause = cause.cause;
+        }
+        return false;
+      },
+    );
     assert.deepEqual(await snapshot(), original);
     await assertDatabaseState(100, 0);
   } finally {
-    await db.execute(sql`DROP TRIGGER IF EXISTS test_reject_fee_ledger ON ledger_entries`);
+    await db.execute(
+      sql`DROP TRIGGER IF EXISTS test_reject_fee_ledger ON ledger_entries`,
+    );
     await db.execute(sql`DROP FUNCTION test_reject_fee_ledger()`);
   }
   await createFundedBounty(bountyInput(25), creatorOsuUserId);
   await assertDatabaseState(72, 1);
 });
 
-
 test("creating another bounty refreshes the shared metadata without duplicating it", async () => {
   await seedCreator(100);
   await db.insert(bountyBeatmaps).values({
     beatmapId: 123,
-    metadata: toBountyBeatmapMetadata({ ...metadata, id: 123, version: "Old version" }),
+    metadata: osuBeatmapMetadatatoBountyBeatmapMetadata({
+      ...metadata,
+      id: 123,
+      version: "Old version",
+    }),
     updatedAt: new Date("2020-01-01T00:00:00Z"),
   });
   await createFundedBounty(bountyInput(10), creatorOsuUserId);
@@ -369,6 +451,8 @@ test("creating another bounty refreshes the shared metadata without duplicating 
   const rows = await db.select().from(bountyBeatmaps);
   assert.equal(rows.length, 1);
   assert.equal(rows[0].metadata.version.name, metadata.version);
-  assert.ok(rows[0].updatedAt.getTime() > new Date("2020-01-01T00:00:00Z").getTime());
+  assert.ok(
+    rows[0].updatedAt.getTime() > new Date("2020-01-01T00:00:00Z").getTime(),
+  );
   await assertDatabaseState(78, 2);
 });

@@ -25,7 +25,11 @@ export default function Home() {
           <p className="text-xl font-bold text-foreground-muted">or...</p>
           <div className="text-foreground-muted flex flex-col gap-2">
             <p>Fund a new challenge</p>
-            <ButtonLink href="/bounties/new" size="lg" variant="accent">
+            <ButtonLink
+              href="/bounties/creation-tool"
+              size="lg"
+              variant="accent"
+            >
               Create a bounty
             </ButtonLink>
           </div>

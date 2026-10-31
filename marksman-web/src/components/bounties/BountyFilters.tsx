@@ -10,6 +10,7 @@ import {
   type BountyModFilter,
 } from "@/lib/bounty-filters";
 import ModIcon from "../osu/ModIcon";
+import TextInput from "../ui/TextInput";
 
 export type BountySortingMethod = {
   type: "date" | "bpReward";
@@ -95,15 +96,12 @@ export default function BountyFilters(props: {
     <div
       className={`bg-surface border-border flex h-full w-full flex-col gap-4 rounded border p-4`}
     >
-      <input
-        type="text"
-        className={`${aes_font.className} bg-background focus-visible:outline-accent flex h-12 w-full rounded-sm px-4 text-left text-xl font-bold focus-visible:outline-2`}
+      <TextInput
         placeholder="Search bounties..."
-        aria-label="Search bounties..."
+        aria-label="Search bounties"
         value={props.searchInput}
-        onChange={(event) => {
-          props.setSearchInput(event.currentTarget.value);
-        }}
+        onChange={(event) => props.setSearchInput(event.currentTarget.value)}
+        size="xl"
       />
       <div className="grid grid-cols-1 gap-4 lg:grid-cols-[1fr_2fr_1fr]">
         <fieldset className="min-w-0">

@@ -1,5 +1,9 @@
 import { db } from "../db";
-import type { Bounty, CreateBountyInput } from "@marksman/contracts";
+import {
+  osuBeatmapMetadatatoBountyBeatmapMetadata,
+  type Bounty,
+  type CreateBountyInput,
+} from "@marksman/contracts";
 import {
   createBounty,
   findBountyByIdForUpdate,
@@ -22,7 +26,6 @@ import {
 } from "../db/ledger";
 import { getBeatmap } from "../integrations/osu/beatmaps";
 import { closeOngoingHuntsForBounty } from "../db/bounty-hunts";
-import { toBountyBeatmapMetadata } from "../adapters/beatmap";
 import { upsertBountyBeatmap } from "../db/bounty-beatmaps";
 
 export async function createFundedBounty(
@@ -36,7 +39,8 @@ export async function createFundedBounty(
     goal: { ...input.goal, beatmapChecksum: osuBeatmapMetadata.checksum },
   };
 
-  const bountyBeatmapMetadata = toBountyBeatmapMetadata(osuBeatmapMetadata);
+  const bountyBeatmapMetadata =
+    osuBeatmapMetadatatoBountyBeatmapMetadata(osuBeatmapMetadata);
 
   const SUPPORTED_GAME_MODES = ["osu"];
   if (!SUPPORTED_GAME_MODES.includes(osuBeatmapMetadata.mode))

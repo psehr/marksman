@@ -119,7 +119,7 @@ function Bounties() {
         <div className="flex flex-col w-full gap-4">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
             <ButtonLink
-              href="/bounties/new"
+              href="/bounties/creation-tool"
               variant="accent"
               className="font-bold"
             >
