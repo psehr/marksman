@@ -33,6 +33,8 @@ export function formatStepTitle(step: BountyCreationToolStep): string {
       return "Beatmap Selection";
     case "goal":
       return "Completion Goal";
+    case "mods":
+      return "Mod Requirements";
     default:
       return "Info Section";
   }

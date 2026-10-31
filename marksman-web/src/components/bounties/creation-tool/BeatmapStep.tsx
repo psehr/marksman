@@ -79,7 +79,7 @@ export default function BeatmapStep({ props }: { props: BeatmapStepProps }) {
           </p>
         </div>
       ) : null}
-      <div className="flex gap-4">
+      <div className="flex gap-2 place-content-end w-full">
         <Button onClick={props.onBack} variant="outline">
           Back
         </Button>
