@@ -13,7 +13,7 @@ export default function Home() {
         <div className="text-foreground-muted max-w-lg text-lg sm:text-xl">
           <p>Create and complete osu! bounties.</p>
           <p>Hunt user-made challenges and earn Bounty Points.</p>
-          <p>Compete against other hunters in the leaderboards.</p>
+          <p>Compete against other hunters in the rankings.</p>
         </div>
         <div className="flex flex-col sm:flex-row gap-2 sm:gap-8 items-center">
           <div className="text-foreground-muted flex flex-col gap-2">

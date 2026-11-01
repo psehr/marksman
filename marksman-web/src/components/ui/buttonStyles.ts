@@ -10,7 +10,7 @@ const variants = {
   danger: "border-danger text-danger hover:bg-danger hover:text-background",
   confirm: "border-success text-success hover:bg-success hover:text-background",
   outline:
-    "border-border bg-transparent text-foreground hover:bg-surface-hover",
+    "border-border bg-surface-raised text-foreground hover:bg-surface-hover",
 };
 
 export type ButtonSize = keyof typeof sizes;

@@ -128,7 +128,7 @@ function Bounties() {
             >
               Create a bounty
             </ButtonLink>
-            <ButtonLink href="/bounties/about">About bounties</ButtonLink>
+            <ButtonLink href="/about/bounties">Learn about bounties</ButtonLink>
           </div>
           <BountyFilters
             selectedFilters={selectedFilters}
