@@ -197,20 +197,20 @@ export default function BountyCreationTool() {
     <>
       {previewCardContent ? (
         <div className="w-full max-w-3xl text-end">
-          <h1
+          <h2
             className={`text-2xl font-bold text-foreground-muted ${aes_font.className}`}
           >
             Bounty Preview
-          </h1>
+          </h2>
           <BountyPreview content={previewCardContent} />
         </div>
       ) : null}
       <div className="w-full max-w-3xl text-end">
-        <h1
+        <h2
           className={`text-2xl font-bold text-foreground-muted ${aes_font.className}`}
         >
           {formatStepTitle(currentStep)}
-        </h1>
+        </h2>
         <div className="bg-surface border border-border rounded p-4">
           {currentStep === "login" ? <LoginStep props={loginProps} /> : null}
           {currentStep === "beatmap" ? (

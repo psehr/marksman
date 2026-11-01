@@ -25,7 +25,7 @@ export default function TextInput({
     <input
       {...props}
       type={type}
-      className={`${aes_font.className} ${sizes[size]} bg-background focus-visible:outline-accent flex w-full rounded-sm px-4 text-left font-bold focus-visible:outline-2 ${className}`}
+      className={`${aes_font.className} ${sizes[size]} bg-background focus-visible:outline-accent flex w-full rounded-sm px-4 font-bold focus-visible:outline-2 ${className} [appearance:textfield] [&::-webkit-inner-spin-button]:appearance-none [&::-webkit-outer-spin-button]:appearance-none`}
     />
   );
 }

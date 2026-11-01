@@ -15,13 +15,13 @@ export default function BeatmapStep({ props }: { props: BeatmapStepProps }) {
     statusNotice = (
       <>
         <p>
-          ✅ Game mode is{" "}
+          Game mode is{" "}
           <span className="font-bold text-success">osu!standard</span>. ✅
         </p>
         <p>
-          ✅ Beatmap is{" "}
+          Beatmap status is{" "}
           <span className="font-bold text-success">
-            Ranked, Loved or Approved
+            {beatmapMetadata?.stats.status}
           </span>
           . ✅
         </p>
@@ -35,7 +35,7 @@ export default function BeatmapStep({ props }: { props: BeatmapStepProps }) {
       <>
         {props.beatmapValidity.reasons.map((reason) => (
           <p className="text-danger font-bold" role="alert" key={reason}>
-            ❌ {reason} ❌
+            {reason} ❌
           </p>
         ))}
       </>
@@ -54,7 +54,6 @@ export default function BeatmapStep({ props }: { props: BeatmapStepProps }) {
       />
       {beatmapMetadata ? (
         <div className="flex flex-col gap-2 w-full min-w-0">
-          <p className="font-bold">You selected:</p>
           <BeatmapCard beatmapMetadata={beatmapMetadata} />
           <div className="flex flex-col text-foreground-muted text-xs gap-1">
             {statusNotice}
@@ -83,11 +82,13 @@ export default function BeatmapStep({ props }: { props: BeatmapStepProps }) {
         <Button onClick={props.onBack} variant="outline">
           Back
         </Button>
-        {props.beatmapValidity.status === "valid" ? (
-          <Button onClick={props.onContinue} variant="accent">
-            Continue
-          </Button>
-        ) : null}
+        <Button
+          onClick={props.onContinue}
+          variant="accent"
+          disabled={props.beatmapValidity.status === "invalid"}
+        >
+          Continue
+        </Button>
       </div>
     </div>
   );

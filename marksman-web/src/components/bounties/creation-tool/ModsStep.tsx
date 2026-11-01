@@ -14,9 +14,9 @@ const rules = [
 export default function ModsStep({ props }: { props: ModsStepProps }) {
   return (
     <div className="flex w-full flex-col items-start gap-4 text-left">
-      <fieldset className="flex gap-2">
+      <fieldset className="w-full flex gap-2">
         <legend>Mod rule</legend>
-        <div className="grid grid-cols-4 gap-2">
+        <div className="w-full grid grid-cols-2 sm:grid-cols-4 gap-2">
           {rules.map(({ value, label }) => (
             <label
               key={value}
@@ -37,7 +37,7 @@ export default function ModsStep({ props }: { props: ModsStepProps }) {
       {props.selectedModRule !== "any" ? (
         <fieldset className="flex w-full flex-col gap-2">
           <legend>Mods</legend>
-          <div className="grid grid-cols-4 gap-2">
+          <div className="w-full grid grid-cols-2 sm:grid-cols-4 gap-2">
             {mods.map((mod) => (
               <label
                 key={mod}
