@@ -14,6 +14,7 @@ const sizes = {
   sm: "h-6 px-2 text-xs",
   md: "h-8 px-3 text-sm",
   lg: "h-10 px-4 text-base",
+  xl: "h-12 px-4 text-xl",
 };
 
 type BountyTierBadgeProps = {
@@ -30,7 +31,7 @@ export default function BountyTierBadge({
   return (
     <span
       title={`Reward tier: ${tier}`}
-      className={`w-24 inline-flex shrink-0 items-center justify-center whitespace-nowrap rounded-xs border font-bold leading-none tracking-wide ${tierStyles[tier]} ${sizes[size]} ${className} ${aes_font.className}`}
+      className={`w-fit inline-flex shrink-0 items-center justify-center whitespace-nowrap rounded-xs border font-bold leading-none tracking-wide ${tierStyles[tier]} ${sizes[size]} ${className} ${aes_font.className}`}
     >
       <span className="sr-only">Reward tier: </span>
       <span

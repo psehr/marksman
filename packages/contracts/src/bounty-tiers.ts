@@ -22,3 +22,9 @@ export function getBountyTier(rewardBp: number): BountyTier {
 
   return tier.name;
 }
+
+export function getNextBountyTier(name: BountyTier) {
+  const idx = bountyTiers.findIndex((tier) => tier.name === name);
+  if (idx <= 0) return undefined;
+  return bountyTiers[idx - 1];
+}

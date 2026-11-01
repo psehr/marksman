@@ -2,7 +2,6 @@
 
 import { useAuth } from "@/components/auth/AuthProvider";
 import { useBeatmapMetadata } from "@/hooks/useBeatmapMetadata";
-import { InfoSection } from "@/components/ui/InfoSection";
 import { useState } from "react";
 import LoginStep from "./LoginStep";
 import BeatmapStep from "./BeatmapStep";
@@ -10,6 +9,7 @@ import GoalStep from "./GoalStep";
 import ModsStep from "./ModsStep";
 import {
   ExtendedBounty,
+  createBountySchema,
   modRequirementSchema,
   osuBeatmapMetadatatoBountyBeatmapMetadata,
 } from "@marksman/contracts";
@@ -30,6 +30,8 @@ import {
   isSelectedBeatmapValid,
 } from "./creation-tool.utils";
 import RewardStep from "./RewardStep";
+import ReviewStep from "./ReviewStep";
+import { useBountyCreation } from "@/hooks/useBountyCreation";
 import { BountyCardDisplay } from "../BountyCard";
 import BountyPreview from "./BountyPreview";
 import { aes_font } from "@/lib/fonts";
@@ -95,6 +97,9 @@ export default function BountyCreationTool() {
   const [requireMinimumAccuracy, setRequireMinimumAccuracy] = useState(false);
   const [selectedMinimumAccuracy, setSelectedMinimumAccuracy] = useState(95);
 
+  const [customizeStableComboThreshold, setCustomizeStableComboThreshold] =
+    useState(false);
+
   const goalStepProps: GoalStepProps = {
     selectedBountyType,
     selectedMinimumComboPercentage,
@@ -109,6 +114,8 @@ export default function BountyCreationTool() {
     beatmapMaxCombo: beatmapMetadata?.max_combo ?? null,
     onBack: () => setCurrentStep("beatmap"),
     onContinue: () => setCurrentStep("mods"),
+    customizeStableComboThreshold,
+    setCustomizeStableComboThreshold,
   };
 
   const [selectedModRule, setSelectedModRule] = useState<ModRule>("any");
@@ -140,7 +147,7 @@ export default function BountyCreationTool() {
     },
   };
 
-  const [reward, setReward] = useState(25);
+  const [reward, setReward] = useState(100);
   const balance = user?.stats.bpBalance ?? null;
   const rewardValidity = evaluateRewardValidity(balance, reward);
   const isRewardValid = rewardValidity.status === "valid";
@@ -154,7 +161,9 @@ export default function BountyCreationTool() {
     isRewardValid,
     validationErrors,
     onBack: () => setCurrentStep("mods"),
-    onContinue: () => setCurrentStep("review"),
+    onContinue: () => {
+      if (isRewardValid && !accountLoading && user) setCurrentStep("review");
+    },
   };
 
   let previewCardContent: BountyCardDisplay | null = null;
@@ -178,7 +187,9 @@ export default function BountyCreationTool() {
         ? {
             ...sharedGoalFields,
             type: "full_combo",
-            minimumComboRatio: selectedMinimumComboPercentage / 100,
+            minimumComboRatio: customizeStableComboThreshold
+              ? selectedMinimumComboPercentage / 100
+              : 0.99,
           }
         : {
             ...sharedGoalFields,
@@ -193,10 +204,47 @@ export default function BountyCreationTool() {
     };
   }
 
+  const creation = useBountyCreation(refreshUser);
+  const finalInput = createBountySchema.safeParse({
+    rewardBp: reward,
+    goal: previewCardContent?.goal,
+  });
+  const reviewErrors = [
+    ...(finalInput.success
+      ? []
+      : finalInput.error.issues.map((issue) => issue.message)),
+    ...(beatmapValidity.status === "valid" ? [] : beatmapValidity.reasons),
+    ...validationErrors,
+  ];
+  const canSubmit =
+    finalInput.success &&
+    reviewErrors.length === 0 &&
+    !accountLoading &&
+    user !== null;
+
+  const reviewStepProps = {
+    input: finalInput.success ? finalInput.data : null,
+    balance,
+    errors: [...new Set(reviewErrors)],
+    pending: creation.pending,
+    error: creation.error,
+    canSubmit,
+    login: {
+      ...loginProps,
+      onContinue: () => setCurrentStep("review"),
+    },
+    customizeStableComboThreshold,
+    onBack: () => setCurrentStep("reward"),
+    onSubmit: () => {
+      if (canSubmit && finalInput.success)
+        void creation.submit(finalInput.data);
+    },
+  };
+
   return (
     <>
       {previewCardContent ? (
-        <div className="w-full max-w-3xl text-end">
+        <div className="w-full max-w-2xl text-end">
           <h2
             className={`text-2xl font-bold text-foreground-muted ${aes_font.className}`}
           >
@@ -205,7 +253,7 @@ export default function BountyCreationTool() {
           <BountyPreview content={previewCardContent} />
         </div>
       ) : null}
-      <div className="w-full max-w-3xl text-end">
+      <div className="w-full max-w-2xl text-end">
         <h2
           className={`text-2xl font-bold text-foreground-muted ${aes_font.className}`}
         >
@@ -220,6 +268,9 @@ export default function BountyCreationTool() {
           {currentStep === "mods" ? <ModsStep props={modsStepProps} /> : null}
           {currentStep === "reward" ? (
             <RewardStep props={rewardStepProps} />
+          ) : null}
+          {currentStep === "review" ? (
+            <ReviewStep props={reviewStepProps} />
           ) : null}
         </div>
       </div>

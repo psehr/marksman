@@ -1,6 +1,8 @@
 import {
   bountyListResponseSchema,
   bountySchema,
+  createBountySchema,
+  type CreateBountyInput,
   extendedBountySchema,
   type BountyListResponse,
   type BountySearchQuery,
@@ -42,4 +44,12 @@ export async function getBookmarkedBounties() {
   return extendedBountySchema
     .array()
     .parse(await apiFetch(`/users/me/bookmarked-bounties`, { method: "GET" }));
+}
+
+export async function createBounty(input: CreateBountyInput) {
+  return z.object({ bounty: bountySchema }).parse(await apiFetch("/bounties", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(createBountySchema.parse(input)),
+  })).bounty;
 }

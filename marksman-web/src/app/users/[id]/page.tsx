@@ -2,6 +2,7 @@
 import { AuthButton } from "@/components/auth/AuthButton";
 import Button from "@/components/ui/Button";
 import { InfoSection } from "@/components/ui/InfoSection";
+import PageHeaderBadge from "@/components/ui/PageHeaderBadge";
 import { DailyClaim } from "@/components/users/DailyClaim";
 import { EventHistory } from "@/components/users/EventHistory";
 import { LedgerEntries } from "@/components/users/LedgerEntries";
@@ -9,6 +10,7 @@ import { MainSection } from "@/components/users/MainSection";
 import { PageSelector } from "@/components/users/PageSelector";
 import { UserCard } from "@/components/users/UserCard";
 import { useUserProfile } from "@/hooks/useUserProfile";
+import { aes_font } from "@/lib/fonts";
 import { PROFILE_HISTORY_PAGE_SIZE } from "@marksman/contracts";
 import { notFound, useParams } from "next/navigation";
 
@@ -58,7 +60,8 @@ export default function UserPage() {
 
   if (userQueryStatus === "complete" && detailedUser) {
     return (
-      <div className="w-full py-12 px-4 flex flex-col place-content-center items-center">
+      <div className="w-full py-12 px-4 gap-8 flex flex-col place-content-center items-center">
+        <PageHeaderBadge>Hunter Profile</PageHeaderBadge>
         <MainSection>
           <div className="w-full">
             <div className="w-full flex flex-col sm:flex-row justify-between gap-4 pb-8 border-b border-border">

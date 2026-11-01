@@ -46,6 +46,9 @@ export type GoalStepProps = {
   beatmapMaxCombo: number | null;
   onBack: () => void;
   onContinue: () => void;
+
+  customizeStableComboThreshold: boolean;
+  setCustomizeStableComboThreshold: (enabled: boolean) => void;
 };
 
 export type ModRequirement = ExtendedBounty["goal"]["modRequirement"];

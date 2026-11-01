@@ -3,16 +3,89 @@ import { RewardStepProps } from "./creation-tool.types";
 import TextInput from "@/components/ui/TextInput";
 import Button from "@/components/ui/Button";
 import { rewardFee } from "./creation-tool.utils";
+import BountyTierBadge from "../BountyTierBadge";
+import {
+  bountyTiers,
+  getBountyTier,
+  getNextBountyTier,
+} from "@marksman/contracts";
 
 export default function RewardStep({ props }: { props: RewardStepProps }) {
+  const balance = props.balance !== null ? props.balance : null;
+  const reward =
+    Number.isInteger(props.reward) && props.reward > 0 ? props.reward : null;
+  const fee = reward && reward > 0 ? rewardFee(reward) : null;
+  const totalCost = reward && fee ? reward + fee : null;
+
+  const currentTier =
+    Number.isInteger(props.reward) && props.reward > 0
+      ? getBountyTier(props.reward)
+      : null;
+
+  const nextTier = currentTier ? getNextBountyTier(currentTier) : null;
+
+  function nextTierBreakdown() {
+    if (currentTier && currentTier === "Phantasm") {
+      return (
+        <p className="text-xs text-foreground-muted">
+          This is the highest reward tier.
+        </p>
+      );
+    }
+    if (nextTier) {
+      return (
+        <p className="text-xs text-foreground-muted">
+          Next Tier: {nextTier.name} at BP ≥{" "}
+          {nextTier.minimumBp.toLocaleString()}
+        </p>
+      );
+    }
+  }
+
+  function tierBreakdown() {
+    return (
+      <div className="flex flex-col gap-2 flex-1 min-w-0 w-full p-2 place-content-around items-end">
+        <div className="flex flex-col md:flex-row flex-wrap gap-1 w-full place-content-end">
+          {allTiers.map((tier) => (
+            <button
+              key={tier.name}
+              type="button"
+              onClick={() => props.setReward(tier.minimumBp)}
+              aria-label={`Set reward to ${tier.minimumBp.toLocaleString()} BP (${tier.name})`}
+              className="cursor-pointer rounded focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-2"
+            >
+              <BountyTierBadge
+                tier={tier.name}
+                size="xl"
+                className={currentTier !== tier.name ? "opacity-20" : ""}
+              />
+            </button>
+          ))}
+        </div>
+        {nextTierBreakdown()}
+      </div>
+    );
+  }
+
+  const allTiers = [...bountyTiers].reverse();
+
   return (
-    <div className="flex flex-col items-start gap-4 w-full">
+    <div className="flex flex-col items-start gap-4">
+      <p
+        aria-label="Reward cost summary"
+        className="w-full text-right text-xs text-foreground-muted wrap-anywhere"
+      >
+        Balance: {balance?.toLocaleString() ?? "—"} BP · Reward:{" "}
+        {reward?.toLocaleString() ?? "—"} BP · Fee:{" "}
+        {fee?.toLocaleString() ?? "—"} BP · Total:{" "}
+        {totalCost?.toLocaleString() ?? "—"} BP
+      </p>
       <label htmlFor="reward" className="sr-only">
         Reward Input
       </label>
       <div className="relative w-full">
         <TextInput
-          className="text-center pr-12"
+          className="text-end pr-12"
           size="xl"
           type="number"
           placeholder="Type a reward amount here..."
@@ -21,56 +94,11 @@ export default function RewardStep({ props }: { props: RewardStepProps }) {
           onChange={(event) => props.setReward(event.target.valueAsNumber)}
         />
         <span className="pointer-events-none absolute inset-y-0 right-4 flex items-center">
-          BP
+          <BPIcon />
         </span>
       </div>
-
-      <section className="w-full grid grid-cols-1 md:grid-cols-2 gap-4 md:gap-2 justify-items-end md:justify-items-center">
-        <div className="flex gap-1 items-center">
-          <span>Available Balance:</span>
-          <span className="font-bold text-accent">
-            {props.balance?.toLocaleString() ?? "-"}
-          </span>
-          <BPIcon size="sm" />
-        </div>
-        <div className="flex gap-1 items-center">
-          <span>Creation Fee:</span>
-          <span className="font-bold text-accent">
-            {!Number.isNaN(props.reward)
-              ? rewardFee(props.reward).toLocaleString()
-              : "-"}
-          </span>{" "}
-          <BPIcon size="sm" />
-        </div>
-        <div className="flex gap-1 items-center">
-          <span>Future Balance:</span>
-          <span className="font-bold text-accent">
-            {!Number.isNaN(props.reward) && props.balance !== null
-              ? (
-                  props.balance -
-                  props.reward -
-                  rewardFee(props.reward)
-                ).toLocaleString()
-              : "-"}
-          </span>
-          <BPIcon size="sm" />
-        </div>
-        <div className="flex gap-1 items-center">
-          <span>Total Cost:</span>
-          <span className="font-bold text-accent">
-            {!Number.isNaN(props.reward)
-              ? (props.reward + rewardFee(props.reward)).toLocaleString()
-              : "-"}
-          </span>
-          <BPIcon size="sm" />
-        </div>
-      </section>
-      <section className="flex w-full place-content-end md:place-content-center text-xs text-foreground-muted">
-        <p>
-          The creation fee is set to 10% of the reward and is non-refundable.
-        </p>
-      </section>
-      <section className="w-full flex flex-col items-center">
+      {tierBreakdown()}
+      <section className="w-full flex flex-col items-end">
         {props.validationErrors.map((error) => (
           <p role="alert" className="text-danger font-bold text-sm" key={error}>
             {error}

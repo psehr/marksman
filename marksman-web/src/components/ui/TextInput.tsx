@@ -5,7 +5,7 @@ const sizes = {
   sm: "h-6 text-sm px-2",
   md: "h-8 text-md px-2",
   lg: "h-10 text-lg px-4",
-  xl: "h-12 text-xl px-4",
+  xl: "h-12 text-2xl px-4",
 };
 
 export type TextInputSize = keyof typeof sizes;

@@ -37,6 +37,8 @@ export function formatStepTitle(step: BountyCreationToolStep): string {
       return "Mod Requirements (4/6)";
     case "reward":
       return "Reward Selection (5/6)";
+    case "review":
+      return "Review Bounty (6/6)";
     default:
       return "Info Section";
   }

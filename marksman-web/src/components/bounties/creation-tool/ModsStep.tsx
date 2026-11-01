@@ -1,9 +1,26 @@
 import Button from "@/components/ui/Button";
 import ModIcon from "@/components/osu/ModIcon";
-import { bountyModFilterSchema } from "@marksman/contracts";
-import type { ModRule, ModsStepProps } from "./creation-tool.types";
+import type {
+  ModRule,
+  ModsStepProps,
+  SelectedMod,
+} from "./creation-tool.types";
+import {
+  radioIconLabelClassName,
+  radioTextualLabelClassName,
+} from "./GoalStep";
 
-const mods = bountyModFilterSchema.exclude(["NM"]).options;
+const mods = [
+  "HR",
+  "HD",
+  "DT",
+  "FL",
+  "EZ",
+  "NF",
+  "HT",
+  "SO",
+] satisfies SelectedMod[];
+
 const rules = [
   { value: "any", label: "Any mods" },
   { value: "exact", label: "Exact mods" },
@@ -13,16 +30,14 @@ const rules = [
 
 export default function ModsStep({ props }: { props: ModsStepProps }) {
   return (
-    <div className="flex w-full flex-col items-start gap-4 text-left">
+    <div className="flex w-full flex-col items-start text-left gap-2">
       <fieldset className="w-full flex gap-2">
-        <legend>Mod rule</legend>
+        <legend className="sr-only">Mod rule</legend>
         <div className="w-full grid grid-cols-2 sm:grid-cols-4 gap-2">
           {rules.map(({ value, label }) => (
-            <label
-              key={value}
-              className="flex cursor-pointer items-center gap-2 rounded border border-border p-2 px-4 hover:bg-surface-hover"
-            >
+            <label key={value} className={radioTextualLabelClassName}>
               <input
+                className="sr-only"
                 type="radio"
                 name="mod-rule"
                 value={value}
@@ -36,14 +51,12 @@ export default function ModsStep({ props }: { props: ModsStepProps }) {
       </fieldset>
       {props.selectedModRule !== "any" ? (
         <fieldset className="flex w-full flex-col gap-2">
-          <legend>Mods</legend>
+          <legend className="sr-only">Mods</legend>
           <div className="w-full grid grid-cols-2 sm:grid-cols-4 gap-2">
             {mods.map((mod) => (
-              <label
-                key={mod}
-                className="flex cursor-pointer place-content-center items-center gap-2 rounded border border-border p-2 hover:bg-surface-hover"
-              >
+              <label key={mod} className={radioIconLabelClassName}>
                 <input
+                  className="sr-only"
                   type="checkbox"
                   aria-label={mod}
                   checked={props.selectedMods.includes(mod)}
@@ -54,6 +67,7 @@ export default function ModsStep({ props }: { props: ModsStepProps }) {
                 <ModIcon
                   mod={mod}
                   crossed={props.selectedModRule === "excludes"}
+                  size="lg"
                 />
               </label>
             ))}
@@ -61,7 +75,7 @@ export default function ModsStep({ props }: { props: ModsStepProps }) {
           <p>
             {props.selectedModRule === "exact"
               ? "Leave all unchecked to require no mods (NM)."
-              : "Select at least one mod."}
+              : null}
           </p>
         </fieldset>
       ) : (

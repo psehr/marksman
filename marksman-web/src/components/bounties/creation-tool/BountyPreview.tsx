@@ -6,9 +6,7 @@ export default function BountyPreview({
   content: BountyCardDisplay;
 }) {
   const status = (
-    <p className="text-foreground-muted text-xs">
-      This is a preview of the future bounty.
-    </p>
+    <p className="text-foreground-muted text-xs">This is a bounty preview.</p>
   );
 
   return (

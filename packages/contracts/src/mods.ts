@@ -36,12 +36,16 @@ export const modRequirementSchema = z.discriminatedUnion("rule", [
   // the mods must include a positive set of mods
   z.object({
     rule: z.literal("includes"),
-    mods: modsSchema.min(1),
+    mods: modsSchema.min(1, {
+      error: "Select at least one mod to include.",
+    }),
   }),
   // the mods must exclude a positive set of mods
   z.object({
     rule: z.literal("excludes"),
-    mods: modsSchema.min(1),
+    mods: modsSchema.min(1, {
+      error: "Select at least one mod to exclude.",
+    }),
   }),
 ]);
 

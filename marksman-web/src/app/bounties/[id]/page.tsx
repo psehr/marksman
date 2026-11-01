@@ -14,6 +14,7 @@ import BountyCard from "@/components/bounties/BountyCard";
 import { aes_font } from "@/lib/fonts";
 import { InfoSection } from "@/components/ui/InfoSection";
 import { BadgeLabel } from "@/components/ui/BadgeLabel";
+import PageHeaderBadge from "@/components/ui/PageHeaderBadge";
 
 export default function BountyDetailsPage() {
   const { id } = useParams<{ id: string }>();
@@ -38,7 +39,8 @@ export default function BountyDetailsPage() {
     return notFound();
   } else {
     return (
-      <div className="flex w-full h-full place-content-center items-center py-12 px-4">
+      <div className="flex flex-col w-full h-full place-content-center items-center py-12 px-4 gap-8">
+        <PageHeaderBadge>Bounty Details</PageHeaderBadge>
         <div className="flex flex-col w-full max-w-2xl h-fit gap-4">
           {queryStatus === "complete" && bounty ? (
             <>
