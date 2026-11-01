@@ -6,40 +6,42 @@ import type { ModRule, ModsStepProps } from "./creation-tool.types";
 const mods = bountyModFilterSchema.exclude(["NM"]).options;
 const rules = [
   { value: "any", label: "Any mods" },
-  { value: "exact", label: "Exactly these mods" },
-  { value: "includes", label: "Include these mods" },
-  { value: "excludes", label: "Exclude these mods" },
+  { value: "exact", label: "Exact mods" },
+  { value: "includes", label: "Include mods" },
+  { value: "excludes", label: "Exclude mods" },
 ] satisfies { value: ModRule; label: string }[];
 
 export default function ModsStep({ props }: { props: ModsStepProps }) {
   return (
     <div className="flex w-full flex-col items-start gap-4 text-left">
-      <fieldset className="flex flex-col gap-2">
+      <fieldset className="flex gap-2">
         <legend>Mod rule</legend>
-        {rules.map(({ value, label }) => (
-          <label
-            key={value}
-            className="flex cursor-pointer items-center gap-2 rounded border border-border p-2 px-4 hover:bg-surface-hover"
-          >
-            <input
-              type="radio"
-              name="mod-rule"
-              value={value}
-              checked={props.selectedModRule === value}
-              onChange={() => props.setSelectedModRule(value)}
-            />
-            {label}
-          </label>
-        ))}
+        <div className="grid grid-cols-4 gap-2">
+          {rules.map(({ value, label }) => (
+            <label
+              key={value}
+              className="flex cursor-pointer items-center gap-2 rounded border border-border p-2 px-4 hover:bg-surface-hover"
+            >
+              <input
+                type="radio"
+                name="mod-rule"
+                value={value}
+                checked={props.selectedModRule === value}
+                onChange={() => props.setSelectedModRule(value)}
+              />
+              {label}
+            </label>
+          ))}
+        </div>
       </fieldset>
       {props.selectedModRule !== "any" ? (
         <fieldset className="flex w-full flex-col gap-2">
           <legend>Mods</legend>
-          <div className="flex flex-wrap gap-2">
+          <div className="grid grid-cols-4 gap-2">
             {mods.map((mod) => (
               <label
                 key={mod}
-                className="flex cursor-pointer items-center gap-2 rounded border border-border p-2 hover:bg-surface-hover"
+                className="flex cursor-pointer place-content-center items-center gap-2 rounded border border-border p-2 hover:bg-surface-hover"
               >
                 <input
                   type="checkbox"

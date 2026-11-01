@@ -11,7 +11,7 @@ const minimumGrades = osuGradeSchema.exclude(["F", "SH", "XH"]).options;
 export default function GoalStep({ props }: { props: GoalStepProps }) {
   return (
     <div className="flex flex-col items-start gap-4 w-full text-left">
-      <fieldset className="flex flex-col gap-2">
+      <fieldset className="flex gap-2">
         <legend>Goal Type</legend>
         <label className={radioLabelClassName}>
           Full-Combo

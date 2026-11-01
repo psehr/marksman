@@ -28,19 +28,23 @@ export function beatmapIdFromInput(input: string): number | undefined {
 export function formatStepTitle(step: BountyCreationToolStep): string {
   switch (step) {
     case "login":
-      return "Authentication Status";
+      return "Authentication Status (1/6)";
     case "beatmap":
-      return "Beatmap Selection";
+      return "Beatmap Selection (2/6)";
     case "goal":
-      return "Completion Goal";
+      return "Completion Goal (3/6)";
     case "mods":
-      return "Mod Requirements";
+      return "Mod Requirements (4/6)";
+    case "reward":
+      return "Reward Selection (5/6)";
     default:
       return "Info Section";
   }
 }
 
-export function isSelectedBeatmapValid(props: BeatmapValidationInput): BeatmapValidity {
+export function isSelectedBeatmapValid(
+  props: BeatmapValidationInput,
+): BeatmapValidity {
   const reasons: string[] = [];
   const beatmapId = beatmapIdFromInput(props.beatmapInput);
 
@@ -73,3 +77,34 @@ export function isSelectedBeatmapValid(props: BeatmapValidationInput): BeatmapVa
     : { status: "invalid", reasons };
 }
 
+export function rewardFee(reward: number) {
+  const FEE_PERCENTAGE = 10;
+  return Math.ceil(reward * (FEE_PERCENTAGE / 100));
+}
+
+export function evaluateRewardValidity(
+  balance: number | null,
+  reward: number,
+): { status: "valid" } | { status: "invalid"; reasons: string[] } {
+  const reasons: string[] = [];
+  const cost = reward + rewardFee(reward);
+
+  if (balance === null) {
+    reasons.push("Unable to fetch user balance.");
+  } else if (balance < cost) {
+    reasons.push("Insufficient BP balance.");
+  }
+
+  if (reward <= 0) {
+    reasons.push("Reward must be positive.");
+  }
+
+  if (!Number.isInteger(reward)) {
+    reasons.push("Reward must be an integer.");
+  }
+
+  const status = reasons.length === 0 ? "valid" : "invalid";
+  return status === "valid"
+    ? { status: "valid" }
+    : { status: "invalid", reasons };
+}

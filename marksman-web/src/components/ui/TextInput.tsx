@@ -11,18 +11,20 @@ const sizes = {
 export type TextInputSize = keyof typeof sizes;
 
 type TextInputProps = Omit<ComponentProps<"input">, "size"> & {
+  type?: "text" | "number";
   size?: TextInputSize;
 };
 
 export default function TextInput({
   size = "md",
+  type = "text",
   className = "",
   ...props
 }: TextInputProps) {
   return (
     <input
       {...props}
-      type="text"
+      type={type}
       className={`${aes_font.className} ${sizes[size]} bg-background focus-visible:outline-accent flex w-full rounded-sm px-4 text-left font-bold focus-visible:outline-2 ${className}`}
     />
   );

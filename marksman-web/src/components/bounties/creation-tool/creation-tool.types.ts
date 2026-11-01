@@ -1,4 +1,9 @@
-import type { ExtendedBounty, OsuBeatmapMetadata, OsuGrade, User } from "@marksman/contracts";
+import type {
+  ExtendedBounty,
+  OsuBeatmapMetadata,
+  OsuGrade,
+  User,
+} from "@marksman/contracts";
 
 export type LoginStepProps = {
   accountLoading: boolean;
@@ -45,13 +50,26 @@ export type GoalStepProps = {
 
 export type ModRequirement = ExtendedBounty["goal"]["modRequirement"];
 export type ModRule = ModRequirement["rule"];
-export type SelectedMod = Extract<ModRequirement, { mods: unknown }>["mods"][number];
+export type SelectedMod = Extract<
+  ModRequirement,
+  { mods: unknown }
+>["mods"][number];
 
 export type ModsStepProps = {
   selectedModRule: ModRule;
   selectedMods: SelectedMod[];
   setSelectedModRule: (rule: ModRule) => void;
   onModToggle: (mod: SelectedMod, checked: boolean) => void;
+  validationErrors: string[];
+  onBack: () => void;
+  onContinue: () => void;
+};
+
+export type RewardStepProps = {
+  balance: number | null;
+  reward: number;
+  setReward: (reward: number) => void;
+  isRewardValid: boolean;
   validationErrors: string[];
   onBack: () => void;
   onContinue: () => void;

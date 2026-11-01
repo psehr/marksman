@@ -11,76 +11,20 @@ import GradeIcon from "../osu/GradeIcon";
 import { BeatmapCard } from "../beatmaps/BeatmapCard";
 import { BadgeLabel } from "../ui/BadgeLabel";
 
+export type BountyCardDisplay = {
+  beatmap: ExtendedBounty["beatmap"];
+  goal: ExtendedBounty["goal"] | null;
+  rewardBp: number | null;
+};
+
 export default function BountyCard({ bounty }: { bounty: ExtendedBounty }) {
-  let mod_requirement;
-  let acc_requirement;
-  let mods;
-  let goalType;
+  const content: BountyCardDisplay = {
+    beatmap: bounty.beatmap,
+    goal: bounty.goal,
+    rewardBp: bounty.rewardBp,
+  };
+
   let status;
-
-  switch (bounty.goal.modRequirement.rule) {
-    case "any":
-      mod_requirement = (
-        <BadgeLabel label="Any mods can be used." text={`Any mods`} />
-      );
-      break;
-    case "exact":
-      mod_requirement = (
-        <BadgeLabel label="Exact mods must be used." text={`Exact mods`} />
-      );
-      if (bounty.goal.modRequirement.mods.length === 0) {
-        mods = <ModIcon mod="NM" size="xs" key="NM" />;
-      } else {
-        mods = bounty.goal.modRequirement.mods.map((mod) => (
-          <ModIcon mod={mod} size="xs" key={mod} />
-        ));
-      }
-      break;
-    case "excludes":
-      mod_requirement = (
-        <BadgeLabel
-          label="Some mods must be excluded."
-          text={`Excluded mods`}
-        />
-      );
-      mods = bounty.goal.modRequirement.mods.map((mod) => (
-        <ModIcon mod={mod} size="xs" key={mod} crossed />
-      ));
-      break;
-    case "includes":
-      mod_requirement = (
-        <BadgeLabel
-          label="Some mods must be included."
-          text={`Included mods`}
-        />
-      );
-      mods = bounty.goal.modRequirement.mods.map((mod) => (
-        <ModIcon mod={mod} size="xs" key={mod} />
-      ));
-      break;
-  }
-
-  switch (bounty.goal.type) {
-    case "full_combo":
-      goalType = <BadgeLabel label="A full-combo is required." text="FC" />;
-      break;
-
-    case "minimum_grade":
-      goalType = (
-        <div className="flex items-center gap-1">
-          <BadgeLabel
-            label={`Achieve a minimum grade of ${bounty.goal.minimumGradeRequirement}`}
-            text="Minimum grade"
-          />
-          <GradeIcon
-            grade={bounty.goal.minimumGradeRequirement}
-            minimum
-            size="sm"
-          />
-        </div>
-      );
-      break;
-  }
 
   switch (bounty.status) {
     case "open":
@@ -114,27 +58,107 @@ export default function BountyCard({ bounty }: { bounty: ExtendedBounty }) {
       break;
   }
 
-  if (bounty.goal.minimumAccuracy !== undefined) {
-    acc_requirement = (
-      <BadgeLabel
-        label={`A minimum accuracy of ${bounty.goal.minimumAccuracy}% is required.`}
-        text={`Acc. ≥${bounty.goal.minimumAccuracy}%`}
-      />
-    );
-  }
-
-  const tier = getBountyTier(bounty.rewardBp);
-  const coverUrl = bounty.beatmap?.covers?.cover;
-
   return (
     <Link
       className="relative isolate bg-card border-border hover:border-focus-ring focus-visible:border-accent flex w-full min-w-0 cursor-pointer flex-col overflow-hidden rounded border transition-all focus-visible:outline-0"
       href={`/bounties/${bounty.id}`}
     >
-      {coverUrl && (
+      <BountyCardContent content={content} status={status} />
+    </Link>
+  );
+}
+
+export function BountyCardContent({
+  content,
+  status,
+}: {
+  content: BountyCardDisplay;
+  status?: React.ReactNode;
+}) {
+  let mod_requirement;
+  let acc_requirement;
+  let mods;
+  let goalType;
+
+  switch (content.goal?.modRequirement.rule) {
+    case "any":
+      mod_requirement = (
+        <BadgeLabel label="Any mods can be used." text={`Any mods`} />
+      );
+      break;
+    case "exact":
+      mod_requirement = (
+        <BadgeLabel label="Exact mods must be used." text={`Exact mods`} />
+      );
+      if (content.goal.modRequirement.mods.length === 0) {
+        mods = <ModIcon mod="NM" size="xs" key="NM" />;
+      } else {
+        mods = content.goal.modRequirement.mods.map((mod) => (
+          <ModIcon mod={mod} size="xs" key={mod} />
+        ));
+      }
+      break;
+    case "excludes":
+      mod_requirement = (
+        <BadgeLabel
+          label="Some mods must be excluded."
+          text={`Excluded mods`}
+        />
+      );
+      mods = content.goal.modRequirement.mods.map((mod) => (
+        <ModIcon mod={mod} size="xs" key={mod} crossed />
+      ));
+      break;
+    case "includes":
+      mod_requirement = (
+        <BadgeLabel
+          label="Some mods must be included."
+          text={`Included mods`}
+        />
+      );
+      mods = content.goal.modRequirement.mods.map((mod) => (
+        <ModIcon mod={mod} size="xs" key={mod} />
+      ));
+      break;
+  }
+
+  switch (content.goal?.type) {
+    case "full_combo":
+      goalType = <BadgeLabel label="A full-combo is required." text="FC" />;
+      break;
+
+    case "minimum_grade":
+      goalType = (
+        <div className="flex items-center gap-1">
+          <BadgeLabel
+            label={`Achieve a minimum grade of ${content.goal.minimumGradeRequirement}`}
+            text="Minimum grade"
+          />
+          <GradeIcon
+            grade={content.goal.minimumGradeRequirement}
+            minimum
+            size="sm"
+          />
+        </div>
+      );
+      break;
+  }
+
+  if (content.goal?.minimumAccuracy !== undefined) {
+    acc_requirement = (
+      <BadgeLabel
+        label={`A minimum accuracy of ${content.goal.minimumAccuracy}% is required.`}
+        text={`Acc. ≥${content.goal.minimumAccuracy}%`}
+      />
+    );
+  }
+
+  return (
+    <>
+      {content.beatmap?.covers?.cover && (
         <>
           <Image
-            src={coverUrl}
+            src={content.beatmap?.covers?.cover}
             alt=""
             fill
             className="pointer-events-none object-cover"
@@ -146,7 +170,7 @@ export default function BountyCard({ bounty }: { bounty: ExtendedBounty }) {
           />
         </>
       )}
-      <BeatmapCard beatmapMetadata={bounty.beatmap} variant="bounty" />
+      <BeatmapCard beatmapMetadata={content.beatmap} variant="bounty" />
       <div className="relative z-10 flex place-content-between items-end gap-4 p-4">
         <div className="flex min-w-0 flex-1 flex-col gap-2">
           <div className="flex flex-wrap items-center gap-2">
@@ -163,15 +187,19 @@ export default function BountyCard({ bounty }: { bounty: ExtendedBounty }) {
         </div>
 
         <div className="flex shrink-0 flex-col items-end gap-2 sm:flex-row sm:items-center">
-          <BountyTierBadge tier={tier} size="md" />
+          {content.rewardBp ? (
+            <BountyTierBadge tier={getBountyTier(content.rewardBp)} size="md" />
+          ) : (
+            ""
+          )}
           <div className="flex gap-1">
             <span className="text-accent text-2xl font-bold leading-none -translate-y-px">
-              {bounty.rewardBp.toLocaleString()}
+              {content.rewardBp ? content.rewardBp.toLocaleString() : "-"}
             </span>
             <BPIcon size="md" />
           </div>
         </div>
       </div>
-    </Link>
+    </>
   );
 }
