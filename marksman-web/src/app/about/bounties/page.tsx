@@ -4,6 +4,8 @@ import { AboutSubSection } from "@/components/about/AboutSubSection";
 import { AboutSection } from "@/components/about/AboutSection";
 import { AccentText } from "@/components/about/AccentText";
 import { aes_font } from "@/lib/fonts";
+import GradeIcon from "@/components/osu/GradeIcon";
+import ModIcon from "@/components/osu/ModIcon";
 
 export default function AboutBountiesPage() {
   return (
@@ -13,7 +15,15 @@ export default function AboutBountiesPage() {
         <p>
           Bounties are <AccentText>user-made challenges</AccentText> that can be
           completed by other players using the{" "}
-          <AboutLink url="/about/hunting">hunting system</AboutLink>.
+          <AboutLink url="/about/hunting">hunting system</AboutLink>, they can
+          be created by any player using the{" "}
+          <AccentText>Bounty Creation Tool</AccentText>.
+        </p>
+        <p>
+          An open bounty <AccentText>can be cancelled</AccentText> by its
+          creator at any time, its{" "}
+          <AboutLink url="/about/bounties#bounty-status">status</AboutLink> then
+          changes and it can no longer be completed afterwards.
         </p>
         <p>
           The five <AccentText>main characteristics</AccentText> of bounties are
@@ -91,7 +101,7 @@ export default function AboutBountiesPage() {
                 valid score
               </AboutLink>{" "}
               to be graded <AccentText>at or above</AccentText> a user-defined{" "}
-              <AboutLink url="/about/bounties#grade-requirements">
+              <AboutLink url="/about/bounties#grade-requirement">
                 grade requirement
               </AboutLink>
               .
@@ -223,10 +233,15 @@ export default function AboutBountiesPage() {
             <h2 className="font-bold text-lg text-foreground-muted">
               For scores set on osu!stable
             </h2>
-            <p>The score must have a miss count of 0.</p>
             <p>
-              The score must have a combo at or above the calculated minimum
-              required combo.
+              The score must have a <AccentText>miss count of 0</AccentText>.
+            </p>
+            <p>
+              The score must have a{" "}
+              <AccentText>
+                combo at or above the calculated minimum required combo
+              </AccentText>
+              .
             </p>
             <p
               className={`wrap-anywhere bg-card ${aes_font.className} font-bold`}
@@ -238,16 +253,88 @@ export default function AboutBountiesPage() {
             <h2 className="font-bold text-lg text-foreground-muted">
               For scores set on osu!lazer
             </h2>
-            <p>The score must have a miss count of 0.</p>
-            <p>The score must have a sliderbreak count of 0.</p>
-            <p>The score combo isn't checked.</p>
+            <p>
+              The score must have a <AccentText>miss count of 0</AccentText>.
+            </p>
+            <p>
+              The score must have a{" "}
+              <AccentText>sliderbreak count of 0</AccentText>.
+            </p>
+            <p>
+              The score <AccentText>combo isn't checked</AccentText>.
+            </p>
           </section>
         </div>
       </AboutSection>
-      <AboutSection title="Grade requirements" id="grade-requirements">
-        <p>[ This section lacks information for now ]</p>
+      <AboutSection title="Grade requirement" id="grade-requirement">
+        <p>
+          Marksman bounties can be of the{" "}
+          <AccentText>grade requirement</AccentText>{" "}
+          <AboutLink url="/about/bounties#goal-types">type</AboutLink>, in which
+          case the completion requires the{" "}
+          <AboutLink url="/about/hunting#what-is-valid-score">
+            valid score
+          </AboutLink>{" "}
+          to be graded <AccentText>at or above</AccentText> the selected grade.
+        </p>
+        <p> The grades are ordered as follows:</p>
+        <div className="flex flex-col sm:flex-row my-2 sm:gap-2 text-xl font-bold place-content-center items-center">
+          <GradeIcon grade="D" />
+          <span>{"<"}</span>
+          <GradeIcon grade="C" />
+          <span>{"<"}</span>
+          <GradeIcon grade="B" />
+          <span>{"<"}</span>
+          <GradeIcon grade="A" />
+          <span>{"<"}</span>
+          <div className="flex flex-row sm:flex-col gap-1">
+            <GradeIcon grade="S" />
+            <GradeIcon grade="SH" />
+          </div>
+          <span>{"<"}</span>
+          <div className="flex flex-row sm:flex-col gap-1">
+            <GradeIcon grade="X" />
+            <GradeIcon grade="XH" />
+          </div>
+        </div>
       </AboutSection>
       <AboutSection title="Supported mods" id="supported-mods">
+        <p>
+          In order to avoid any potential abuse, notably with osu!lazer
+          customizable mods,{" "}
+          <AccentText>Marksman uses a strict list of supported mods</AccentText>
+          .
+        </p>
+        <p>
+          This means that when attempting completion, when using mods, the{" "}
+          <AboutLink url="/about/hunting#what-is-valid-score">
+            valid score
+          </AboutLink>{" "}
+          <AccentText>must exclude any mod that is not in the list</AccentText>{" "}
+          of supported mods, regardless of the selected{" "}
+          <AboutLink url="/about/bounties#mod-rules">
+            mod requirement rule
+          </AboutLink>
+          .
+        </p>
+        <p>
+          Mod customization is also <AccentText>not allowed</AccentText>.
+        </p>
+        <p>
+          The <AccentText>supported mods</AccentText> list is as follows:
+        </p>
+        <div className="flex flex-col sm:flex-row w-full my-2 place-content-center gap-2">
+          <ModIcon mod="HD" />
+          <ModIcon mod="HR" />
+          <ModIcon mod="DT" />
+          <ModIcon mod="FL" />
+          <ModIcon mod="EZ" />
+          <ModIcon mod="HT" />
+          <ModIcon mod="NF" />
+          <ModIcon mod="SO" />
+        </div>
+      </AboutSection>
+      <AboutSection title="Bounty statuses" id="bounty-status">
         <p>[ This section lacks information for now ]</p>
       </AboutSection>
       <AboutSection title="Reward tiers" id="reward-tiers">

@@ -1,10 +1,14 @@
 import { ExtendedBounty } from "@marksman/contracts";
 
-export default function BountyStatus({ bounty }: { bounty: ExtendedBounty }) {
+export default function BountyStatus({
+  status,
+}: {
+  status: ExtendedBounty["status"];
+}) {
   let text_color: string = "text-accent";
   let text: string = "OPEN";
 
-  switch (bounty.status) {
+  switch (status) {
     case "open":
       text_color = "text-accent";
       text = "OPEN";

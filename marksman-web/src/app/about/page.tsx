@@ -83,6 +83,9 @@ export default function AboutPage() {
           <ButtonLink href="/about/bounties" variant="outline" size="lg">
             About - Bounties
           </ButtonLink>
+          <ButtonLink href="/about/bounty-creation" variant="outline" size="lg">
+            About - Bounty Creation
+          </ButtonLink>
           <ButtonLink href="/about/hunting" variant="outline" size="lg">
             About - Hunting
           </ButtonLink>

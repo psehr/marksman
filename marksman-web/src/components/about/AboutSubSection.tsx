@@ -17,11 +17,11 @@ export function AboutSubSection({
       <a
         href={`#${id}`}
         aria-label={`Link to ${id.replaceAll("-", " ")}`}
-        className="pr-4 rounded focus-visible:outline-2 focus-visible:outline-accent"
+        className="pr-4 rounded focus-visible:outline-2 focus-visible:outline-accent min-w-10"
       >
         {index}
       </a>
-      <div className="flex flex-col gap-2">{children}</div>
+      <div>{children}</div>
     </SectionAnchor>
   );
 }

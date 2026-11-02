@@ -57,7 +57,7 @@ export default function BountyDetailsPage() {
                   <div
                     className={`${aes_font.className} font-bold text-4xl w-full`}
                   >
-                    <BountyStatus bounty={bounty} />
+                    <BountyStatus status={bounty.status} />
                   </div>
                 </InfoSection>
 
