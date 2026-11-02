@@ -8,6 +8,7 @@ import {
   HuntAttemptScoreEvidence,
   HuntAttemptVerificationResult,
   HuntAttemptStatus,
+  modsSchema,
 } from "@marksman/contracts";
 import { InvalidBeatmapMetadataError } from "./errors";
 
@@ -223,9 +224,20 @@ function isCorrectMods(
   score: HuntAttemptScoreEvidence,
   bounty: Bounty,
 ): boolean {
+  let settingsExist = false;
+
   const modsAcronyms = score.mods.map((mod) => {
+    if (mod.settings && Object.keys(mod.settings).length > 0)
+      settingsExist = true;
     return mod.acronym;
   });
+
+  // customized mods reject
+  if (settingsExist) return false;
+
+  // unsupported mods reject
+  const parsedModsAcronyms = modsSchema.safeParse(modsAcronyms);
+  if (!parsedModsAcronyms.success) return false;
 
   switch (bounty.goal.modRequirement.rule) {
     case "any":

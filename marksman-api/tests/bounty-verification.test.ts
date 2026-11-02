@@ -148,7 +148,7 @@ for (const [minimum, accuracy, expected] of [
 
 const modCases: Array<[Bounty["goal"]["modRequirement"], string[], boolean]> = [
   [{ rule: "any" }, [], true],
-  [{ rule: "any" }, ["UNRECOGNIZED"], true],
+  [{ rule: "any" }, ["UNRECOGNIZED"], false],
   [{ rule: "exact", mods: [] }, [], true],
   [{ rule: "exact", mods: [] }, ["HD"], false],
   [{ rule: "exact", mods: ["HD", "HR"] }, ["HR", "HD"], true],
@@ -158,11 +158,11 @@ const modCases: Array<[Bounty["goal"]["modRequirement"], string[], boolean]> = [
   [
     { rule: "includes", mods: ["HD", "HR"] },
     ["HR", "HD", "UNRECOGNIZED"],
-    true,
+    false,
   ],
   [{ rule: "includes", mods: ["HD", "HR"] }, ["HD"], false],
   [{ rule: "excludes", mods: ["HD", "HR"] }, [], true],
-  [{ rule: "excludes", mods: ["HD", "HR"] }, ["UNRECOGNIZED"], true],
+  [{ rule: "excludes", mods: ["HD", "HR"] }, ["UNRECOGNIZED"], false],
   [{ rule: "excludes", mods: ["HD", "HR"] }, ["HR"], false],
 ];
 for (const [requirement, acronyms, expected] of modCases) {
