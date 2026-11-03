@@ -45,7 +45,7 @@ export default function RewardStep({ props }: { props: RewardStepProps }) {
   function tierBreakdown() {
     return (
       <div className="flex flex-col gap-2 flex-1 min-w-0 w-full p-2 place-content-around items-end">
-        <div className="flex flex-col md:flex-row flex-wrap gap-1 w-full place-content-end">
+        <div className="grid grid-cols-2 md:flex md:flex-row flex-wrap gap-1 w-full place-content-end">
           {allTiers.map((tier) => (
             <button
               key={tier.name}
@@ -57,7 +57,7 @@ export default function RewardStep({ props }: { props: RewardStepProps }) {
               <BountyTierBadge
                 tier={tier.name}
                 size="xl"
-                className={currentTier !== tier.name ? "opacity-20" : ""}
+                className={`${currentTier !== tier.name ? "opacity-20" : ""} w-28 sm:w-fit`}
               />
             </button>
           ))}

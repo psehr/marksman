@@ -246,7 +246,7 @@ export default function BountyCreationTool() {
       {previewCardContent ? (
         <div className="w-full max-w-2xl text-end">
           <h2
-            className={`text-2xl font-bold text-foreground-muted ${aes_font.className}`}
+            className={`text-lg sm:text-2xl font-bold text-foreground-muted ${aes_font.className}`}
           >
             Bounty Preview
           </h2>
@@ -255,7 +255,7 @@ export default function BountyCreationTool() {
       ) : null}
       <div className="w-full max-w-2xl text-end">
         <h2
-          className={`text-2xl font-bold text-foreground-muted ${aes_font.className}`}
+          className={`text-lg sm:text-2xl font-bold text-foreground-muted ${aes_font.className}`}
         >
           {formatStepTitle(currentStep)}
         </h2>

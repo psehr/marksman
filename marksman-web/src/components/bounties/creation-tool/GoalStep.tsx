@@ -2,7 +2,7 @@ import Button from "@/components/ui/Button";
 import type { GoalStepProps } from "./creation-tool.types";
 
 export const radioTextualLabelClassName =
-  "flex cursor-pointer items-center place-content-center gap-2 rounded border border-border p-2 px-4 hover:bg-surface-hover has-checked:bg-accent has-checked:text-background has-focus-visible:outline-2 has-focus-visible:outline-accent";
+  "flex cursor-pointer text-center items-center place-content-center gap-2 rounded border border-border p-2 px-4 hover:bg-surface-hover has-checked:bg-accent has-checked:text-background has-focus-visible:outline-2 has-focus-visible:outline-accent";
 
 export const radioIconLabelClassName =
   "flex cursor-pointer items-center place-content-center gap-2 rounded border border-border p-2 px-4 hover:bg-surface-hover has-checked:bg-surface-hover has-checked:border-accent has-checked:ring-2 has-checked:ring-accent has-focus-visible:outline-2 has-focus-visible:outline-accent has-focus-visible:outline-offset-4";
@@ -13,6 +13,15 @@ import Link from "next/link";
 const minimumGrades = osuGradeSchema.exclude(["F", "SH", "XH"]).options;
 
 export default function GoalStep({ props }: { props: GoalStepProps }) {
+  const minimumRequiredCombo =
+    props.beatmapMaxCombo !== null
+      ? Math.ceil(
+          (props.beatmapMaxCombo * props.selectedMinimumComboPercentage) / 100,
+        )
+      : null;
+
+  const maxCombo = props.beatmapMaxCombo;
+
   return (
     <div className="flex flex-col items-end gap-4 w-full text-end">
       <fieldset className="flex gap-2">
@@ -60,12 +69,12 @@ export default function GoalStep({ props }: { props: GoalStepProps }) {
         </fieldset>
       ) : null}
       {props.selectedBountyType === "full_combo" ? (
-        <fieldset className="flex w-full flex-col gap-2 items-end">
+        <fieldset className="flex w-full flex-col gap-2 sm:items-end">
           <legend className="sr-only">Customize stable combo threshold</legend>
-          <label className="flex items-center gap-2">
+          <label className="flex items-start gap-2 text-left sm:text-right">
             <input
               type="checkbox"
-              className="accent-accent"
+              className="accent-accent mt-1 shrink-0"
               checked={props.customizeStableComboThreshold}
               onChange={(event) =>
                 props.setCustomizeStableComboThreshold(event.target.checked)
@@ -73,29 +82,29 @@ export default function GoalStep({ props }: { props: GoalStepProps }) {
             />
             <p>
               Customize stable combo threshold{" "}
-              <Link href="" className="underline text-sm text-foreground-muted">
+              <Link
+                href="/about/bounties#fc-ruling"
+                className="underline text-sm text-foreground-muted"
+              >
                 (what's this?)
               </Link>
             </p>
           </label>
           {props.customizeStableComboThreshold ? (
-            <label className="flex flex-col w-1/2">
-              <span>
-                {props.selectedMinimumComboPercentage}% · Minimum combo:{" "}
-                {props.beatmapMaxCombo !== null ? (
-                  <>
-                    {Math.ceil(
-                      (props.beatmapMaxCombo *
-                        props.selectedMinimumComboPercentage) /
-                        100,
-                    )}
-                    {" / "}
-                    {props.beatmapMaxCombo}
-                  </>
+            <label className="flex flex-col w-full items-end">
+              <div className="flex flex-col sm:gap-2 sm:flex-row tabular-nums">
+                <span>Threshold: {props.selectedMinimumComboPercentage}%</span>
+                <span>•</span>
+                <span>Minimum required combo: </span>
+                {minimumRequiredCombo && maxCombo ? (
+                  <span>
+                    {minimumRequiredCombo} / {props.beatmapMaxCombo}
+                  </span>
                 ) : (
-                  "Combo unavailable"
+                  <span>data unavailable</span>
                 )}
-              </span>
+              </div>
+
               <input
                 type="range"
                 className="accent-accent"
@@ -113,12 +122,12 @@ export default function GoalStep({ props }: { props: GoalStepProps }) {
           ) : null}
         </fieldset>
       ) : null}
-      <fieldset className="flex w-full flex-col gap-2 items-end">
+      <fieldset className="flex w-full flex-col gap-2 sm:items-end">
         <legend className="sr-only">Minimum accuracy (optional)</legend>
-        <label className="flex items-center gap-2">
+        <label className="flex items-start gap-2 text-left sm:text-right">
           <input
             type="checkbox"
-            className="accent-accent"
+            className="accent-accent mt-1 shrink-0"
             checked={props.requireMinimumAccuracy}
             onChange={(event) =>
               props.setRequireMinimumAccuracy(event.target.checked)
@@ -127,7 +136,7 @@ export default function GoalStep({ props }: { props: GoalStepProps }) {
           Require minimum accuracy
         </label>
         {props.requireMinimumAccuracy ? (
-          <label className="flex flex-col w-1/2">
+          <label className="flex flex-col tabular-nums w-full items-end">
             Minimum accuracy: {props.selectedMinimumAccuracy}%
             <input
               type="range"
