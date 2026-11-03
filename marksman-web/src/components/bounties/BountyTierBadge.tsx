@@ -31,7 +31,7 @@ export default function BountyTierBadge({
   return (
     <span
       title={`Reward tier: ${tier}`}
-      className={`w-fit inline-flex shrink-0 items-center justify-center whitespace-nowrap rounded-xs border font-bold leading-none tracking-wide ${tierStyles[tier]} ${sizes[size]} ${className} ${aes_font.className}`}
+      className={`inline-flex shrink-0 items-center justify-center whitespace-nowrap rounded-xs border font-bold leading-none tracking-wide ${tierStyles[tier]} ${sizes[size]} ${className} ${aes_font.className}`}
     >
       <span className="sr-only">Reward tier: </span>
       <span

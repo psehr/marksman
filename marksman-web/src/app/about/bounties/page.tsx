@@ -6,6 +6,8 @@ import { AccentText } from "@/components/about/AccentText";
 import { aes_font } from "@/lib/fonts";
 import GradeIcon from "@/components/osu/GradeIcon";
 import ModIcon from "@/components/osu/ModIcon";
+import BountyTierBadge from "@/components/bounties/BountyTierBadge";
+import BPIcon from "@/components/economy/BPIcon";
 
 export default function AboutBountiesPage() {
   return (
@@ -335,10 +337,73 @@ export default function AboutBountiesPage() {
         </div>
       </AboutSection>
       <AboutSection title="Bounty statuses" id="bounty-status">
-        <p>[ This section lacks information for now ]</p>
+        <p>A Marksman bounty can be one of the following statuses:</p>
+        <AboutSubSection index="I." id="open-bounty">
+          <AccentText>Open</AccentText>, which means ongoing: this bounty has
+          not yet been completed by a player and{" "}
+          <AccentText>can still be hunted</AccentText>. It also means that it{" "}
+          <AccentText>can still be cancelled</AccentText> by its creator.
+        </AboutSubSection>
+        <AboutSubSection index="II." id="closed-bounty">
+          <AccentText>Completed</AccentText>, or closed: this bounty has been
+          completed by a player and <AccentText>cannot be hunted</AccentText>{" "}
+          for completion. It <AccentText>cannot be cancelled</AccentText> by its
+          creator.
+        </AboutSubSection>
+        <AboutSubSection index="III." id="cancelled-bounty">
+          <AccentText>Cancelled</AccentText>: this bounty was cancelled by its
+          creator, meaning that the initial{" "}
+          <AccentText>reward was refunded</AccentText> (without the creation
+          fee) and it <AccentText>can no longer be hunted</AccentText> for
+          completion.
+        </AboutSubSection>
       </AboutSection>
       <AboutSection title="Reward tiers" id="reward-tiers">
-        <p>[ This section lacks information for now ]</p>
+        <p>
+          Marksman bounties feature a{" "}
+          <AccentText>cosmetic subdivision</AccentText> for their BP reward.
+        </p>
+        <p>They are as follows, with their corresponding BP minimum:</p>
+        <div className="flex place-content-center">
+          <div className="flex flex-col gap-1 w-full max-w-sm bg-surface-raised p-1 border border-border rounded">
+            <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2">
+              <BountyTierBadge tier="Easy" size="lg" className="w-full" />
+              <span className="font-bold whitespace-nowrap text-right">
+                BP ≥ <span className="text-accent">0</span>
+              </span>
+            </div>
+            <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2">
+              <BountyTierBadge tier="Normal" size="lg" className="w-full" />
+              <span className="font-bold whitespace-nowrap text-right">
+                BP ≥ <span className="text-accent">100</span>
+              </span>
+            </div>
+            <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2">
+              <BountyTierBadge tier="Hard" size="lg" className="w-full" />
+              <span className="font-bold whitespace-nowrap text-right">
+                BP ≥ <span className="text-accent">300</span>
+              </span>
+            </div>
+            <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2">
+              <BountyTierBadge tier="Lunatic" size="lg" className="w-full" />
+              <span className="font-bold whitespace-nowrap text-right">
+                BP ≥ <span className="text-accent">1,000</span>
+              </span>
+            </div>
+            <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2">
+              <BountyTierBadge tier="Extra" size="lg" className="w-full" />
+              <span className="font-bold whitespace-nowrap text-right">
+                BP ≥ <span className="text-accent">3,000</span>
+              </span>
+            </div>
+            <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2">
+              <BountyTierBadge tier="Phantasm" size="lg" className="w-full" />
+              <span className="font-bold whitespace-nowrap text-right">
+                BP ≥ <span className="text-accent">10,000</span>
+              </span>
+            </div>
+          </div>
+        </div>
       </AboutSection>
     </div>
   );

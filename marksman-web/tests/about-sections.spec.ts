@@ -4,6 +4,36 @@ test.beforeEach(async ({ page }) => {
   await page.route("**/auth/me", route => route.fulfill({ status: 401, json: { error: "Signed out" } }));
 });
 
+test("reward tiers fit narrow screens without overlapping labels or thresholds", async ({ page }) => {
+  for (const width of [320, 375, 390, 768]) {
+    await page.setViewportSize({ width, height: 800 });
+    await page.goto("/about/bounties#reward-tiers");
+    await page.evaluate(() => document.fonts.ready);
+    const section = page.locator("#reward-tiers");
+    const badges = section.locator('[title^="Reward tier:"]');
+    await expect(badges).toHaveCount(6);
+    const measurements = await badges.evaluateAll(elements => elements.map(badge => {
+      const row = badge.parentElement!;
+      const threshold = badge.nextElementSibling!;
+      const table = row.parentElement!.getBoundingClientRect();
+      const label = badge.lastElementChild!.getBoundingClientRect();
+      const bounds = badge.getBoundingClientRect();
+      const value = threshold.getBoundingClientRect();
+      return {
+        labelFits: label.left >= bounds.left && label.right <= bounds.right,
+        separated: bounds.right <= value.left,
+        contained: bounds.left >= table.left && value.right <= table.right,
+      };
+    }));
+    for (const measurement of measurements) {
+      expect(measurement, `tier layout at ${width}px`).toEqual({
+        labelFits: true, separated: true, contained: true,
+      });
+    }
+    expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(width);
+  }
+});
+
 test("section links update the URL and highlight only the selected section through history and reload", async ({ page }) => {
   await page.goto("/about#core-concept");
   const core = page.locator("#core-concept");
