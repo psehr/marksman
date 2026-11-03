@@ -246,7 +246,7 @@ export default function AboutBountiesPage() {
               .
             </p>
             <p
-              className={`wrap-anywhere bg-card ${aes_font.className} font-bold`}
+              className={`wrap-anywhere bg-card ${aes_font.className} font-bold rounded p-1`}
             >
               MinimumCombo = ceil(threshold / 100 × max combo)
             </p>
@@ -363,44 +363,50 @@ export default function AboutBountiesPage() {
           Marksman bounties feature a{" "}
           <AccentText>cosmetic subdivision</AccentText> for their BP reward.
         </p>
-        <p>They are as follows, with their corresponding BP minimum:</p>
+        <p>They are as follows, with their corresponding BP range:</p>
         <div className="flex place-content-center">
-          <div className="flex flex-col gap-1 w-full max-w-sm bg-surface-raised p-1 border border-border rounded">
-            <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2">
+          <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-1 sm:gap-x-6 w-full max-w-sm bg-surface-raised p-1 sm:pr-5 border border-border rounded">
+            <div className="contents">
               <BountyTierBadge tier="Easy" size="lg" className="w-full" />
-              <span className="font-bold whitespace-nowrap text-right">
-                BP ≥ <span className="text-accent">0</span>
-              </span>
+              <div className="flex gap-1 font-bold whitespace-nowrap place-content-center items-center">
+                <span className="text-accent">1 - 99</span>
+                <BPIcon size="sm" />
+              </div>
             </div>
-            <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2">
+            <div className="contents">
               <BountyTierBadge tier="Normal" size="lg" className="w-full" />
-              <span className="font-bold whitespace-nowrap text-right">
-                BP ≥ <span className="text-accent">100</span>
-              </span>
+              <div className="flex gap-1 font-bold whitespace-nowrap place-content-center items-center">
+                <span className="text-accent">100 - 299</span>
+                <BPIcon size="sm" />
+              </div>
             </div>
-            <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2">
+            <div className="contents">
               <BountyTierBadge tier="Hard" size="lg" className="w-full" />
-              <span className="font-bold whitespace-nowrap text-right">
-                BP ≥ <span className="text-accent">300</span>
-              </span>
+              <div className="flex gap-1 font-bold whitespace-nowrap place-content-center items-center">
+                <span className="text-accent">300 - 999</span>
+                <BPIcon size="sm" />
+              </div>
             </div>
-            <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2">
+            <div className="contents">
               <BountyTierBadge tier="Lunatic" size="lg" className="w-full" />
-              <span className="font-bold whitespace-nowrap text-right">
-                BP ≥ <span className="text-accent">1,000</span>
-              </span>
+              <div className="flex gap-1 font-bold whitespace-nowrap place-content-center items-center">
+                <span className="text-accent">1,000 - 2,999</span>
+                <BPIcon size="sm" />
+              </div>
             </div>
-            <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2">
+            <div className="contents">
               <BountyTierBadge tier="Extra" size="lg" className="w-full" />
-              <span className="font-bold whitespace-nowrap text-right">
-                BP ≥ <span className="text-accent">3,000</span>
-              </span>
+              <div className="flex gap-1 font-bold whitespace-nowrap place-content-center items-center">
+                <span className="text-accent">3,000 - 9,999</span>
+                <BPIcon size="sm" />
+              </div>
             </div>
-            <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-2">
+            <div className="contents">
               <BountyTierBadge tier="Phantasm" size="lg" className="w-full" />
-              <span className="font-bold whitespace-nowrap text-right">
-                BP ≥ <span className="text-accent">10,000</span>
-              </span>
+              <div className="flex gap-1 font-bold whitespace-nowrap place-content-center items-center">
+                <span className="text-accent">≥ 10,000</span>
+                <BPIcon size="sm" />
+              </div>
             </div>
           </div>
         </div>
