@@ -4,9 +4,11 @@ import { claimDailyBp } from "@/lib/api/economy";
 import { ApiError } from "@/lib/api/client";
 import type { BountyEvent, LedgerEntry, User } from "@marksman/contracts";
 import { useEffect, useRef, useState } from "react";
+import { useUserHunts } from "./useUserHunts";
 
 export function useUserProfile(id: string) {
   const { user, refreshUser: refreshAccount } = useAuth();
+  const { hunts, huntsQueryStatus, refreshHunts } = useUserHunts(id);
 
   const [userQueryStatus, setUserQueryStatus] = useState<
     "loading" | "errored" | "complete" | "notFound"
@@ -209,6 +211,9 @@ export function useUserProfile(id: string) {
   }, [eventsRefresh, eventsPage, id, detailedUser?.identity, userQueryStatus]);
 
   return {
+    hunts,
+    huntsQueryStatus,
+    refreshHunts,
     user,
     detailedUser,
     userQueryStatus,

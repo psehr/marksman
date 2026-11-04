@@ -2,6 +2,7 @@ import {
   bountyEventSchema,
   ledgerEntrySchema,
   userSchema,
+  userHuntedBountiesSchema,
 } from "@marksman/contracts";
 import { apiFetch } from "./client";
 
@@ -15,6 +16,12 @@ export async function getCurrentUser() {
 
 export async function getUser(id: string) {
   return userSchema.parse(await apiFetch(`/users/${encodeURIComponent(id)}`));
+}
+
+export async function getUserHunts(id: string, signal?: AbortSignal) {
+  return userHuntedBountiesSchema.parse(
+    await apiFetch(`/users/${encodeURIComponent(id)}/hunts`, { signal }),
+  );
 }
 
 export async function getUserLedger(page: number) {

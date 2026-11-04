@@ -13,6 +13,7 @@ import { useUserProfile } from "@/hooks/useUserProfile";
 import { aes_font } from "@/lib/fonts";
 import { PROFILE_HISTORY_PAGE_SIZE } from "@marksman/contracts";
 import { notFound, useParams } from "next/navigation";
+import ProfileBountySlots from "@/components/users/ProfileBountySlots";
 
 export default function UserPage() {
   const { id } = useParams<{ id: string }>();
@@ -36,6 +37,9 @@ export default function UserPage() {
     claimMessage,
     claimError,
     claimDailyReward,
+    hunts,
+    refreshHunts,
+    huntsQueryStatus,
   } = useUserProfile(id);
 
   if (userQueryStatus === "loading") {
@@ -83,6 +87,20 @@ export default function UserPage() {
           <div
             className={`w-full grid grid-cols-1 gap-4 ${userIsPageOwner ? "lg:grid-cols-2" : ""}`}
           >
+            <div className="flex flex-col lg:flex-row place-content-center items-stretch col-span-full gap-4">
+              {huntsQueryStatus === "complete" ? (
+                <ProfileBountySlots hunts={hunts} />
+              ) : null}
+              {huntsQueryStatus === "loading" ? <p>Loading hunts...</p> : null}
+              {huntsQueryStatus === "errored" ? (
+                <>
+                  <p>Error loading hunts</p>
+                  <Button size="sm" onClick={refreshHunts}>
+                    Retry
+                  </Button>
+                </>
+              ) : null}
+            </div>
             <InfoSection
               title="Events"
               className="min-w-0 h-96"

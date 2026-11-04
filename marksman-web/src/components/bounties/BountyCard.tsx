@@ -10,6 +10,7 @@ import BountyTierBadge from "./BountyTierBadge";
 import GradeIcon from "../osu/GradeIcon";
 import { BeatmapCard } from "../beatmaps/BeatmapCard";
 import { BadgeLabel } from "../ui/BadgeLabel";
+import TargetIcon from "../ui/TargetIcon";
 
 export type BountyCardDisplay = {
   beatmap: ExtendedBounty["beatmap"];
@@ -60,7 +61,7 @@ export default function BountyCard({ bounty }: { bounty: ExtendedBounty }) {
 
   return (
     <Link
-      className="relative isolate bg-card border-border hover:border-focus-ring focus-visible:border-accent flex w-full min-w-0 cursor-pointer flex-col overflow-hidden rounded border transition-all focus-visible:outline-0"
+      className="relative isolate bg-card border-border hover:border-focus-ring focus-visible:border-accent flex w-full min-w-0 cursor-pointer flex-col justify-between overflow-hidden rounded border transition-all focus-visible:outline-0"
       href={`/bounties/${bounty.id}`}
     >
       <BountyCardContent content={content} status={status} />

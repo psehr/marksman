@@ -59,7 +59,7 @@ export function BeatmapCard({
   switch (variant) {
     case "bounty":
       return (
-        <div className="relative h-24 overflow-hidden text-left">
+        <div className="relative shrink-0 h-24 overflow-hidden text-left">
           <div
             className={`relative z-10 gap-4 ${aes_font.className} flex size-full p-2 px-4`}
           >
