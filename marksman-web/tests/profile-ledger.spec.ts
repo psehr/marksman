@@ -51,9 +51,10 @@ async function setup(page: Page, account: User | null = owner, authGate?: Promis
     return route.fulfill({ json: [entry(1)] });
   });
   await page.route("**/users/*/bounty-events?*", route => route.fulfill({ json: [] }));
+  await page.route("**/users/*/hunts", route => route.fulfill({ json: [] }));
   return state;
 }
-const visit = (page: Page) => page.goto(`/users/${owner.identity.id}`);
+const visit = (page: Page) => page.goto(`/users/${owner.identity.id}?view=activity`);
 const history = (page: Page) => page.getByRole("heading", { name: "Transactions", exact: true });
 const next = (page: Page) => page.getByRole("button", { name: ">", exact: true });
 const previous = (page: Page) => page.getByRole("button", { name: "<", exact: true });

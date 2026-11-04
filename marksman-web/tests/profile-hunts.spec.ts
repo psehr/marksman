@@ -78,7 +78,8 @@ for (const failure of ["http", "network", "schema"]) {
     state.failure = failure;
     await page.goto(`/users/${owner.identity.id}`);
     await expect(page.getByText("Error loading hunts", { exact: true })).toBeVisible();
-    await expect(page.getByRole("heading", { name: "Events", exact: true })).toBeVisible();
+    await expect(page.getByText("Balance: 100 BP", { exact: true })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Activity", exact: true })).toBeEnabled();
     await expect(page.getByText("Empty Hunting Slot", { exact: true })).toHaveCount(0);
     state.failure = "";
     await page.getByRole("button", { name: "Retry", exact: true }).click();
@@ -151,3 +152,61 @@ for (const width of [320, 375, 390, 1280]) {
     await expect(page).toHaveURL(new RegExp(`/bounties/${pair(1).bounty.id}$`));
   });
 }
+
+
+for (const query of ["", "?view=unknown", "?view=Hunting"]) {
+  test(`profile defaults to Hunting for ${query || "missing view"}`, async ({ page }) => {
+    await setup(page);
+    await page.goto(`/users/${owner.identity.id}${query}`);
+    await expect(page.getByRole("button", { name: "Hunting", exact: true })).toHaveAttribute("aria-pressed", "true");
+    await expect(slot(page, 1)).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Activity", exact: true })).toHaveCount(0);
+  });
+}
+
+for (const [view, label] of [["activity", "Activity"], ["created", "Created Bounties"]] as const) {
+  test(`direct ${view} URL survives reload`, async ({ page }) => {
+    await setup(page);
+    await page.goto(`/users/${owner.identity.id}?view=${view}`);
+    for (let attempt = 0; attempt < 2; attempt++) {
+      if (attempt) await page.reload();
+      await expect(page.getByRole("button", { name: label, exact: true })).toHaveAttribute("aria-pressed", "true");
+      await expect(page.getByText("Hunting Slot #1", { exact: true })).toHaveCount(0);
+      await expect(page.getByRole("heading", { name: view === "activity" ? "Activity" : "W.I.P", exact: true })).toBeVisible();
+    }
+  });
+}
+
+test("view buttons preserve query parameters and hash, with Back and Forward restoring content", async ({ page }) => {
+  const state = await setup(page);
+  await page.goto(`/users/${owner.identity.id}?keep=1&keep=2#profile`);
+  const hunting = page.getByRole("button", { name: "Hunting", exact: true });
+  const activity = page.getByRole("button", { name: "Activity", exact: true });
+  const created = page.getByRole("button", { name: "Created Bounties", exact: true });
+  await expect(slot(page, 1)).toBeVisible();
+  const reads = state.reads;
+  const historyLength = await page.evaluate(() => history.length);
+  await hunting.click();
+  expect(await page.evaluate(() => history.length)).toBe(historyLength);
+
+  await activity.focus();
+  await page.keyboard.press("Enter");
+  await expect(activity).toHaveAttribute("aria-pressed", "true");
+  await expect(page.getByRole("heading", { name: "Activity", exact: true })).toBeVisible();
+  await expect(page).toHaveURL(new RegExp(`\\?keep=1&keep=2&view=activity#profile$`));
+  await created.click();
+  await expect(created).toHaveAttribute("aria-pressed", "true");
+  await expect(page.getByRole("heading", { name: "W.I.P", exact: true })).toBeVisible();
+  await page.goBack();
+  await expect(activity).toHaveAttribute("aria-pressed", "true");
+  await expect(page.getByRole("heading", { name: "Activity", exact: true })).toBeVisible();
+  await page.goBack();
+  await expect(hunting).toHaveAttribute("aria-pressed", "true");
+  await expect(slot(page, 1)).toBeVisible();
+  await page.goForward();
+  await expect(activity).toHaveAttribute("aria-pressed", "true");
+  await hunting.click();
+  await expect(page).toHaveURL(new RegExp(`\\?keep=1&keep=2#profile$`));
+  await expect(slot(page, 1)).toBeVisible();
+  expect(state.reads).toBe(reads);
+});

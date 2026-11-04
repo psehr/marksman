@@ -26,7 +26,7 @@ function RouteLink({
     <Link
       href={url}
       onClick={onClick}
-      className={`cursor-pointer rounded focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-4 ${className ?? ""} ${selected ? "text-accent" : "text-foreground-muted"} font-bold ${aes_font.className} text-xl`}
+      className={`cursor-pointer rounded focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-4 ${className ?? ""} ${selected ? "text-accent" : "text-foreground-muted"} ${aes_font.className} font-bold  text-xl`}
       aria-current={selected ? "page" : undefined}
     >
       {title}

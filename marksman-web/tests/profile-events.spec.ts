@@ -21,11 +21,11 @@ function gate() {
   const promise = new Promise<void>(resolve => { release = resolve; });
   return { promise, release };
 }
-const section = (page: Page) => page.getByRole("heading", { name: "Events", exact: true }).locator("..");
+const section = (page: Page) => page.getByRole("heading", { name: "Activity", exact: true }).locator("..");
 const table = (page: Page) => section(page).getByRole("table", { name: "Bounty Events History" });
 const next = (page: Page) => section(page).getByRole("button", { name: ">", exact: true });
 const previous = (page: Page) => section(page).getByRole("button", { name: "<", exact: true });
-const visit = (page: Page, user = creator) => page.goto(`/users/${user.identity.id}`);
+const visit = (page: Page, user = creator) => page.goto(`/users/${user.identity.id}?view=activity`);
 
 async function setup(page: Page, account: User | null = null, authGate?: Promise<void>) {
   const state = { account, profileReads: 0, ledgerReads: 0, eventRequests: [] as string[] };
@@ -61,6 +61,7 @@ async function setup(page: Page, account: User | null = null, authGate?: Promise
     return route.fulfill({ json: url.pathname.includes(creator.identity.id)
       ? [event(1, "cancelled"), event(2, "completed"), event(2)] : [event(2, "completed")] });
   });
+  await page.route("**/users/*/hunts", route => route.fulfill({ json: [] }));
   return state;
 }
 
@@ -216,6 +217,7 @@ for (const lateStatus of [200, 500]) {
       // A real Next Link transition preserves the mounted profile component.
       await page.getByRole("navigation").getByRole("link", { name: "Profile", exact: true }).click();
       await expect(page).toHaveURL(new RegExp(`/users/${winner.identity.id}$`));
+      await page.getByRole("button", { name: "Activity", exact: true }).click();
       await expect(table(page)).toContainText("scorehunter completed mapmaker's bounty");
     } finally { pending.release(); }
     await expect.poll(() => finished).toBe(true);
@@ -296,7 +298,7 @@ test("history headers and stretched links retain native keyboard and pointer nav
   const plainRow = ledger.locator("tbody tr").nth(1);
   await expect(plainRow.getByRole("link")).toHaveCount(0);
   await plainRow.locator("td").first().click();
-  await expect(page).toHaveURL(new RegExp(`/users/${creator.identity.id}$`));
+  await expect(page).toHaveURL(new RegExp(`/users/${creator.identity.id}\\?view=activity$`));
   const eventLink = table(page).getByRole("link").first();
   await eventLink.focus();
   await expect(eventLink).toBeFocused();

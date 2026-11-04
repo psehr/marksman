@@ -5,8 +5,10 @@ import { ApiError } from "@/lib/api/client";
 import type { BountyEvent, LedgerEntry, User } from "@marksman/contracts";
 import { useEffect, useRef, useState } from "react";
 import { useUserHunts } from "./useUserHunts";
+import { useProfileView } from "./useProfileView";
 
 export function useUserProfile(id: string) {
+  const { view, setView } = useProfileView();
   const { user, refreshUser: refreshAccount } = useAuth();
   const { hunts, huntsQueryStatus, refreshHunts } = useUserHunts(id);
 
@@ -211,6 +213,8 @@ export function useUserProfile(id: string) {
   }, [eventsRefresh, eventsPage, id, detailedUser?.identity, userQueryStatus]);
 
   return {
+    view,
+    setView,
     hunts,
     huntsQueryStatus,
     refreshHunts,
