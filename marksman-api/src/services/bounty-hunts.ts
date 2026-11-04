@@ -1,4 +1,9 @@
-import { Hunt, UserIdentity } from "@marksman/contracts";
+import {
+  Hunt,
+  UserHuntedBounties,
+  userHuntedBountiesSchema,
+  UserIdentity,
+} from "@marksman/contracts";
 import { db } from "../db";
 import { findBountyByIdForUpdate } from "../db/bounties";
 import {
@@ -12,7 +17,7 @@ import {
   UserNotFoundError,
   DuplicateHuntingError,
 } from "./errors";
-import { findUserByIdForUpdate } from "../db/users";
+import { findUserById, findUserByIdForUpdate } from "../db/users";
 import {
   markHuntStopped,
   countUserOngoingHunts,
@@ -21,7 +26,9 @@ import {
   insertHunt,
   isUserHuntingBounty,
   getUserOngoingHunts,
+  getUserOngoingHuntedBounties,
 } from "../db/bounty-hunts";
+import { enrichBounties } from "./bounty-enrichment";
 
 export async function startHunt(
   identity: UserIdentity,
@@ -90,7 +97,44 @@ export async function stopHunt(
 }
 
 export async function getOngoingHuntsForUser(userId: string): Promise<Hunt[]> {
+  const user = await findUserById(userId);
+  if (!user) throw new UserNotFoundError();
+
   const hunts = await getUserOngoingHunts(db, userId);
 
   return hunts;
+}
+
+export async function getOngoingHuntedBountiesForUser(
+  userId: string,
+): Promise<UserHuntedBounties> {
+  const user = await findUserById(userId);
+  if (!user) throw new UserNotFoundError();
+
+  const huntedBounties = await getUserOngoingHuntedBounties(db, userId);
+  const bounties = huntedBounties.map((pair) => pair.bounty);
+  const enrichedBounties = await enrichBounties(bounties);
+
+  const enrichedHuntedBounties = enrichedBounties.map((bounty) => {
+    const foundHunt = huntedBounties.find(
+      (huntedBounty) => huntedBounty.hunt.bountyId === bounty.id,
+    )?.hunt;
+
+    if (!foundHunt)
+      throw new Error("Unable to find paired hunt for enriched bounty.");
+
+    return {
+      hunt: foundHunt,
+      bounty: bounty,
+    };
+  });
+
+  const parsedHuntedBounties = userHuntedBountiesSchema.safeParse(
+    enrichedHuntedBounties,
+  );
+
+  if (!parsedHuntedBounties.success)
+    throw new Error("Could not parse hunted bounty.");
+
+  return parsedHuntedBounties.data;
 }

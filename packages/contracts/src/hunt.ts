@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { extendedBountySchema } from "./bounty";
 
 export const huntStatusEnum = z.enum(["ongoing", "stopped", "closed"]);
 
@@ -11,4 +12,12 @@ export const huntSchema = z.object({
   status: huntStatusEnum,
 });
 
+export const userHuntedBountiesSchema = z
+  .object({
+    hunt: huntSchema,
+    bounty: extendedBountySchema,
+  })
+  .array();
+
+export type UserHuntedBounties = z.infer<typeof userHuntedBountiesSchema>;
 export type Hunt = z.infer<typeof huntSchema>;

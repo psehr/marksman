@@ -6,7 +6,16 @@ import { getBookmarkedBounties } from "../services/bounty-bookmarks";
 import { fetchLedgerHistory } from "../services/ledger";
 import { getUserBountyEvents } from "../services/bounty-events";
 import { UserNotFoundError } from "../services/errors";
-import { getOngoingHuntsForUser } from "../services/bounty-hunts";
+import {
+  getOngoingHuntedBountiesForUser,
+  getOngoingHuntsForUser,
+} from "../services/bounty-hunts";
+import z from "zod";
+import {
+  bountySchema,
+  extendedBountySchema,
+  huntSchema,
+} from "@marksman/contracts";
 
 export const usersRouter = Router();
 
@@ -62,6 +71,32 @@ usersRouter.get("/me/hunts", requireAuth, async (req, res) => {
   const ongoingHunts = await getOngoingHuntsForUser(userId);
 
   return res.json(ongoingHunts);
+});
+
+usersRouter.get("/:id/hunts", async (req, res) => {
+  const parsedUserId = uuidSchema.safeParse(req.params.id);
+
+  if (!parsedUserId.success) {
+    return res
+      .status(400)
+      .json({ code: "MALFORMED_USER_ID", error: "Malformed user ID" });
+  }
+  try {
+    const ongoingHunts = await getOngoingHuntedBountiesForUser(
+      parsedUserId.data,
+    );
+
+    return res.json(ongoingHunts);
+  } catch (error) {
+    if (error instanceof UserNotFoundError) {
+      return res.status(404).json({
+        code: "USER_NOT_FOUND",
+        error: "User not found",
+      });
+    }
+
+    throw error;
+  }
 });
 
 usersRouter.get("/:id/bounty-events", async (req, res) => {

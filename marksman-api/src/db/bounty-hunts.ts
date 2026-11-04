@@ -1,7 +1,8 @@
 import { and, eq, inArray, sql } from "drizzle-orm";
 import { db, Transaction } from ".";
 import { bounties, bountyHunts, users } from "./schema";
-import { Hunt } from "@marksman/contracts";
+import { Bounty, Hunt } from "@marksman/contracts";
+import { toBounty } from "./bounties";
 
 export function toHunt(row: typeof bountyHunts.$inferSelect): Hunt {
   return {
@@ -193,4 +194,21 @@ export async function getUserOngoingHunts(
     );
 
   return rows.map((row) => toHunt(row));
+}
+
+export async function getUserOngoingHuntedBounties(
+  connection: Transaction | typeof db,
+  userId: string,
+): Promise<{ hunt: Hunt; bounty: Bounty }[]> {
+  const rows = await connection
+    .select()
+    .from(bountyHunts)
+    .innerJoin(bounties, eq(bounties.id, bountyHunts.bountyId))
+    .where(
+      and(eq(bountyHunts.userId, userId), eq(bountyHunts.status, "ongoing")),
+    );
+
+  return rows.map((row) => {
+    return { hunt: toHunt(row.bounty_hunts), bounty: toBounty(row.bounties) };
+  });
 }

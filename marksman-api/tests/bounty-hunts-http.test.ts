@@ -5,8 +5,8 @@ import type { Server } from "node:http";
 import { setTimeout as delay } from "node:timers/promises";
 import { after, afterEach, before, beforeEach, mock, test } from "node:test";
 import { eq, sql } from "drizzle-orm";
-import { huntSchema } from "@marksman/contracts";
-import { bounties, bountyHunts, ledgerEntries, sessions, users } from "../src/db/schema";
+import { huntSchema, userHuntedBountiesSchema, type BountyBeatmapMetadata } from "@marksman/contracts";
+import { bounties, bountyHunts, bountyBookmarks, bountyBeatmaps, ledgerEntries, sessions, users } from "../src/db/schema";
 import { createTestDatabase } from "./fixtures/test-database";
 
 // Configure the isolated database before loading the application or pool.
@@ -378,3 +378,94 @@ for (const missing of ["user", "bounty"] as const) {
     }
   });
 }
+
+
+async function requestPublicHunts(profileId: string, viewerId?: string) {
+  const headers: Record<string, string> = {};
+  if (viewerId) headers.Cookie = await cookieFor(viewerId);
+  return httpFetch(`${baseUrl}/users/${profileId}/hunts`, { headers });
+}
+
+test("public profile hunts rejects malformed user IDs", async () => {
+  await expectError(await requestPublicHunts("not-a-uuid"), 400,
+    "MALFORMED_USER_ID", "Malformed user ID");
+});
+
+test("public profile hunts returns 404 for a missing user", async () => {
+  await expectError(await requestPublicHunts(randomUUID()), 404,
+    "USER_NOT_FOUND", "User not found");
+});
+
+test("public profile hunts returns an empty array anonymously for an existing user", async () => {
+  const response = await requestPublicHunts(hunter.id);
+  assert.equal(response.status, 200);
+  assert.deepEqual(await response.json(), []);
+});
+
+test("public profile hunts returns enriched matching cards and excludes inactive and other users' hunts", async () => {
+  const startedAt = new Date("2026-10-01T12:00:00.000Z");
+  const endedAt = new Date("2026-10-01T13:00:00.000Z");
+  await db.update(bounties).set({ creatorOsuUserId: other.osuUserId }).where(eq(bounties.id, bountyId));
+  const [second] = await db.insert(bounties).values({
+    creatorOsuUserId: other.osuUserId, rewardBp: 75, status: "open",
+    goal: { type: "minimum_grade", beatmapId: 456, minimumGradeRequirement: "S", beatmapChecksum: null, modRequirement: { rule: "any" } },
+  }).returning();
+  const metadata: BountyBeatmapMetadata = {
+    url: "https://osu.ppy.sh/beatmaps/123",
+    version: { id: 123, name: "Profile fixture" },
+    song: { title: "Profile song", artist: "Fixture artist" },
+    specs: { sr: 5, ar: 9, od: 8, cs: 4, hp: 6, bpm: 180,
+      length: { total: 120, drain: 110 }, maxCombo: 500 },
+    covers: null, creator: null, stats: { status: "ranked", playcount: 10 },
+  };
+  // Metadata is persisted locally; no upstream lookup should occur.
+  await db.insert(bountyBeatmaps).values({ beatmapId: 123, metadata }).onConflictDoUpdate({
+    target: bountyBeatmaps.beatmapId, set: { metadata },
+  });
+  await db.insert(bountyBookmarks).values({ userId: hunter.id, bountyId });
+  const hunts = await db.insert(bountyHunts).values([
+    { userId: hunter.id, bountyId, status: "ongoing", startedAt },
+    { userId: hunter.id, bountyId: second.id, status: "ongoing", startedAt },
+    { userId: hunter.id, bountyId, status: "stopped", startedAt, endedAt },
+    { userId: hunter.id, bountyId: second.id, status: "closed", startedAt, endedAt },
+    { userId: other.id, bountyId, status: "ongoing", startedAt },
+  ]).returning();
+  const original = await snapshot();
+  for (const viewerId of [undefined, other.id]) {
+    const response = await requestPublicHunts(hunter.id, viewerId);
+    assert.equal(response.status, 200);
+    const body = await response.json();
+    const pairs = userHuntedBountiesSchema.parse(body);
+    assert.deepEqual(pairs, body);
+    assert.equal(pairs.length, 2);
+    for (const row of hunts.slice(0, 2)) {
+      const pair = pairs.find(pair => pair.hunt.id === row.id);
+      assert.ok(pair);
+      assert.deepEqual(pair.hunt, { ...row, startedAt: startedAt.toISOString(), endedAt: null });
+      assert.equal(pair.bounty.id, row.bountyId);
+      assert.equal(pair.bounty.rewardBp, row.bountyId === bountyId ? 25 : 75);
+      assert.deepEqual(pair.bounty.owner, { id: other.id, osuUserId: other.osuUserId, username: other.username });
+      assert.equal(pair.bounty.winner, null);
+      assert.deepEqual(pair.bounty.beatmap, row.bountyId === bountyId ? metadata : null);
+      assert.deepEqual(pair.bounty.engagement, {
+        bookmarkCount: row.bountyId === bountyId ? 1 : 0,
+        isBookmarkedByCurrentUser: null,
+      });
+    }
+  }
+  assert.deepEqual(await snapshot(), original);
+});
+
+test("public profile hunts frees a displayed slot after stopping", async () => {
+  await db.update(bounties).set({ creatorOsuUserId: other.osuUserId }).where(eq(bounties.id, bountyId));
+  const hunt = await stoppingFixture();
+  const beforeStop = await requestPublicHunts(hunter.id);
+  assert.equal(beforeStop.status, 200);
+  const pairs = userHuntedBountiesSchema.parse(await beforeStop.json());
+  assert.equal(pairs.length, 1);
+  assert.equal(pairs[0].hunt.id, hunt.id);
+  assert.equal((await request({ stopHuntId: hunt.id })).status, 200);
+  const response = await requestPublicHunts(hunter.id);
+  assert.equal(response.status, 200);
+  assert.deepEqual(await response.json(), []);
+});
