@@ -148,6 +148,13 @@ for (const [minimum, accuracy, expected] of [
 
 const modCases: Array<[Bounty["goal"]["modRequirement"], string[], boolean]> = [
   [{ rule: "any" }, [], true],
+  [{ rule: "any" }, ["CL"], true],
+  [{ rule: "exact", mods: [] }, ["CL"], true],
+  [{ rule: "exact", mods: ["HD"] }, ["HD", "CL"], true],
+  [{ rule: "includes", mods: ["HD"] }, ["HD", "CL"], true],
+  [{ rule: "excludes", mods: ["HR"] }, ["HD", "CL"], true],
+  [{ rule: "excludes", mods: ["HR"] }, ["HR", "CL"], false],
+  [{ rule: "any" }, ["CL", "UNRECOGNIZED"], false],
   [{ rule: "any" }, ["UNRECOGNIZED"], false],
   [{ rule: "exact", mods: [] }, [], true],
   [{ rule: "exact", mods: [] }, ["HD"], false],
@@ -172,6 +179,16 @@ for (const [requirement, acronyms, expected] of modCases) {
     const s = qualifyingScore();
     s.mods = acronyms.map((acronym) => ({ acronym }));
     assert.equal(checkCompletion(s, b, hunter, metadata), expected);
+  });
+}
+
+for (const settings of [{}, { no_slider_head_accuracy: false }]) {
+  test(`CL settings ${JSON.stringify(settings)} with exact NM`, () => {
+    const b = qualifyingBounty();
+    b.goal.modRequirement = { rule: "exact", mods: [] };
+    const s = qualifyingScore();
+    s.mods = [{ acronym: "CL", settings }];
+    assert.equal(checkCompletion(s, b, hunter, metadata), Object.keys(settings).length === 0);
   });
 }
 

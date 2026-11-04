@@ -226,11 +226,15 @@ function isCorrectMods(
 ): boolean {
   let settingsExist = false;
 
-  const modsAcronyms = score.mods.map((mod) => {
+  // ignoring classic mod if it has default settings
+  const classicFilteredMods = score.mods.filter((mod) => {
     if (mod.settings && Object.keys(mod.settings).length > 0)
       settingsExist = true;
-    return mod.acronym;
+
+    return mod.acronym !== "CL";
   });
+
+  const modsAcronyms = classicFilteredMods.map((mod) => mod.acronym);
 
   // customized mods reject
   if (settingsExist) return false;
