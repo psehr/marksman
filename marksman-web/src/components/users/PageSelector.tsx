@@ -2,15 +2,22 @@ import Button from "../ui/Button";
 
 export function PageSelector({
   entriesLength,
+  total,
   pageSize,
   selectedPage,
   setSelectedPage,
 }: {
   entriesLength: number;
+  total?: number;
   pageSize: number;
   selectedPage: number;
   setSelectedPage: (page: number) => void;
 }) {
+  const hasNextPage =
+    total === undefined
+      ? entriesLength >= pageSize
+      : selectedPage * pageSize < total;
+
   return (
     <div className="flex items-center gap-2">
       {selectedPage > 1 ? (
@@ -26,7 +33,7 @@ export function PageSelector({
         "-"
       )}
       <p>Page {selectedPage}</p>
-      {entriesLength < pageSize ? (
+      {!hasNextPage ? (
         "-"
       ) : (
         <Button

@@ -11,11 +11,20 @@ import { apiFetch } from "./client";
 import { z } from "zod";
 
 export async function cancelBounty(bountyId: string) {
-  return z.object({ bounty: bountySchema }).parse(await apiFetch(`/bounties/${encodeURIComponent(bountyId)}/cancel`, { method: "POST" })).bounty;
+  return z
+    .object({ bounty: bountySchema })
+    .parse(
+      await apiFetch(`/bounties/${encodeURIComponent(bountyId)}/cancel`, {
+        method: "POST",
+      }),
+    ).bounty;
 }
 
 export async function setBountyBookmark(bountyId: string, bookmarked: boolean) {
-  await apiFetch(`/bounties/${encodeURIComponent(bountyId)}/${bookmarked ? "bookmark" : "unbookmark"}`, { method: "POST" });
+  await apiFetch(
+    `/bounties/${encodeURIComponent(bountyId)}/${bookmarked ? "bookmark" : "unbookmark"}`,
+    { method: "POST" },
+  );
 }
 
 export async function getBounty(bountyId: string) {
@@ -37,7 +46,10 @@ export async function getBounties(
   }
   const search = params.toString();
   return bountyListResponseSchema.parse(
-    await apiFetch(`/bounties${search ? `?${search}` : ""}`, { method: "GET", signal }),
+    await apiFetch(`/bounties${search ? `?${search}` : ""}`, {
+      method: "GET",
+      signal,
+    }),
   );
 }
 
@@ -48,9 +60,11 @@ export async function getBookmarkedBounties() {
 }
 
 export async function createBounty(input: CreateBountyInput) {
-  return z.object({ bounty: bountySchema }).parse(await apiFetch("/bounties", {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(createBountySchema.parse(input)),
-  })).bounty;
+  return z.object({ bounty: bountySchema }).parse(
+    await apiFetch("/bounties", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(createBountySchema.parse(input)),
+    }),
+  ).bounty;
 }

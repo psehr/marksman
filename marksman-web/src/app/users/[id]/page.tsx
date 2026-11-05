@@ -15,6 +15,7 @@ import { PROFILE_HISTORY_PAGE_SIZE } from "@marksman/contracts";
 import { notFound, useParams } from "next/navigation";
 import ProfileBountySlots from "@/components/users/ProfileBountySlots";
 import { Suspense } from "react";
+import BountyList from "@/components/bounties/BountyList";
 
 export default function UserPage() {
   return (
@@ -52,6 +53,15 @@ function UserProfile() {
     huntsQueryStatus,
     view,
     setView,
+    createdBounties,
+    createdBountiesTotal,
+    createdBountiesPageSize,
+    createdBountiesQueryStatus,
+    createdBountiesStatus,
+    setCreatedBountiesStatus,
+    createdBountiesPage,
+    setCreatedBountiesPage,
+    refreshCreatedBounties,
   } = useUserProfile(id);
 
   if (userQueryStatus === "loading") {
@@ -166,9 +176,61 @@ function UserProfile() {
         break;
       case "created":
         content = (
-          <InfoSection title="W.I.P" className="col-span-full">
-            This page is still work in progress. It is not available yet.
-          </InfoSection>
+          <div className="col-span-full flex items-center flex-col gap-4">
+            <div className="flex w-full items-center place-content-center">
+              <Button
+                variant="textual"
+                size="sm"
+                onClick={() => setCreatedBountiesStatus("open")}
+                aria-pressed={createdBountiesStatus === "open"}
+              >
+                Open
+              </Button>
+              <span className="text-border hidden md:inline">•</span>
+              <Button
+                variant="textual"
+                size="sm"
+                onClick={() => setCreatedBountiesStatus("completed")}
+                aria-pressed={createdBountiesStatus === "completed"}
+              >
+                Completed
+              </Button>
+              <span className="text-border hidden md:inline">•</span>
+              <Button
+                variant="textual"
+                size="sm"
+                onClick={() => setCreatedBountiesStatus("cancelled")}
+                aria-pressed={createdBountiesStatus === "cancelled"}
+              >
+                Cancelled
+              </Button>
+            </div>
+
+            {createdBountiesQueryStatus === "complete" ? (
+              <BountyList bounties={createdBounties} hasBounties />
+            ) : null}
+            {createdBountiesQueryStatus === "loading" ? (
+              <p>Loading...</p>
+            ) : null}
+            {createdBountiesQueryStatus === "errored" ? (
+              <>
+                <p>Error loading bounties</p>
+                <Button variant="textual" onClick={refreshCreatedBounties}>
+                  Retry
+                </Button>
+              </>
+            ) : null}
+            {createdBountiesQueryStatus === "complete" &&
+            createdBountiesPageSize !== undefined ? (
+              <PageSelector
+                entriesLength={createdBounties.length}
+                total={createdBountiesTotal}
+                pageSize={createdBountiesPageSize}
+                selectedPage={createdBountiesPage}
+                setSelectedPage={setCreatedBountiesPage}
+              />
+            ) : null}
+          </div>
         );
         break;
     }

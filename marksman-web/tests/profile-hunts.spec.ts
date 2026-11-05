@@ -32,10 +32,39 @@ function pair(index: number): UserHuntedBounties[number] {
 }
 const slot = (page: Page, index: number) => page.getByText(`Hunting Slot #${index}`, { exact: true }).locator("..");
 
+for (const total of [0, 20, 21, 40]) {
+  test(`created bounty pagination respects total ${total}`, async ({ page }) => {
+    await setup(page);
+    await page.route("**/bounties?*", route => {
+      const params = new URL(route.request().url()).searchParams;
+      expect(params.get("creatorId")).toBe(owner.identity.id);
+      const selectedPage = Number(params.get("page"));
+      const count = Math.max(0, Math.min(20, total - (selectedPage - 1) * 20));
+      return route.fulfill({ json: {
+        items: Array.from({ length: count }, (_, index) => pair(index + 1).bounty),
+        total, page: selectedPage, pageSize: 20,
+      } });
+    });
+    await page.goto(`/users/${owner.identity.id}?view=created`);
+    await expect(page.getByText("Page 1", { exact: true })).toBeVisible();
+    const next = page.getByRole("button", { name: ">", exact: true });
+    if (total <= 20) {
+      await expect(next).toHaveCount(0);
+    } else {
+      await next.click();
+      await expect(page.getByText("Page 2", { exact: true })).toBeVisible();
+      await expect(next).toHaveCount(0);
+      await page.getByRole("button", { name: "<", exact: true }).click();
+      await expect(page.getByText("Page 1", { exact: true })).toBeVisible();
+      await expect(next).toBeVisible();
+    }
+  });
+}
+
 async function setup(page: Page, count = 0, signedIn = false) {
   const state = { count, reads: 0, failure: "" };
   await page.route("**/*", route => {
-    if (new URL(route.request().url()).origin === "http://127.0.0.1:3100") return route.continue();
+    if (new URL(route.request().url()).origin === new URL(test.info().project.use.baseURL!).origin) return route.continue();
     return route.abort("blockedbyclient");
   });
   await page.route("**/auth/me", route => route.fulfill(signedIn ? { json: owner } : { status: 401, json: {} }));

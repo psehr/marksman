@@ -2,15 +2,54 @@ import { useAuth } from "@/components/auth/AuthProvider";
 import { getUser, getUserLedger, getUserBountyEvents } from "@/lib/api/users";
 import { claimDailyBp } from "@/lib/api/economy";
 import { ApiError } from "@/lib/api/client";
-import type { BountyEvent, LedgerEntry, User } from "@marksman/contracts";
+import type {
+  BountyEvent,
+  BountySearchQuery,
+  LedgerEntry,
+  User,
+} from "@marksman/contracts";
 import { useEffect, useRef, useState } from "react";
 import { useUserHunts } from "./useUserHunts";
 import { useProfileView } from "./useProfileView";
+import { useUserCreatedBounties } from "./useUserCreatedBounties";
 
 export function useUserProfile(id: string) {
   const { view, setView } = useProfileView();
   const { user, refreshUser: refreshAccount } = useAuth();
   const { hunts, huntsQueryStatus, refreshHunts } = useUserHunts(id);
+  const [createdQuery, setCreatedQuery] = useState<{
+    creatorId: string;
+    status: BountySearchQuery["status"];
+    page: number;
+  }>({ creatorId: id, status: "open", page: 1 });
+  // Use defaults immediately on profile navigation, before any new request runs.
+  const createdBountiesStatus =
+    createdQuery.creatorId === id ? createdQuery.status : "open";
+  const createdBountiesPage =
+    createdQuery.creatorId === id ? createdQuery.page : 1;
+  const {
+    bounties: createdBounties,
+    total: createdBountiesTotal,
+    pageSize: createdBountiesPageSize,
+    queryStatus: createdBountiesQueryStatus,
+    refreshCreatedBounties,
+  } = useUserCreatedBounties(id, createdBountiesStatus, createdBountiesPage);
+
+  useEffect(() => {
+    setCreatedQuery({ creatorId: id, status: "open", page: 1 });
+  }, [id]);
+
+  const setCreatedBountiesStatus = (status: BountySearchQuery["status"]) => {
+    setCreatedQuery({ creatorId: id, status, page: 1 });
+  };
+
+  const setCreatedBountiesPage = (page: number) => {
+    setCreatedQuery((previous) => ({
+      creatorId: id,
+      status: previous.creatorId === id ? previous.status : "open",
+      page,
+    }));
+  };
 
   const [userQueryStatus, setUserQueryStatus] = useState<
     "loading" | "errored" | "complete" | "notFound"
@@ -218,6 +257,15 @@ export function useUserProfile(id: string) {
     hunts,
     huntsQueryStatus,
     refreshHunts,
+    createdBounties,
+    createdBountiesTotal,
+    createdBountiesPageSize,
+    createdBountiesQueryStatus,
+    createdBountiesStatus,
+    setCreatedBountiesStatus,
+    createdBountiesPage,
+    setCreatedBountiesPage,
+    refreshCreatedBounties,
     user,
     detailedUser,
     userQueryStatus,

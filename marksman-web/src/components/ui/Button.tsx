@@ -19,7 +19,7 @@ export default function Button({
   return (
     <button
       {...props}
-      className={`${buttonStyles(size, variant)} disabled:cursor-not-allowed disabled:opacity-50 ${className}`}
+      className={`${className} ${buttonStyles(size, variant)} disabled:cursor-not-allowed disabled:opacity-50`}
       type={type}
     >
       {children}
