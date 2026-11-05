@@ -1,3 +1,5 @@
+import { aes_font } from "@/lib/fonts";
+
 const sizes = {
   sm: "h-8 px-3 text-sm gap-1.5",
   md: "h-10 px-4 text-sm gap-2",
@@ -11,6 +13,7 @@ const variants = {
   confirm: "border-success text-success hover:bg-success hover:text-background",
   outline:
     "border-border bg-surface-raised text-foreground hover:bg-surface-hover",
+  textual: `border-transparent aria-pressed:text-accent text-foreground-muted font-bold text-xl ${aes_font.className}`,
 };
 
 export type ButtonSize = keyof typeof sizes;

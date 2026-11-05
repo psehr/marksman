@@ -28,6 +28,7 @@ export async function getBounty(bountyId: string) {
 
 export async function getBounties(
   query: Partial<BountySearchQuery> = {},
+  signal?: AbortSignal,
 ): Promise<BountyListResponse> {
   const params = new URLSearchParams();
   for (const [key, value] of Object.entries(query)) {
@@ -36,7 +37,7 @@ export async function getBounties(
   }
   const search = params.toString();
   return bountyListResponseSchema.parse(
-    await apiFetch(`/bounties${search ? `?${search}` : ""}`, { method: "GET" }),
+    await apiFetch(`/bounties${search ? `?${search}` : ""}`, { method: "GET", signal }),
   );
 }
 

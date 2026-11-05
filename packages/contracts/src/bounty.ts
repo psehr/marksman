@@ -114,7 +114,7 @@ export const bountyScoreCandidateSchema = scoreResponseSchema.extend({
 const bountyTypeEnum = z.enum(["full_combo", "minimum_grade"]);
 
 export const bountySearchQuerySchema = z.object({
-  status: z.enum(["open", "completed"]).default("open"),
+  status: z.enum(["open", "completed", "cancelled"]).default("open"),
   goals: z
     .string()
     .default("")
@@ -137,6 +137,7 @@ export const bountySearchQuerySchema = z.object({
   sort: z.enum(["date", "reward"]).default("date"),
   order: z.enum(["asc", "desc"]).default("desc"),
   relationship: z.enum(["all", "created", "bookmarked"]).default("all"),
+  creatorId: z.uuid().optional(),
   page: z.coerce.number().int().positive().default(1),
 });
 

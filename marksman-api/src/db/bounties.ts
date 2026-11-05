@@ -61,6 +61,10 @@ export async function listBounties(
     Number.isInteger(query.page) && query.page > 0 ? query.page : 1;
   const pageSize = BOUNTIES_LIST_PAGE_SIZE;
 
+  const creatorFilter = query.creatorId
+    ? eq(creator.id, query.creatorId)
+    : undefined;
+
   const statusFilter = eq(bounties.status, query.status);
 
   const goalFilter = query.goals.length
@@ -149,6 +153,7 @@ export async function listBounties(
     goalFilter,
     tierFilter,
     modsFilter,
+    creatorFilter,
   );
 
   let sortMethod;

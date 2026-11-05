@@ -195,32 +195,29 @@ function UserProfile() {
             </div>
           </div>
           <div className="flex flex-wrap items-center gap-4">
-            <button
-              type="button"
-              className={`cursor-pointer rounded focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-4 aria-pressed:text-accent text-foreground-muted font-bold ${aes_font.className} text-xl`}
+            <Button
+              variant="textual"
               aria-pressed={view === "hunting"}
               onClick={() => setView("hunting")}
             >
               Hunting
-            </button>
+            </Button>
             <span className="text-border hidden md:inline">•</span>
-            <button
-              type="button"
-              className={`cursor-pointer rounded focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-4 aria-pressed:text-accent text-foreground-muted font-bold ${aes_font.className} text-xl`}
+            <Button
+              variant="textual"
               aria-pressed={view === "created"}
               onClick={() => setView("created")}
             >
               Created Bounties
-            </button>
+            </Button>
             <span className="text-border hidden md:inline">•</span>
-            <button
-              type="button"
-              className={`cursor-pointer rounded focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-4 aria-pressed:text-accent text-foreground-muted font-bold ${aes_font.className} text-xl`}
+            <Button
+              variant="textual"
               aria-pressed={view === "activity"}
               onClick={() => setView("activity")}
             >
               Activity
-            </button>
+            </Button>
           </div>
           <div
             className={`w-full grid grid-cols-1 gap-4 ${userIsPageOwner ? "lg:grid-cols-2" : ""}`}
