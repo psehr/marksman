@@ -30,7 +30,7 @@ const visit = (page: Page, user = creator) => page.goto(`/users/${user.identity.
 async function setup(page: Page, account: User | null = null, authGate?: Promise<void>) {
   const state = { account, profileReads: 0, ledgerReads: 0, eventRequests: [] as string[] };
   await page.route("**/*", route => {
-    if (new URL(route.request().url()).origin === "http://127.0.0.1:3100") return route.continue();
+    if (new URL(route.request().url()).origin === new URL(test.info().project.use.baseURL!).origin) return route.continue();
     return route.abort("blockedbyclient");
   });
   await page.route("**/auth/me", async route => {
@@ -43,7 +43,7 @@ async function setup(page: Page, account: User | null = null, authGate?: Promise
     return route.fulfill({ status: 204 });
   });
   await page.route("**/users/*", route => {
-    if (new URL(route.request().url()).origin === "http://127.0.0.1:3100") return route.fallback();
+    if (new URL(route.request().url()).origin === new URL(test.info().project.use.baseURL!).origin) return route.fallback();
     if (!["fetch", "xhr"].includes(route.request().resourceType())) return route.fallback();
     const id = new URL(route.request().url()).pathname.split("/").pop();
     const user = [creator, winner].find(user => user.identity.id === id);

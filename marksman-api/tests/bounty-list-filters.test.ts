@@ -129,6 +129,37 @@ test("public default list excludes closed states and returns enriched items", as
   assert.equal((await list()).items[0].owner?.username, creator.username);
 });
 
+test("creator UUID filters each public status independently of session identity", async () => {
+  const cookie = await cookieFor(alice.id);
+  for (const status of ["open", "completed", "cancelled"] as const) {
+    const target = await seed({ status });
+    await seed({ status, creatorOsuUserId: alice.osuUserId });
+    await seed({ status, creatorOsuUserId: bob.osuUserId });
+    for (const viewer of [undefined, cookie]) {
+      await expectIds({ creatorId: creator.id, status }, [target.id], viewer);
+    }
+  }
+  await seed({ status: "draft" });
+  assert.equal((await list({ creatorId: creator.id })).total, 1);
+  await expectIds({ creatorId: randomUUID() }, []);
+  // Explicit creator selection does not redefine viewer-relative relationships.
+  await expectIds({ creatorId: creator.id, relationship: "created" }, [], cookie);
+});
+
+test("creator filtering applies before pagination and total counting", async () => {
+  const expected = [];
+  for (let i = 0; i < 25; i++) {
+    expected.push(await seed({ status: "cancelled", createdAt: new Date("2026-01-01Z") }));
+    await seed({ status: "cancelled", creatorOsuUserId: alice.osuUserId });
+  }
+  await seed({ status: "completed" });
+  const query = { creatorId: creator.id, status: "cancelled" };
+  const pages = await Promise.all([1, 2, 3].map(page => list({ ...query, page: String(page) })));
+  assert.deepEqual(pages.map(page => page.total), [25, 25, 25]);
+  assert.deepEqual(pages.map(page => page.items.length), [20, 5, 0]);
+  assert.deepEqual(pages.flatMap(page => page.items.map(item => item.id)), expected.map(row => row.id).sort());
+});
+
 test("tier boundaries and disjoint tier selections", async () => {
   const rewards = [1, 99, 100, 299, 300, 999, 1000, 2999, 3000, 9999, 10000, 50000];
   const rows = [];
@@ -223,7 +254,7 @@ test("date and reward sorting support both directions", async () => {
 });
 
 test("invalid query parameters return structured 400 responses", async () => {
-  for (const query of ["page=0", "page=-1", "page=1.5", "page=abc", "status=draft", "sort=oops", "order=oops", "relationship=oops", "tiers=oops", "goals=oops", "mods=oops", "mods=HD&mods=HR"]) {
+  for (const query of ["creatorId=invalid", "creatorId=42", "creatorId=", "creatorId=" + randomUUID() + "&creatorId=" + randomUUID(), "page=0", "page=-1", "page=1.5", "page=abc", "status=draft", "sort=oops", "order=oops", "relationship=oops", "tiers=oops", "goals=oops", "mods=oops", "mods=HD&mods=HR"]) {
     const response = await httpFetch(`${baseUrl}/bounties?${query}`);
     assert.equal(response.status, 400, query);
     assert.equal((await response.json()).code, "INVALID_BOUNTY_LIST_QUERY");

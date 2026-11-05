@@ -176,8 +176,8 @@ function UserProfile() {
         break;
       case "created":
         content = (
-          <div className="col-span-full flex items-center flex-col gap-4">
-            <div className="flex w-full items-center place-content-center">
+          <div className="col-span-full flex items-center flex-col gap-8">
+            <div className="flex flex-wrap w-full items-center place-content-center gap-2">
               <Button
                 variant="textual"
                 size="sm"
@@ -240,7 +240,7 @@ function UserProfile() {
         <PageHeaderBadge>Marksman Profile</PageHeaderBadge>
         <MainSection>
           <div className="w-full">
-            <div className="w-full flex flex-col sm:flex-row justify-between gap-4 pb-8 border-b border-border">
+            <div className="w-full flex flex-col sm:flex-row justify-between gap-4 pb-8">
               <UserCard user={detailedUser} />
               <div className="flex flex-col place-content-end gap-2">
                 {userIsPageOwner ? (
@@ -256,11 +256,13 @@ function UserProfile() {
               </div>
             </div>
           </div>
-          <div className="flex flex-wrap items-center gap-4">
+          <span className="w-full border-b border-border" />
+          <div className="flex w-full flex-col sm:flex-row place-content-center items-center">
             <Button
               variant="textual"
               aria-pressed={view === "hunting"}
               onClick={() => setView("hunting")}
+              size="lg"
             >
               Hunting
             </Button>
@@ -269,6 +271,7 @@ function UserProfile() {
               variant="textual"
               aria-pressed={view === "created"}
               onClick={() => setView("created")}
+              size="lg"
             >
               Created Bounties
             </Button>
@@ -277,10 +280,12 @@ function UserProfile() {
               variant="textual"
               aria-pressed={view === "activity"}
               onClick={() => setView("activity")}
+              size="lg"
             >
               Activity
             </Button>
           </div>
+          <span className="w-full border-b border-border" />
           <div
             className={`w-full grid grid-cols-1 gap-4 ${userIsPageOwner ? "lg:grid-cols-2" : ""}`}
           >

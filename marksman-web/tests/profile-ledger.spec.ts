@@ -28,7 +28,7 @@ async function setup(page: Page, account: User | null = owner, authGate?: Promis
   const state = { account, balance: 100, accountReads: 0, profileReads: 0, ledgerPages: [] as number[] };
   // All external requests are blocked unless a mock below handles them.
   await page.route("**/*", route => {
-    if (new URL(route.request().url()).origin === "http://127.0.0.1:3100") return route.continue();
+    if (new URL(route.request().url()).origin === new URL(test.info().project.use.baseURL!).origin) return route.continue();
     return route.abort("blockedbyclient");
   });
   await page.route("**/auth/me", async route => {
@@ -39,7 +39,7 @@ async function setup(page: Page, account: User | null = owner, authGate?: Promis
       : { status: 401, json: { code: "NOT_LOGGED_IN", error: "Not logged in" } });
   });
   await page.route("**/users/*", route => {
-    if (new URL(route.request().url()).origin === "http://127.0.0.1:3100") return route.fallback();
+    if (new URL(route.request().url()).origin === new URL(test.info().project.use.baseURL!).origin) return route.fallback();
     if (route.request().isNavigationRequest() || !["fetch", "xhr"].includes(route.request().resourceType())) return route.fallback();
     const id = new URL(route.request().url()).pathname.split("/").pop();
     if (id !== owner.identity.id && id !== other.identity.id) return route.fallback();
