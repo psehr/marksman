@@ -1,5 +1,6 @@
 import type { LedgerEntry, User } from "@marksman/contracts";
 import { expect, test, type Page, type Route } from "@playwright/test";
+import { detailedUserFixture } from "./fixtures/users";
 
 const owner: User = {
   identity: { id: "12345678-1234-4234-8234-123456789abc", osuUserId: 42, username: "ledger-owner" },
@@ -44,7 +45,9 @@ async function setup(page: Page, account: User | null = owner, authGate?: Promis
     const id = new URL(route.request().url()).pathname.split("/").pop();
     if (id !== owner.identity.id && id !== other.identity.id) return route.fallback();
     state.profileReads++;
-    return route.fulfill({ json: { ...(id === owner.identity.id ? owner : other), stats: { bpBalance: state.balance } } });
+    return route.fulfill({ json: detailedUserFixture({
+      ...(id === owner.identity.id ? owner : other), stats: { bpBalance: state.balance },
+    }) });
   });
   await page.route("**/users/me/ledger?*", route => {
     state.ledgerPages.push(Number(new URL(route.request().url()).searchParams.get("page")));
@@ -68,7 +71,7 @@ test("late authentication starts owner history; renders signed amounts and bount
   });
   try {
     await visit(page);
-    await expect(page.getByText("Balance: 100 BP", { exact: true })).toBeVisible();
+    await expect(page.getByText(owner.identity.username, { exact: true })).toBeVisible();
     expect(state.ledgerPages).toEqual([]);
     await expect(history(page)).toHaveCount(0);
   } finally { auth.release(); }
@@ -82,7 +85,8 @@ for (const account of [null, other]) {
   test(`${account ? "nonowner" : "signed-out visitor"} never requests private history`, async ({ page }) => {
     const state = await setup(page, account);
     await visit(page);
-    await expect(page.getByText("Balance: 100 BP", { exact: true })).toBeVisible();
+    await expect(page.getByText(owner.identity.username, { exact: true })).toBeVisible();
+    await expect(page.getByText("Your Balance", { exact: true })).toHaveCount(0);
     await expect(account
       ? page.getByRole("button", { name: "Log out", exact: true }).first()
       : page.getByRole("link", { name: "Log in with osu!", exact: true })).toBeVisible();
@@ -150,7 +154,7 @@ for (const failure of [400, 404, 500, "network"] as const) {
     await visit(page);
     await expect(page.getByText("Error loading ledger", { exact: true })).toBeVisible();
     await expect(history(page)).toBeVisible();
-    await expect(page.getByText("Balance: 100 BP", { exact: true })).toBeVisible();
+    await expect(page.getByText("Your Balance", { exact: true }).locator("..")).toContainText("100");
     await page.getByRole("button", { name: "Retry", exact: true }).click();
     await expect(page.locator("tbody tr")).toHaveCount(1);
     await expect(page.getByText("Error loading ledger", { exact: true })).toHaveCount(0);
@@ -180,7 +184,7 @@ test("daily claim from page two refreshes balance and account and returns histor
   const reads = state.accountReads;
   await page.getByRole("button", { name: "Claim daily 25 BP", exact: true }).click();
   await expect(page.getByText("Claimed 25 BP.", { exact: true })).toBeVisible();
-  await expect(page.getByText("Balance: 125 BP", { exact: true })).toBeVisible();
+  await expect(page.getByText("Your Balance", { exact: true }).locator("..")).toContainText("125");
   await expect(history(page).locator("..").getByText("Page 1", { exact: true })).toBeVisible();
   await expect(page.getByRole("cell", { name: "+25 BP", exact: true })).toBeVisible();
   expect(state.accountReads).toBeGreaterThan(reads);

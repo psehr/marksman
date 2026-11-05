@@ -16,6 +16,8 @@ import { notFound, useParams } from "next/navigation";
 import ProfileBountySlots from "@/components/users/ProfileBountySlots";
 import { Suspense } from "react";
 import BountyList from "@/components/bounties/BountyList";
+import UserStatsCard from "@/components/users/UserStatsCard";
+import StatContainer from "@/components/users/StatContainer";
 
 export default function UserPage() {
   return (
@@ -193,7 +195,7 @@ function UserProfile() {
                 onClick={() => setCreatedBountiesStatus("completed")}
                 aria-pressed={createdBountiesStatus === "completed"}
               >
-                Completed
+                Closed
               </Button>
               <span className="text-border hidden md:inline">•</span>
               <Button
@@ -240,21 +242,42 @@ function UserProfile() {
         <PageHeaderBadge>Marksman Profile</PageHeaderBadge>
         <MainSection>
           <div className="w-full">
-            <div className="w-full flex flex-col sm:flex-row justify-between gap-4 pb-8">
+            <div className="w-full flex flex-col lg:flex-row justify-between gap-4 pb-8">
               <UserCard user={detailedUser} />
-              <div className="flex flex-col place-content-end gap-2">
-                {userIsPageOwner ? (
-                  <DailyClaim
-                    claimed={claimed}
-                    claimPending={claimPending}
-                    claimMessage={claimMessage}
-                    claimError={claimError}
-                    claimDailyReward={claimDailyReward}
+              <UserStatsCard cols={2}>
+                <StatContainer
+                  stat={detailedUser.stats.bountiesWon}
+                  title={`Completed ${detailedUser.stats.bountiesWon > 1 ? "Bounties" : "Bounty"}`}
+                  unit="count"
+                />
+                <StatContainer
+                  stat={detailedUser.stats.bountyEarningsBp}
+                  title={`Total Earnings`}
+                  unit="bp"
+                />
+              </UserStatsCard>
+              {userIsPageOwner ? (
+                <UserStatsCard cols={1} size="sm">
+                  <StatContainer
+                    stat={detailedUser.stats.bpBalance}
+                    title={`Your Balance`}
+                    unit="bp"
                   />
-                ) : null}
-                {user ? <AuthButton /> : null}
-              </div>
+                </UserStatsCard>
+              ) : null}
             </div>
+          </div>
+          <div className="flex w-full place-content-end gap-4">
+            {userIsPageOwner ? (
+              <DailyClaim
+                claimed={claimed}
+                claimPending={claimPending}
+                claimMessage={claimMessage}
+                claimError={claimError}
+                claimDailyReward={claimDailyReward}
+              />
+            ) : null}
+            {user ? <AuthButton /> : null}
           </div>
           <span className="w-full border-b border-border" />
           <div className="flex w-full flex-col sm:flex-row place-content-center items-center">

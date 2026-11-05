@@ -16,6 +16,7 @@ import {
   extendedBountySchema,
   huntSchema,
 } from "@marksman/contracts";
+import { enrichUser } from "../services/users";
 
 export const usersRouter = Router();
 
@@ -38,7 +39,9 @@ usersRouter.get("/:id", async (req, res) => {
     return res
       .status(404)
       .json({ code: "USER_NOT_FOUND", error: "User not found" });
-  return res.json(user);
+
+  const enrichedUser = await enrichUser(user);
+  return res.json(enrichedUser);
 });
 
 usersRouter.get("/me/bookmarked-bounties", requireAuth, async (req, res) => {

@@ -5,8 +5,8 @@ import { ApiError } from "@/lib/api/client";
 import type {
   BountyEvent,
   BountySearchQuery,
+  DetailedUser,
   LedgerEntry,
-  User,
 } from "@marksman/contracts";
 import { useEffect, useRef, useState } from "react";
 import { useUserHunts } from "./useUserHunts";
@@ -54,7 +54,7 @@ export function useUserProfile(id: string) {
   const [userQueryStatus, setUserQueryStatus] = useState<
     "loading" | "errored" | "complete" | "notFound"
   >("loading");
-  const [detailedUser, setDetailedUser] = useState<User>();
+  const [detailedUser, setDetailedUser] = useState<DetailedUser>();
 
   const [ledgerQueryStatus, setLedgerQueryStatus] = useState<
     "loading" | "errored" | "complete"

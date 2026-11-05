@@ -1,5 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 import type { ExtendedBounty, User, UserHuntedBounties } from "@marksman/contracts";
+import { detailedUserFixture } from "./fixtures/users";
 
 const owner: User = {
   identity: { id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa", osuUserId: 42, username: "slot-owner" },
@@ -73,7 +74,9 @@ async function setup(page: Page, count = 0, signedIn = false) {
     if (!["fetch", "xhr"].includes(route.request().resourceType())) return route.fallback();
     const id = new URL(route.request().url()).pathname.split("/").pop();
     const profile = [owner, other].find(user => user.identity.id === id);
-    return profile ? route.fulfill({ json: profile }) : route.fallback();
+    return profile ? route.fulfill({ json: detailedUserFixture(profile, {
+      bountiesWon: 12, bountyEarningsBp: 12345,
+    }) }) : route.fallback();
   });
   await page.route("**/users/*/bounty-events?*", route => route.fulfill({ json: [] }));
   await page.route("**/users/me/ledger?*", route => route.fulfill({ json: [] }));
@@ -111,6 +114,9 @@ for (const signedIn of [false, true]) {
     });
     await page.goto(`/users/${owner.identity.id}?view=created`);
     await expect(page.getByText("open result 1-0", { exact: true })).toBeVisible();
+    await expect(page.getByText("Total Earnings", { exact: true }).locator("..")).toContainText("12,345");
+    await expect(page.getByText("Completed Bounties", { exact: true }).locator("..")).toContainText("12");
+    await expect(page.getByText("Your Balance", { exact: true })).toHaveCount(0);
   });
 }
 
@@ -122,7 +128,7 @@ test("created status controls reset pagination and support keyboard selection", 
   });
   await page.goto(`/users/${owner.identity.id}?view=created`);
   await expect(page.getByRole("button", { name: "Open", exact: true })).toHaveAttribute("aria-pressed", "true");
-  for (const label of ["Completed", "Cancelled", "Open"]) {
+  for (const [label, status] of [["Closed", "completed"], ["Cancelled", "cancelled"], ["Open", "open"]]) {
     await page.getByRole("button", { name: ">", exact: true }).click();
     await expect(page.getByText("Page 2", { exact: true })).toBeVisible();
     const button = page.getByRole("button", { name: label, exact: true });
@@ -130,7 +136,7 @@ test("created status controls reset pagination and support keyboard selection", 
     await button.press("Enter");
     await expect(button).toHaveAttribute("aria-pressed", "true");
     await expect(page.getByText("Page 1", { exact: true })).toBeVisible();
-    await expect(page.getByText(`${label.toLowerCase()} result 1-0`, { exact: true })).toBeVisible();
+    await expect(page.getByText(`${status} result 1-0`, { exact: true })).toBeVisible();
   }
 });
 
@@ -184,7 +190,7 @@ test("slow previous status cannot replace current created bounties", async ({ pa
     if (status === "open") finished();
   });
   await page.goto(`/users/${owner.identity.id}?view=created`);
-  await page.getByRole("button", { name: "Completed", exact: true }).click();
+  await page.getByRole("button", { name: "Closed", exact: true }).click();
   await expect(page.getByText("completed result 1-0", { exact: true })).toBeVisible();
   release();
   await done;
@@ -240,7 +246,7 @@ test("profile navigation resets created query and ignores previous profile respo
     if (oldProfile && selectedPage === 2) finished();
   });
   await page.goto(`/users/${other.identity.id}?view=created`);
-  await page.getByRole("button", { name: "Completed", exact: true }).click();
+  await page.getByRole("button", { name: "Closed", exact: true }).click();
   await expect(page.getByText("completed result 1-0", { exact: true })).toBeVisible();
   await page.getByRole("button", { name: ">", exact: true }).click();
   await pending;
@@ -265,7 +271,7 @@ for (const width of [320, 375, 390, 1280]) {
     await page.evaluate(() => document.fonts.ready);
     if (width === 320) await page.screenshot({ path: test.info().outputPath("created-320.png"), fullPage: true });
     const controls = (await page.getByRole("button", { name: "Open", exact: true }).locator("..").boundingBox())!;
-    for (const name of ["Open", "Completed", "Cancelled"]) {
+    for (const name of ["Open", "Closed", "Cancelled"]) {
       const bounds = await page.getByRole("button", { name, exact: true }).boundingBox();
       expect.soft(bounds!.x).toBeGreaterThanOrEqual(controls.x - 1);
       expect.soft(bounds!.x + bounds!.width).toBeLessThanOrEqual(controls.x + controls.width + 1);
@@ -295,7 +301,7 @@ for (const failure of ["http", "network", "schema"]) {
     state.failure = failure;
     await page.goto(`/users/${owner.identity.id}`);
     await expect(page.getByText("Error loading hunts", { exact: true })).toBeVisible();
-    await expect(page.getByText("Balance: 100 BP", { exact: true })).toBeVisible();
+    await expect(page.getByText(owner.identity.username, { exact: true })).toBeVisible();
     await expect(page.getByRole("button", { name: "Activity", exact: true })).toBeEnabled();
     await expect(page.getByText("Empty Hunting Slot", { exact: true })).toHaveCount(0);
     state.failure = "";

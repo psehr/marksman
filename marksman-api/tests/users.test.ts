@@ -3,15 +3,18 @@ import { createTestDatabase } from "./fixtures/test-database";
 import { after, before, beforeEach, test } from "node:test";
 import { setTimeout as delay } from "node:timers/promises";
 import { eq, sql } from "drizzle-orm";
-import { ledgerEntries, users } from "../src/db/schema";
-import { userSchema, type User } from "@marksman/contracts";
+import { bounties, ledgerEntries, users } from "../src/db/schema";
+import { detailedUserSchema, userSchema, type User } from "@marksman/contracts";
+import { qualifyingBounty } from "./fixtures/completion";
 
 // Select the isolated database before loading modules that initialize the pool.
 process.env.DATABASE_URL =
   "postgresql://marksman_test:marksman_test@127.0.0.1:5433/marksman_test?application_name=marksman_user_tests&options=-c%20statement_timeout%3D10000";
 const { db } = require("../src/db") as typeof import("../src/db");
-const { registerOrUpdateUserFromOsuProfile } =
+const { registerOrUpdateUserFromOsuProfile, enrichUser } =
   require("../src/services/users") as typeof import("../src/services/users");
+const { getBountyWinStats } =
+  require("../src/db/bounties") as typeof import("../src/db/bounties");
 
 const profile = { osuUserId: 12345, username: "original_name" };
 const testDatabase = createTestDatabase(db);
@@ -49,6 +52,39 @@ async function assertGrant(user: User) {
   }]);
   assert.ok(entries[0].createdAt instanceof Date);
 }
+
+test("user enrichment returns numeric zero stats when no bounties have been won", async () => {
+  const user = await registerOrUpdateUserFromOsuProfile(profile);
+  assert.deepEqual(await getBountyWinStats(user), { bountiesWon: 0, bountyEarningsBp: 0 });
+  const enriched = detailedUserSchema.parse(await enrichUser(user));
+  assert.deepEqual(enriched, { ...user, stats: { bpBalance: 330, bountiesWon: 0, bountyEarningsBp: 0 } });
+  assert.deepEqual(user.stats, { bpBalance: 330 });
+});
+
+test("win stats count and sum only the viewed user's completed wins", async () => {
+  const user = await registerOrUpdateUserFromOsuProfile(profile);
+  const other = await registerOrUpdateUserFromOsuProfile({ osuUserId: 99999, username: "other" });
+  const base = { creatorOsuUserId: other.identity.osuUserId, goal: qualifyingBounty().goal };
+  await db.insert(bounties).values([
+    // Repeated rewards must both contribute to SUM and COUNT.
+    { ...base, status: "completed", completedByOsuUserId: profile.osuUserId, rewardBp: 100 },
+    { ...base, status: "completed", completedByOsuUserId: profile.osuUserId, rewardBp: 100 },
+    { ...base, status: "completed", completedByOsuUserId: profile.osuUserId, rewardBp: 350 },
+    { ...base, status: "completed", creatorOsuUserId: profile.osuUserId, completedByOsuUserId: other.identity.osuUserId, rewardBp: 900 },
+    { ...base, status: "completed", completedByOsuUserId: null, rewardBp: 900 },
+    ...(["open", "cancelled", "draft"] as const).map(status => ({
+      ...base, status, completedByOsuUserId: profile.osuUserId, rewardBp: 900,
+    })),
+  ]);
+  const original = structuredClone(user);
+  assert.deepEqual(await getBountyWinStats(user), { bountiesWon: 3, bountyEarningsBp: 550 });
+  const enriched = detailedUserSchema.parse(await enrichUser(user));
+  assert.deepEqual(enriched, { ...user, stats: { bpBalance: 330, bountiesWon: 3, bountyEarningsBp: 550 } });
+  assert.deepEqual(user, original);
+  assert.deepEqual(await getBountyWinStats(other), { bountiesWon: 1, bountyEarningsBp: 900 });
+  assert.equal((await db.select().from(users).where(eq(users.id, user.identity.id)))[0].bpBalance, 330);
+  await assertGrant(user);
+});
 
 test("first login creates a user with the supplied profile and one 330 BP grant", async () => {
   const user = await registerOrUpdateUserFromOsuProfile(profile);

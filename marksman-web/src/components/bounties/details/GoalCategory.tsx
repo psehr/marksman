@@ -19,7 +19,7 @@ export default function GoalCategory({ bounty }: { bounty: ExtendedBounty }) {
           </p>
           <div className={`${base_font.className} font-normal`}>
             <p className="text-sm text-foreground-muted font-bold">
-              osu!stable only:
+              osu!stable requirements:
             </p>
             <p className="text-xs text-foreground-muted">
               Stable-Combo-Threshold:{" "}

@@ -317,11 +317,13 @@ export default function AboutBountiesPage() {
           <AboutLink url="/about/bounties#mod-rules">
             mod requirement rule
           </AboutLink>
-          .
+          , except for the <AccentText>Classic (CL)</AccentText> mod that is{" "}
+          <AccentText>ignored</AccentText> during verification.
         </p>
         <p>
           Mod customization is also <AccentText>not allowed</AccentText>.
         </p>
+
         <p>
           The <AccentText>supported mods</AccentText> list is as follows:
         </p>

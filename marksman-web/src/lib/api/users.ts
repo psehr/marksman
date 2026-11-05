@@ -3,6 +3,7 @@ import {
   ledgerEntrySchema,
   userSchema,
   userHuntedBountiesSchema,
+  detailedUserSchema,
 } from "@marksman/contracts";
 import { apiFetch } from "./client";
 
@@ -15,7 +16,9 @@ export async function getCurrentUser() {
 }
 
 export async function getUser(id: string) {
-  return userSchema.parse(await apiFetch(`/users/${encodeURIComponent(id)}`));
+  return detailedUserSchema.parse(
+    await apiFetch(`/users/${encodeURIComponent(id)}`),
+  );
 }
 
 export async function getUserHunts(id: string, signal?: AbortSignal) {
@@ -31,7 +34,11 @@ export async function getUserLedger(page: number) {
 }
 
 export async function getUserBountyEvents(id: string, page: number) {
-  return bountyEventSchema.array().parse(
-    await apiFetch(`/users/${encodeURIComponent(id)}/bounty-events?page=${page}`),
-  );
+  return bountyEventSchema
+    .array()
+    .parse(
+      await apiFetch(
+        `/users/${encodeURIComponent(id)}/bounty-events?page=${page}`,
+      ),
+    );
 }

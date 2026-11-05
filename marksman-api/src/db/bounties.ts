@@ -17,6 +17,7 @@ import {
   lt,
   or,
   sql,
+  sum,
 } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import { bounties, bountyBeatmaps, bountyBookmarks, users } from "./schema";
@@ -29,6 +30,7 @@ import type {
   BountyEvent,
   BountySearchQuery,
   CreateBountyInput,
+  User,
   UserIdentity,
 } from "@marksman/contracts";
 import { db, type Transaction } from "./index";
@@ -379,4 +381,26 @@ export async function getBountyEventsOfUser(
     .slice((pageNumber - 1) * pageSize, (pageNumber - 1) * pageSize + pageSize);
 
   return events;
+}
+
+export async function getBountyWinStats(
+  user: User,
+): Promise<{ bountiesWon: number; bountyEarningsBp: number }> {
+  const [result] = await db
+    .select({
+      bountiesWon: count(),
+      bountyEarningsBp: sum(bounties.rewardBp),
+    })
+    .from(bounties)
+    .where(
+      and(
+        eq(bounties.status, "completed"),
+        eq(bounties.completedByOsuUserId, user.identity.osuUserId),
+      ),
+    );
+
+  return {
+    bountiesWon: result.bountiesWon,
+    bountyEarningsBp: Number(result.bountyEarningsBp ?? 0),
+  };
 }

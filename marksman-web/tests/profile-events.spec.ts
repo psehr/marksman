@@ -1,5 +1,6 @@
 import type { BountyEvent, User } from "@marksman/contracts";
 import { expect, test, type Page } from "@playwright/test";
+import { detailedUserFixture } from "./fixtures/users";
 
 const creator: User = {
   identity: { id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa", osuUserId: 42, username: "mapmaker" },
@@ -49,7 +50,7 @@ async function setup(page: Page, account: User | null = null, authGate?: Promise
     const user = [creator, winner].find(user => user.identity.id === id);
     if (!user) return route.fallback();
     state.profileReads++;
-    return route.fulfill({ json: user });
+    return route.fulfill({ json: detailedUserFixture(user) });
   });
   await page.route("**/users/me/ledger?*", route => {
     state.ledgerReads++;
@@ -182,7 +183,7 @@ for (const failure of [400, 404, 500, "network"] as const) {
     });
     await visit(page);
     await expect(section(page).getByText("Error loading events", { exact: true })).toBeVisible();
-    await expect(page.getByText("Balance: 100 BP", { exact: true })).toBeVisible();
+    await expect(page.getByText(creator.identity.username, { exact: true })).toBeVisible();
     await section(page).getByRole("button", { name: "Retry", exact: true }).click();
     await expect(table(page).locator("tbody tr")).toHaveCount(1);
     await expect(section(page).getByText("Error loading events")).toHaveCount(0);
@@ -308,11 +309,13 @@ test("history headers and stretched links retain native keyboard and pointer nav
   await expect(page).toHaveURL(new RegExp(`/bounties/${event(2).bountyId}$`));
   await visit(page);
   // Click the date, outside the link text, to exercise the stretched overlay.
+  await table(page).locator("tbody tr").first().locator("td").first().scrollIntoViewIfNeeded();
   const dateCell = await table(page).locator("tbody tr").first().locator("td").first().boundingBox();
   await page.mouse.click(dateCell!.x + dateCell!.width / 2, dateCell!.y + dateCell!.height / 2);
   await expect(page).toHaveURL(new RegExp(`/bounties/${bountyId}$`));
   await visit(page);
   await expect(ledger.locator("tbody tr")).toHaveCount(2);
+  await ledger.locator("tbody tr").first().locator("td").last().scrollIntoViewIfNeeded();
   const amountCell = await ledger.locator("tbody tr").first().locator("td").last().boundingBox();
   await page.mouse.click(amountCell!.x + amountCell!.width / 2, amountCell!.y + amountCell!.height / 2);
   await expect(page).toHaveURL(new RegExp(`/bounties/${bountyId}$`));
