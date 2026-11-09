@@ -31,6 +31,7 @@ function pair(index: number): UserHuntedBounties[number] {
     userId: owner.identity.id, bountyId: bounty.id, status: "ongoing",
     startedAt: "2026-01-03T00:00:00.000Z", endedAt: null } };
 }
+const wonRequest = (url: URL) => url.pathname === "/bounties" && url.searchParams.has("winnerId");
 const createdRequest = (url: URL) => url.pathname === "/bounties" && url.searchParams.has("creatorId");
 const slot = (page: Page, index: number) => page.getByText(`Hunting Slot #${index}`, { exact: true }).locator("..");
 
@@ -81,6 +82,7 @@ async function setup(page: Page, count = 0, signedIn = false) {
   await page.route("**/users/*/bounty-events?*", route => route.fulfill({ json: [] }));
   await page.route("**/users/me/ledger?*", route => route.fulfill({ json: [] }));
   await page.route(createdRequest, route => route.fulfill({ json: createdResult("open", 1, 0) }));
+  await page.route(wonRequest, route => route.fulfill({ json: createdResult("completed", 1, 0) }));
   await page.route("**/users/*/hunts", route => {
     state.reads++;
     if (state.failure === "network") return route.abort("failed");
@@ -252,7 +254,7 @@ test("profile navigation resets created query and ignores previous profile respo
   await pending;
   await page.getByRole("link", { name: "Profile", exact: true }).click();
   await expect(page).toHaveURL(new RegExp(`/users/${owner.identity.id}$`));
-  await page.getByRole("button", { name: "Created Bounties", exact: true }).click();
+  await page.getByRole("button", { name: "Created", exact: true }).click();
   await expect(page.getByText("open result 1-0", { exact: true })).toBeVisible();
   release();
   await done;
@@ -387,7 +389,7 @@ for (const query of ["", "?view=unknown", "?view=Hunting"]) {
   });
 }
 
-for (const [view, label] of [["activity", "Activity"], ["created", "Created Bounties"]] as const) {
+for (const [view, label] of [["activity", "Activity"], ["created", "Created"], ["won", "Completed"]] as const) {
   test(`direct ${view} URL survives reload`, async ({ page }) => {
     await setup(page);
     await page.goto(`/users/${owner.identity.id}?view=${view}`);
@@ -406,7 +408,7 @@ test("view buttons preserve query parameters and hash, with Back and Forward res
   await page.goto(`/users/${owner.identity.id}?keep=1&keep=2#profile`);
   const hunting = page.getByRole("button", { name: "Hunting", exact: true });
   const activity = page.getByRole("button", { name: "Activity", exact: true });
-  const created = page.getByRole("button", { name: "Created Bounties", exact: true });
+  const created = page.getByRole("button", { name: "Created", exact: true });
   await expect(slot(page, 1)).toBeVisible();
   const reads = state.reads;
   const historyLength = await page.evaluate(() => history.length);
@@ -433,4 +435,125 @@ test("view buttons preserve query parameters and hash, with Back and Forward res
   await expect(page).toHaveURL(new RegExp(`\\?keep=1&keep=2#profile$`));
   await expect(slot(page, 1)).toBeVisible();
   expect(state.reads).toBe(reads);
+});
+
+
+function wonResult(selectedPage = 1, total = 1) {
+  const result = createdResult("completed", selectedPage, total);
+  return { ...result, items: result.items.map(bounty => ({ ...bounty,
+    completedByOsuUserId: owner.identity.osuUserId, winner: owner.identity,
+    completedAt: "2026-01-04T00:00:00.000Z", completionScoreId: 123,
+  })) };
+}
+
+for (const signedIn of [false, true]) {
+  test(`wins use viewed profile with ${signedIn ? "another signed-in user" : "anonymous viewer"}`, async ({ page }) => {
+    await setup(page);
+    if (signedIn) await page.route("**/auth/me", route => route.fulfill({ json: other }));
+    await page.route(wonRequest, route => {
+      const params = new URL(route.request().url()).searchParams;
+      expect(params.get("winnerId")).toBe(owner.identity.id);
+      expect(params.get("status")).toBe("completed");
+      expect(params.has("creatorId")).toBe(false);
+      expect(params.has("relationship")).toBe(false);
+      return route.fulfill({ json: wonResult() });
+    });
+    await page.goto(`/users/${owner.identity.id}?view=won`);
+    await expect(page.getByText("completed result 1-0", { exact: true })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Completed", exact: true })).toHaveAttribute("aria-pressed", "true");
+    await expect(page.getByRole("button", { name: "Open", exact: true })).toHaveCount(0);
+  });
+}
+
+for (const total of [0, 20, 21, 40]) {
+  test(`won pagination respects total ${total}`, async ({ page }) => {
+    await setup(page);
+    await page.route(wonRequest, route => route.fulfill({ json: wonResult(Number(new URL(route.request().url()).searchParams.get("page")), total) }));
+    await page.goto(`/users/${owner.identity.id}?view=won`);
+    await expect(page.getByText("Page 1", { exact: true })).toBeVisible();
+    const next = page.getByRole("button", { name: ">", exact: true });
+    if (!total) await expect(page.getByText("No bounties found", { exact: true })).toBeVisible();
+    if (total <= 20) await expect(next).toHaveCount(0);
+    else {
+      await next.click();
+      await expect(page.getByText("completed result 2-0", { exact: true })).toBeVisible();
+      await expect(next).toHaveCount(0);
+      await page.getByRole("button", { name: "<", exact: true }).click();
+      await expect(page.getByText("completed result 1-0", { exact: true })).toBeVisible();
+    }
+  });
+}
+
+for (const failure of ["http", "network", "schema"]) {
+  test(`won ${failure} failure retries`, async ({ page }) => {
+    await setup(page);
+    let failed = true;
+    await page.route(wonRequest, route => {
+      if (!failed) return route.fulfill({ json: wonResult() });
+      if (failure === "network") return route.abort("failed");
+      return route.fulfill(failure === "http" ? { status: 503, json: {} } : { json: {} });
+    });
+    await page.goto(`/users/${owner.identity.id}?view=won`);
+    await expect(page.getByText("Error loading bounties", { exact: true })).toBeVisible();
+    failed = false;
+    await page.getByRole("button", { name: "Retry", exact: true }).click();
+    await expect(page.getByText("completed result 1-0", { exact: true })).toBeVisible();
+  });
+}
+
+for (const width of [320, 375, 390, 1280]) {
+  test(`won cards and four view controls fit at ${width}px`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 900 });
+    await setup(page);
+    await page.route(wonRequest, route => route.fulfill({ json: wonResult() }));
+    await page.goto(`/users/${owner.identity.id}?view=won`);
+    await expect(page.getByText("completed result 1-0", { exact: true })).toBeVisible();
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  });
+}
+
+test("Won tab supports keyboard, preserved URL state, Back and Forward", async ({ page }) => {
+  await setup(page);
+  await page.goto(`/users/${owner.identity.id}?keep=1#profile`);
+  const button = page.getByRole("button", { name: "Completed", exact: true });
+  await button.focus();
+  await button.press("Enter");
+  await expect(button).toHaveAttribute("aria-pressed", "true");
+  await expect(page).toHaveURL(/\?keep=1&view=won#profile$/);
+  await expect(page.getByText("No bounties found", { exact: true })).toBeVisible();
+  await page.goBack();
+  await expect(slot(page, 1)).toBeVisible();
+  await page.goForward();
+  await expect(button).toHaveAttribute("aria-pressed", "true");
+});
+
+
+test("profile navigation resets wins page and ignores a late previous-profile response", async ({ page }) => {
+  await setup(page, 0, true);
+  let release!: () => void;
+  const gate = new Promise<void>(resolve => { release = resolve; });
+  let started!: () => void;
+  const pending = new Promise<void>(resolve => { started = resolve; });
+  let finished!: () => void;
+  const done = new Promise<void>(resolve => { finished = resolve; });
+  await page.route(wonRequest, async route => {
+    const params = new URL(route.request().url()).searchParams;
+    const old = params.get("winnerId") === other.identity.id;
+    const selectedPage = Number(params.get("page"));
+    if (old && selectedPage === 2) { started(); await gate; }
+    if (!old) expect(selectedPage).toBe(1);
+    await route.fulfill({ json: wonResult(selectedPage, 21) });
+    if (old && selectedPage === 2) finished();
+  });
+  await page.goto(`/users/${other.identity.id}?view=won`);
+  await page.getByRole("button", { name: ">", exact: true }).click();
+  await pending;
+  await expect(page.getByText("Loading...", { exact: true })).toBeVisible();
+  await page.getByRole("link", { name: "Profile", exact: true }).click();
+  await page.getByRole("button", { name: "Completed", exact: true }).click();
+  await expect(page.getByText("completed result 1-0", { exact: true })).toBeVisible();
+  release();
+  await done;
+  await expect(page.getByText("Page 1", { exact: true })).toBeVisible();
+  await expect(page.getByText("completed result 2-0", { exact: true })).toHaveCount(0);
 });

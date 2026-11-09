@@ -64,6 +64,13 @@ function UserProfile() {
     createdBountiesPage,
     setCreatedBountiesPage,
     refreshCreatedBounties,
+    wonBounties,
+    wonBountiesTotal,
+    wonBountiesPageSize,
+    wonBountiesQueryStatus,
+    wonBountiesPage,
+    setWonBountiesPage,
+    refreshWonBounties,
   } = useUserProfile(id);
 
   if (userQueryStatus === "loading") {
@@ -235,6 +242,34 @@ function UserProfile() {
           </div>
         );
         break;
+      case "won":
+        content = (
+          <div className="col-span-full flex items-center flex-col gap-8">
+            {wonBountiesQueryStatus === "complete" ? (
+              <BountyList bounties={wonBounties} hasBounties />
+            ) : null}
+            {wonBountiesQueryStatus === "loading" ? <p>Loading...</p> : null}
+            {wonBountiesQueryStatus === "errored" ? (
+              <>
+                <p>Error loading bounties</p>
+                <Button variant="textual" onClick={refreshWonBounties}>
+                  Retry
+                </Button>
+              </>
+            ) : null}
+            {wonBountiesQueryStatus === "complete" &&
+            wonBountiesPageSize !== undefined ? (
+              <PageSelector
+                entriesLength={wonBounties.length}
+                total={wonBountiesTotal}
+                pageSize={wonBountiesPageSize}
+                selectedPage={wonBountiesPage}
+                setSelectedPage={setWonBountiesPage}
+              />
+            ) : null}
+          </div>
+        );
+        break;
     }
 
     return (
@@ -296,7 +331,16 @@ function UserProfile() {
               onClick={() => setView("created")}
               size="lg"
             >
-              Created Bounties
+              Created
+            </Button>
+            <span className="text-border hidden md:inline">•</span>
+            <Button
+              variant="textual"
+              aria-pressed={view === "won"}
+              onClick={() => setView("won")}
+              size="lg"
+            >
+              Completed
             </Button>
             <span className="text-border hidden md:inline">•</span>
             <Button

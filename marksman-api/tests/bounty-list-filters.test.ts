@@ -254,9 +254,38 @@ test("date and reward sorting support both directions", async () => {
 });
 
 test("invalid query parameters return structured 400 responses", async () => {
-  for (const query of ["creatorId=invalid", "creatorId=42", "creatorId=", "creatorId=" + randomUUID() + "&creatorId=" + randomUUID(), "page=0", "page=-1", "page=1.5", "page=abc", "status=draft", "sort=oops", "order=oops", "relationship=oops", "tiers=oops", "goals=oops", "mods=oops", "mods=HD&mods=HR"]) {
+  for (const query of ["winnerId=invalid", "winnerId=42", "winnerId=", "winnerId=" + randomUUID() + "&winnerId=" + randomUUID(), "creatorId=invalid", "creatorId=42", "creatorId=", "creatorId=" + randomUUID() + "&creatorId=" + randomUUID(), "page=0", "page=-1", "page=1.5", "page=abc", "status=draft", "sort=oops", "order=oops", "relationship=oops", "tiers=oops", "goals=oops", "mods=oops", "mods=HD&mods=HR"]) {
     const response = await httpFetch(`${baseUrl}/bounties?${query}`);
     assert.equal(response.status, 400, query);
     assert.equal((await response.json()).code, "INVALID_BOUNTY_LIST_QUERY");
   }
+});
+
+
+test("winner UUID filters viewed-player wins independently of session and combines with creator", async () => {
+  const won = await seed({ status: "completed", completedByOsuUserId: alice.osuUserId });
+  const otherCreator = await seed({ status: "completed", completedByOsuUserId: alice.osuUserId, creatorOsuUserId: bob.osuUserId });
+  await seed({ status: "completed", completedByOsuUserId: bob.osuUserId });
+  await seed({ status: "completed" });
+  await seed({ status: "open" });
+  await seed({ status: "cancelled" });
+  for (const cookie of [undefined, await cookieFor(bob.id)]) {
+    await expectIds({ winnerId: alice.id, status: "completed" }, [won.id, otherCreator.id], cookie);
+    await expectIds({ winnerId: alice.id, creatorId: creator.id, status: "completed" }, [won.id], cookie);
+    await expectIds({ winnerId: randomUUID(), status: "completed" }, [], cookie);
+    await expectIds({ winnerId: creator.id, status: "completed" }, [], cookie);
+    await expectIds({ winnerId: alice.id }, [], cookie);
+  }
+});
+
+test("winner filtering applies before pagination and total counting", async () => {
+  const expected = [];
+  for (let i = 0; i < 25; i++) {
+    expected.push(await seed({ status: "completed", completedByOsuUserId: alice.osuUserId, createdAt: new Date("2026-01-01Z") }));
+    await seed({ status: "completed", completedByOsuUserId: bob.osuUserId });
+  }
+  const pages = await Promise.all([1, 2, 3].map(page => list({ winnerId: alice.id, status: "completed", page: String(page) })));
+  assert.deepEqual(pages.map(page => page.total), [25, 25, 25]);
+  assert.deepEqual(pages.map(page => page.items.length), [20, 5, 0]);
+  assert.deepEqual(pages.flatMap(page => page.items.map(item => item.id)), expected.map(row => row.id).sort());
 });

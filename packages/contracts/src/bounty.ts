@@ -138,6 +138,7 @@ export const bountySearchQuerySchema = z.object({
   order: z.enum(["asc", "desc"]).default("desc"),
   relationship: z.enum(["all", "created", "bookmarked"]).default("all"),
   creatorId: z.uuid().optional(),
+  winnerId: z.uuid().optional(),
   page: z.coerce.number().int().positive().default(1),
 });
 

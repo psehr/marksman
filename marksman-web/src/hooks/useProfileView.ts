@@ -1,9 +1,11 @@
 import { useSearchParams } from "next/navigation";
 
-export type ProfileView = "activity" | "hunting" | "created";
+export type ProfileView = "activity" | "hunting" | "created" | "won";
 
 export function parseProfileView(value: string | null): ProfileView {
-  return value === "activity" || value === "created" ? value : "hunting";
+  return value === "activity" || value === "created" || value === "won"
+    ? value
+    : "hunting";
 }
 
 export function getProfileViewUrl(currentUrl: string, view: ProfileView): URL {

@@ -12,6 +12,7 @@ import { useEffect, useRef, useState } from "react";
 import { useUserHunts } from "./useUserHunts";
 import { useProfileView } from "./useProfileView";
 import { useUserCreatedBounties } from "./useUserCreatedBounties";
+import { useUserWonBounties } from "./useUserWonBounties";
 
 export function useUserProfile(id: string) {
   const { view, setView } = useProfileView();
@@ -22,6 +23,10 @@ export function useUserProfile(id: string) {
     status: BountySearchQuery["status"];
     page: number;
   }>({ creatorId: id, status: "open", page: 1 });
+  const [wonQuery, setWonQuery] = useState<{ winnerId: string; page: number }>({
+    winnerId: id,
+    page: 1,
+  });
   // Use defaults immediately on profile navigation, before any new request runs.
   const createdBountiesStatus =
     createdQuery.creatorId === id ? createdQuery.status : "open";
@@ -50,6 +55,27 @@ export function useUserProfile(id: string) {
       page,
     }));
   };
+
+  const setWonBountiesPage = (page: number) => {
+    setWonQuery({
+      winnerId: id,
+      page,
+    });
+  };
+
+  const wonBountiesPage = wonQuery.winnerId === id ? wonQuery.page : 1;
+
+  const {
+    bounties: wonBounties,
+    total: wonBountiesTotal,
+    pageSize: wonBountiesPageSize,
+    queryStatus: wonBountiesQueryStatus,
+    refreshWonBounties,
+  } = useUserWonBounties(id, wonBountiesPage);
+
+  useEffect(() => {
+    setWonQuery({ winnerId: id, page: 1 });
+  }, [id]);
 
   const [userQueryStatus, setUserQueryStatus] = useState<
     "loading" | "errored" | "complete" | "notFound"
@@ -266,6 +292,13 @@ export function useUserProfile(id: string) {
     createdBountiesPage,
     setCreatedBountiesPage,
     refreshCreatedBounties,
+    wonBounties,
+    wonBountiesTotal,
+    wonBountiesPageSize,
+    wonBountiesQueryStatus,
+    wonBountiesPage,
+    setWonBountiesPage,
+    refreshWonBounties,
     user,
     detailedUser,
     userQueryStatus,

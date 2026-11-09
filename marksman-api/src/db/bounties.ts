@@ -73,6 +73,10 @@ export async function listBounties(
     ? eq(creator.id, query.creatorId)
     : undefined;
 
+  const winnerFilter = query.winnerId
+    ? eq(winner.id, query.winnerId)
+    : undefined;
+
   const statusFilter = eq(bounties.status, query.status);
 
   const goalFilter = query.goals.length
@@ -162,6 +166,7 @@ export async function listBounties(
     tierFilter,
     modsFilter,
     creatorFilter,
+    winnerFilter,
   );
 
   let sortMethod;
@@ -192,6 +197,7 @@ export async function listBounties(
       ),
     )
     .leftJoin(creator, eq(bounties.creatorOsuUserId, creator.osuUserId))
+    .leftJoin(winner, eq(bounties.completedByOsuUserId, winner.osuUserId))
     .where(filters)
     .orderBy(sortMethod, bounties.id)
     .limit(pageSize)
@@ -208,6 +214,7 @@ export async function listBounties(
       ),
     )
     .leftJoin(creator, eq(bounties.creatorOsuUserId, creator.osuUserId))
+    .leftJoin(winner, eq(bounties.completedByOsuUserId, winner.osuUserId))
     .where(filters);
 
   return {
