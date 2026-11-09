@@ -10,7 +10,6 @@ import BountyTierBadge from "./BountyTierBadge";
 import GradeIcon from "../osu/GradeIcon";
 import { BeatmapCard } from "../beatmaps/BeatmapCard";
 import { BadgeLabel } from "../ui/BadgeLabel";
-import TargetIcon from "../ui/TargetIcon";
 
 export type BountyCardDisplay = {
   beatmap: ExtendedBounty["beatmap"];
@@ -125,7 +124,23 @@ export function BountyCardContent({
 
   switch (content.goal?.type) {
     case "full_combo":
-      goalType = <BadgeLabel label="A full-combo is required." text="FC" />;
+      goalType = (
+        <BadgeLabel
+          label="A full-combo is required."
+          text="Full-Combo"
+          color="accent"
+        />
+      );
+      break;
+
+    case "pass":
+      goalType = (
+        <BadgeLabel
+          label={`Clear/Pass the map without using No-Fail`}
+          text="Clear/Pass"
+          color="danger"
+        />
+      );
       break;
 
     case "minimum_grade":
@@ -134,6 +149,7 @@ export function BountyCardContent({
           <BadgeLabel
             label={`Achieve a minimum grade of ${content.goal.minimumGradeRequirement}`}
             text="Minimum grade"
+            color="info"
           />
           <GradeIcon
             grade={content.goal.minimumGradeRequirement}

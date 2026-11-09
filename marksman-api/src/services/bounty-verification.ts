@@ -243,6 +243,9 @@ function isCorrectMods(
   const parsedModsAcronyms = modsSchema.safeParse(modsAcronyms);
   if (!parsedModsAcronyms.success) return false;
 
+  if (bounty.goal.type === "pass" && parsedModsAcronyms.data.includes("NF"))
+    return false;
+
   switch (bounty.goal.modRequirement.rule) {
     case "any":
       return true;

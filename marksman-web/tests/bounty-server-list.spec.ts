@@ -70,7 +70,7 @@ test("ignores an older search response and recovers an out of range page", async
   await page.goto("/bounties?page=9");
   await page.getByRole("button", { name: "First page" }).click();
   await expect(cards(page)).toHaveText([/Player2/]);
-  const search = page.getByRole("textbox", { name: "Search bounties..." });
+  const search = page.getByRole("textbox", { name: "Search bounties" });
   await search.fill("slow");
   await expect.poll(() => started).toBe(true);
   await search.fill("new");
@@ -92,8 +92,49 @@ for (const failure of ["http", "network", "schema"] as const) {
     await page.goto("/bounties");
     await expect(page.getByText("Failed to load bounties", { exact: true })).toBeVisible();
     fail = false;
-    await page.getByRole("textbox", { name: "Search bounties..." }).fill("retry");
+    await page.getByRole("textbox", { name: "Search bounties" }).fill("retry");
     await expect(cards(page)).toHaveCount(1);
     await expect(page.getByText("Failed to load bounties", { exact: true })).toHaveCount(0);
+  });
+}
+
+
+test("Pass URL filter survives reload, toggle and browser history", async ({ page }) => {
+  const requests: string[] = [];
+  await setup(page, params => {
+    requests.push(params.get("goals") ?? "");
+    return { items: [{ ...fixtures[0], goal: { type: "pass", beatmapId: 42, beatmapChecksum: null, modRequirement: { rule: "any" } } }], total: 1, page: 1, pageSize: 20 };
+  });
+  await page.goto("/bounties?goals=pass&keep=yes");
+  await page.getByText("Show additional filters", { exact: true }).click();
+  const button = page.getByRole("button", { name: "Clear/Pass", exact: true });
+  await expect(button).toHaveAttribute("aria-pressed", "true");
+  await expect(cards(page)).toContainText("Clear/Pass");
+  await expect.poll(() => requests.at(-1)).toBe("pass");
+  await page.reload();
+  await page.getByText("Show additional filters", { exact: true }).click();
+  await expect(button).toHaveAttribute("aria-pressed", "true");
+  await button.focus(); await button.press("Enter");
+  await expect(button).toHaveAttribute("aria-pressed", "false");
+  await expect.poll(() => requests.at(-1)).toBe("");
+  expect(new URL(page.url()).searchParams.get("keep")).toBe("yes");
+  await page.goBack();
+  await expect(button).toHaveAttribute("aria-pressed", "true");
+  await expect.poll(() => requests.at(-1)).toBe("pass");
+});
+
+for (const width of [320, 375, 390, 1280]) {
+  test(`goal filters and badges fit at ${width}px`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 1000 });
+    const pass = { ...fixtures[2], goal: { type: "pass", beatmapId: 42, beatmapChecksum: null, modRequirement: { rule: "any" } } };
+    await setup(page, () => ({ items: [fixtures[0], fixtures[1], pass], total: 3, page: 1, pageSize: 20 }));
+    await page.goto("/bounties?goals=pass");
+    await expect(cards(page)).toHaveCount(3);
+    await page.getByText("Show additional filters", { exact: true }).click();
+    await expect(page.getByRole("button", { name: "Clear/Pass", exact: true })).toBeVisible();
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+    const badgeColors = await cards(page).locator('[title="A full-combo is required."], [title="Clear/Pass the map without using No-Fail"], [title="Achieve a minimum grade of A"]').evaluateAll(elements => elements.map(element => getComputedStyle(element).color));
+    expect(new Set(badgeColors).size).toBe(3);
+    if (width === 320) await page.screenshot({ path: "/tmp/marksman-pass-filters-320.png", fullPage: true });
   });
 }

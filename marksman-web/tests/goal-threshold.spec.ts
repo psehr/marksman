@@ -70,7 +70,7 @@ for (const [label, ratio, missing] of [
       return route.fulfill({ json: data });
     });
     await page.goto(`/bounties/${bounty.id}`);
-    await expect(page.getByText("osu!stable only:", { exact: true })).toBeVisible();
+    await expect(page.getByText("osu!stable requirements:", { exact: true })).toBeVisible();
     await expect(page.getByText(`Stable-Combo-Threshold: ${(ratio ?? 0.99) * 100}%`, { exact: true })).toBeVisible();
     await expect(page.getByRole("link", { name: "Learn more", exact: true })).toHaveAttribute("href", "/about/bounties#fc-ruling");
     if (missing) {
@@ -80,3 +80,15 @@ for (const [label, ratio, missing] of [
     }
   });
 }
+
+
+test("Pass detail displays its goal and intrinsic NF restriction", async ({ page }) => {
+  const data: ExtendedBounty = { ...bounty, goal: { type: "pass", beatmapId: 42, beatmapChecksum: null, modRequirement: { rule: "any" } } };
+  await page.route("**/auth/me", route => route.fulfill({ status: 401, json: {} }));
+  await page.route("**/_next/image?**", route => route.fulfill({ status: 204 }));
+  await page.route(`**/bounties/${bounty.id}`, route => route.request().isNavigationRequest() || route.request().headers()["rsc"] ? route.fallback() : route.fulfill({ json: data }));
+  await page.goto(`/bounties/${bounty.id}`);
+  await expect(page.getByText("Clear/Pass", { exact: true })).toHaveCount(2);
+  await expect(page.getByText("Clear/Pass the map without using No-Fail.", { exact: true })).toBeVisible();
+  await expect(page.getByText("Stable-Combo-Threshold:", { exact: false })).toHaveCount(0);
+});

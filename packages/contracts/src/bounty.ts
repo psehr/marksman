@@ -40,6 +40,21 @@ const bountyGoalSchema = z.discriminatedUnion("type", [
     type: z.literal("minimum_grade"),
     minimumGradeRequirement: osuGradeSchema.exclude(["F"]),
   }),
+
+  baseGoalSchema
+    .extend({ type: z.literal("pass") })
+    .refine(
+      ({ modRequirement }) =>
+        !(
+          (modRequirement.rule === "exact" ||
+            modRequirement.rule === "includes") &&
+          modRequirement.mods.includes("NF")
+        ),
+      {
+        message: "Pass goals cannot require No Fail.",
+        path: ["modRequirement", "mods"],
+      },
+    ),
 ]);
 
 export const bountySchema = z.object({
@@ -111,7 +126,7 @@ export const bountyScoreCandidateSchema = scoreResponseSchema.extend({
   validity: bountyCompletionValiditySchema,
 });
 
-const bountyTypeEnum = z.enum(["full_combo", "minimum_grade"]);
+const bountyTypeEnum = z.enum(["full_combo", "minimum_grade", "pass"]);
 
 export const bountySearchQuerySchema = z.object({
   status: z.enum(["open", "completed", "cancelled"]).default("open"),

@@ -113,7 +113,10 @@ export default function BountyCreationTool() {
     setSelectedMinimumComboPercentage,
     beatmapMaxCombo: beatmapMetadata?.max_combo ?? null,
     onBack: () => setCurrentStep("beatmap"),
-    onContinue: () => setCurrentStep("mods"),
+    onContinue: () => {
+      clearSelectedMods();
+      setCurrentStep("mods");
+    },
     customizeStableComboThreshold,
     setCustomizeStableComboThreshold,
   };
@@ -126,7 +129,10 @@ export default function BountyCreationTool() {
       : { rule: selectedModRule, mods: selectedMods },
   );
 
+  const clearSelectedMods = () => setSelectedMods([]);
+
   const modsStepProps: ModsStepProps = {
+    bountyType: selectedBountyType,
     selectedModRule,
     selectedMods,
     setSelectedModRule,
@@ -191,11 +197,16 @@ export default function BountyCreationTool() {
               ? selectedMinimumComboPercentage / 100
               : 0.99,
           }
-        : {
-            ...sharedGoalFields,
-            type: "minimum_grade",
-            minimumGradeRequirement: selectedMinimumGrade,
-          };
+        : selectedBountyType === "minimum_grade"
+          ? {
+              ...sharedGoalFields,
+              type: "minimum_grade",
+              minimumGradeRequirement: selectedMinimumGrade,
+            }
+          : {
+              ...sharedGoalFields,
+              type: "pass",
+            };
 
     previewCardContent = {
       beatmap: osuBeatmapMetadatatoBountyBeatmapMetadata(beatmapMetadata),

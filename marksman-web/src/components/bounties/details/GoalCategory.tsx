@@ -39,6 +39,14 @@ export default function GoalCategory({ bounty }: { bounty: ExtendedBounty }) {
           </Link>
         </>
       ) : null}
+      {bounty.goal.type === "pass" ? (
+        <div className="flex flex-col items-center">
+          <p>
+            <span className="text-accent">Clear/Pass</span> the map without
+            using No-Fail.
+          </p>
+        </div>
+      ) : null}
       {bounty.goal.type === "minimum_grade" ? (
         <div className="flex flex-col gap-2 items-center">
           <p>

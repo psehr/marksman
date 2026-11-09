@@ -87,7 +87,7 @@ test("review reflects grade, accuracy and exact NM choices", async ({ page }) =>
   await back.click();
   await back.click();
   await page.getByText("Minimum Grade", { exact: true }).last().click();
-  await page.getByRole("checkbox", { name: "Require minimum accuracy", exact: true }).check();
+  await page.getByRole("checkbox", { name: "Require minimum accuracy", exact: true }).locator("..").click();
   await next.click();
   await page.getByText("Exact mods", { exact: true }).click();
   await next.click();
@@ -127,3 +127,52 @@ test("creation flow fits a narrow mobile viewport", async ({ page }) => {
   await review(page);
   expect(await page.evaluate(() => document.documentElement.scrollWidth)).toBeLessThanOrEqual(375);
 });
+
+
+test("Pass resets prior mods, disables NF and submits a Pass goal", async ({ page }) => {
+  await review(page);
+  const back = page.getByRole("button", { name: "Back", exact: true });
+  const next = page.getByRole("button", { name: "Continue", exact: true });
+  await back.click();
+  await back.click();
+  await page.getByRole("radio", { name: "Exact mods", exact: true }).locator("..").click();
+  await page.getByRole("checkbox", { name: "NF", exact: true }).locator("..").click();
+  await back.click();
+  await page.getByRole("radio", { name: "Pass", exact: true }).locator("..").click();
+  await next.click();
+  for (const name of ["Exact mods", "Include mods", "Exclude mods"]) {
+    await page.getByRole("radio", { name, exact: true }).locator("..").click();
+    await expect(page.getByRole("checkbox", { name: "NF", exact: true })).toBeDisabled();
+    await expect(page.getByRole("checkbox", { name: "NF", exact: true })).not.toBeChecked();
+  }
+  await page.getByRole("radio", { name: "Exact mods", exact: true }).locator("..").click();
+  await page.getByRole("checkbox", { name: "HD", exact: true }).locator("..").click();
+  await next.click();
+  await next.click();
+  await expect(page.getByText("Clear/Pass", { exact: true })).toBeVisible();
+  let payload: any;
+  await page.route("**/bounties", route => {
+    payload = route.request().postDataJSON();
+    return route.fulfill({ status: 201, json: { bounty: {
+      id, status: "open", ...payload, creatorOsuUserId: 12345,
+      completedByOsuUserId: null, completionScoreId: null,
+      createdAt: "2026-11-01T00:00:00.000Z", completedAt: null, cancelledAt: null,
+    } } });
+  });
+  await page.route(`**/bounties/${id}`, route => route.fulfill({ status: 404, json: {} }));
+  await page.getByRole("button", { name: "Create bounty · 110 BP", exact: true }).click();
+  await expect(page).toHaveURL(`/bounties/${id}`);
+  expect(payload.goal).toEqual({ type: "pass", beatmapId: 123456, beatmapChecksum: null, modRequirement: { rule: "exact", mods: ["HD"] } });
+});
+
+for (const width of [320, 390, 1280]) {
+  test(`Pass preview and goal options fit at ${width}px`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 900 });
+    await review(page);
+    const back = page.getByRole("button", { name: "Back", exact: true });
+    await back.click(); await back.click(); await back.click();
+    await page.getByRole("radio", { name: "Pass", exact: true }).locator("..").click();
+    await expect(page.getByText("Clear/Pass", { exact: true })).toBeVisible();
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  });
+}

@@ -11,6 +11,7 @@ export const tierOptions: readonly BountyTier[] = [
 export type BountyGoal = ExtendedBounty["goal"]["type"];
 export const goalOptions: readonly BountyGoal[] = [
   "full_combo",
+  "pass",
   "minimum_grade",
 ];
 type RequiredMod = Extract<

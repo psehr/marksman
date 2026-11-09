@@ -42,7 +42,9 @@ export default function ModsStep({ props }: { props: ModsStepProps }) {
                 name="mod-rule"
                 value={value}
                 checked={props.selectedModRule === value}
-                onChange={() => props.setSelectedModRule(value)}
+                onChange={() => {
+                  props.setSelectedModRule(value);
+                }}
               />
               {label}
             </label>
@@ -54,7 +56,11 @@ export default function ModsStep({ props }: { props: ModsStepProps }) {
           <legend className="sr-only">Mods</legend>
           <div className="w-full grid grid-cols-2 sm:grid-cols-4 gap-2">
             {mods.map((mod) => (
-              <label key={mod} className={radioIconLabelClassName}>
+              <label
+                key={mod}
+                className={radioIconLabelClassName}
+                aria-disabled={props.bountyType === "pass" && mod === "NF"}
+              >
                 <input
                   className="sr-only"
                   type="checkbox"
@@ -63,6 +69,7 @@ export default function ModsStep({ props }: { props: ModsStepProps }) {
                   onChange={(event) =>
                     props.onModToggle(mod, event.target.checked)
                   }
+                  disabled={props.bountyType === "pass" && mod === "NF"}
                 />
                 <ModIcon
                   mod={mod}

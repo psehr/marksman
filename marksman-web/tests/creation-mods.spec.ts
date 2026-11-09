@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-test("wizard mod rules validate selections and preserve them across navigation", async ({ page }) => {
+test("wizard mod rules validate selections and reset mods after returning to Goal", async ({ page }) => {
   await page.route("**/auth/me", route => route.fulfill({ json: {
     identity: { id: "12345678-1234-4234-8234-123456789abc", osuUserId: 12345, username: "fixture" },
     stats: { bpBalance: 1000 }, createdAt: "2025-01-01T00:00:00.000Z",
@@ -19,25 +19,27 @@ test("wizard mod rules validate selections and preserve them across navigation",
   const next = page.getByRole("button", { name: "Continue", exact: true });
   await expect(page.getByRole("radio", { name: "Any mods", exact: true })).toBeChecked();
   await expect(next).toBeEnabled();
-  await page.getByRole("radio", { name: "Exactly these mods" }).check();
+  await page.getByRole("radio", { name: "Exact mods" }).locator("..").click();
   await expect(next).toBeEnabled();
   await expect(page.getByText("Leave all unchecked to require no mods (NM).")).toBeVisible();
-  await page.getByRole("radio", { name: "Include these mods" }).check();
+  await page.getByRole("radio", { name: "Include mods" }).locator("..").click();
   await expect(next).toBeDisabled();
-  await page.getByRole("checkbox", { name: "HD", exact: true }).check();
+  await page.getByRole("checkbox", { name: "HD", exact: true }).locator("..").click();
   await expect(next).toBeEnabled();
-  await page.getByRole("checkbox", { name: "DT", exact: true }).check();
-  await page.getByRole("checkbox", { name: "HT", exact: true }).check();
+  await page.getByRole("checkbox", { name: "DT", exact: true }).locator("..").click();
+  await page.getByRole("checkbox", { name: "HT", exact: true }).locator("..").click();
   await expect(next).toBeDisabled();
   await expect(page.getByRole("alert").filter({ hasText: "conflicting" })).toBeVisible();
-  await page.getByRole("checkbox", { name: "HT", exact: true }).uncheck();
+  await page.getByRole("checkbox", { name: "HT", exact: true }).locator("..").click();
   await page.getByRole("button", { name: "Back", exact: true }).click();
   await next.click();
-  await expect(page.getByRole("radio", { name: "Include these mods" })).toBeChecked();
-  await expect(page.getByRole("checkbox", { name: "HD", exact: true })).toBeChecked();
-  await page.getByRole("radio", { name: "Any mods", exact: true }).check();
+  await expect(page.getByRole("radio", { name: "Include mods" })).toBeChecked();
+  await expect(page.getByRole("checkbox", { name: "HD", exact: true })).not.toBeChecked();
+  await page.getByRole("radio", { name: "Any mods", exact: true }).locator("..").click();
   await expect(page.getByRole("checkbox")).toHaveCount(0);
-  await page.getByRole("radio", { name: "Exclude these mods" }).check();
-  await expect(page.getByRole("checkbox", { name: "HD", exact: true })).toBeChecked();
+  await page.getByRole("radio", { name: "Exclude mods" }).locator("..").click();
+  await expect(page.getByRole("checkbox", { name: "HD", exact: true })).not.toBeChecked();
+  await expect(next).toBeDisabled();
+  await page.getByRole("checkbox", { name: "HD", exact: true }).locator("..").click();
   await expect(next).toBeEnabled();
 });

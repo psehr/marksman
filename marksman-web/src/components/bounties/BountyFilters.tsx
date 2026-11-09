@@ -34,7 +34,7 @@ function FilterButton({
 }) {
   return (
     <button
-      className={`bg-surface text-sm border-border aria-pressed:border-accent enabled:hover:bg-surface-hover rounded border-2 h-10 px-4 enabled:cursor-pointer disabled:opacity-20 ${className}`}
+      className={`bg-surface text-sm border-border aria-pressed:border-accent aria-pressed:text-accent enabled:hover:bg-surface-hover rounded border text-foreground-muted h-10 px-4 enabled:cursor-pointer disabled:opacity-20 ${className}`}
       aria-pressed={pressed}
       aria-label={ariaLabel}
       disabled={disabled}
@@ -64,7 +64,7 @@ function IconFilterButton({
   return (
     <button
       onClick={onClick}
-      className={`opacity-40 aria-pressed:opacity-100 cursor-pointer focus-visible:outline-2 focus-visible:outline-accent ${className}`}
+      className={`rounded-xs text-sm opacity-40 aria-pressed:opacity-100 cursor-pointer focus-visible:outline-2 focus-visible:outline-accent ${className}`}
       aria-pressed={pressed}
       aria-label={ariaLabel}
       type="button"
@@ -163,7 +163,7 @@ export default function BountyFilters(props: {
           <div className="flex gap-2">
             <select
               id="bounty-sort"
-              className="rounded border-2 border-border bg-surface px-4 h-10 text-sm"
+              className="rounded border text-foreground-muted border-border bg-surface px-4 h-10 text-sm"
               value={props.selectedSortingMethod.type}
               onChange={(event) => {
                 const type = event.currentTarget.value;
@@ -224,18 +224,25 @@ export default function BountyFilters(props: {
             <legend className="mb-2 text-foreground-muted font-bold">
               Goal Type
             </legend>
-            <div className="flex flex-col gap-2">
+            <div className="flex flex-wrap gap-2">
               <IconFilterButton
                 onClick={() => props.onToggleGoal("full_combo")}
                 pressed={props.selectedFilters.goals.has("full_combo")}
-                className="border-2 border-border aria-pressed:border-accent rounded h-8"
+                className="px-4 border border-accent text-accent rounded-xs h-8"
               >
                 Full-Combo
               </IconFilterButton>
               <IconFilterButton
+                onClick={() => props.onToggleGoal("pass")}
+                pressed={props.selectedFilters.goals.has("pass")}
+                className="px-4 border border-danger text-danger rounded-xs h-8"
+              >
+                Clear/Pass
+              </IconFilterButton>
+              <IconFilterButton
                 onClick={() => props.onToggleGoal("minimum_grade")}
                 pressed={props.selectedFilters.goals.has("minimum_grade")}
-                className="border-2 border-border aria-pressed:border-accent rounded h-8"
+                className="px-4 border border-info text-info rounded-xs h-8"
               >
                 Minimum Grade
               </IconFilterButton>

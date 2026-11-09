@@ -59,6 +59,7 @@ export type SelectedMod = Extract<
 >["mods"][number];
 
 export type ModsStepProps = {
+  bountyType: BountyType;
   selectedModRule: ModRule;
   selectedMods: SelectedMod[];
   setSelectedModRule: (rule: ModRule) => void;
@@ -78,7 +79,7 @@ export type RewardStepProps = {
   onContinue: () => void;
 };
 
-export type BountyType = "minimum_grade" | "full_combo";
+export type BountyType = "minimum_grade" | "full_combo" | "pass";
 
 export type BountyCreationToolStep =
   | "login"

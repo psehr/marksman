@@ -49,6 +49,7 @@ type ModIconProps = {
   mod: ModAcronym;
   size?: keyof typeof sizes;
   crossed?: boolean;
+  grayed?: boolean;
   className?: string;
 };
 
@@ -57,6 +58,7 @@ export default function ModIcon({
   mod,
   size = "md",
   crossed = false,
+  grayed = false,
   className = "",
 }: ModIconProps) {
   const name = modNames[mod] ?? mod;
@@ -68,7 +70,7 @@ export default function ModIcon({
       role="img"
       aria-label={label}
       title={label}
-      className={`relative inline-flex aspect-120/84 shrink-0 items-center justify-center font-bold leading-none tracking-wide ${sizes[size]} ${!icon ? "rounded-md border border-border bg-background" : ""} ${className}`}
+      className={`relative inline-flex aspect-120/84 shrink-0 items-center justify-center font-bold leading-none tracking-wide ${grayed ? "opacity-50" : null} ${sizes[size]} ${!icon ? "rounded-md border border-border bg-background" : ""} ${className}`}
     >
       {icon ? (
         <span

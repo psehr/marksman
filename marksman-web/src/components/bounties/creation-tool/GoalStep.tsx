@@ -5,7 +5,7 @@ export const radioTextualLabelClassName =
   "flex cursor-pointer text-center items-center place-content-center gap-2 rounded border border-border p-2 px-4 hover:bg-surface-hover has-checked:bg-accent has-checked:text-background has-focus-visible:outline-2 has-focus-visible:outline-accent";
 
 export const radioIconLabelClassName =
-  "flex cursor-pointer items-center place-content-center gap-2 rounded border border-border p-2 px-4 hover:bg-surface-hover has-checked:bg-surface-hover has-checked:border-accent has-checked:ring-2 has-checked:ring-accent has-focus-visible:outline-2 has-focus-visible:outline-accent has-focus-visible:outline-offset-4";
+  "flex cursor-pointer aria-disabled:cursor-not-allowed aria-disabled:opacity-20 items-center place-content-center gap-2 rounded border border-border p-2 px-4 hover:bg-surface-hover has-checked:bg-surface-hover has-checked:border-accent has-checked:ring-2 has-checked:ring-accent has-focus-visible:outline-2 has-focus-visible:outline-accent has-focus-visible:outline-offset-4";
 
 import { osuGradeSchema } from "@marksman/contracts";
 import GradeIcon from "@/components/osu/GradeIcon";
@@ -35,6 +35,19 @@ export default function GoalStep({ props }: { props: GoalStepProps }) {
             value="full_combo"
             checked={props.selectedBountyType === "full_combo"}
             onChange={() => props.setSelectedBountyType("full_combo")}
+          />
+        </label>
+        <label className={radioTextualLabelClassName}>
+          Pass
+          <input
+            className="sr-only"
+            type="radio"
+            name="type"
+            value="pass"
+            checked={props.selectedBountyType === "pass"}
+            onChange={() => {
+              props.setSelectedBountyType("pass");
+            }}
           />
         </label>
         <label className={radioTextualLabelClassName}>
