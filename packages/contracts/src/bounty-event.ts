@@ -1,7 +1,13 @@
 import { z } from "zod";
 import { userIdentitySchema } from "./user";
 
-const bountyEventTypeEnumSchema = z.enum(["created", "completed", "cancelled"]);
+const bountyEventTypeEnumSchema = z.enum([
+  "created",
+  "completed",
+  "cancelled",
+  "hunt_started",
+  "hunt_ended",
+]);
 
 export const bountyEventSchema = z.object({
   type: bountyEventTypeEnumSchema,

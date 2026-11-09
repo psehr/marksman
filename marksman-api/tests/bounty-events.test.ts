@@ -4,7 +4,7 @@ import { once } from "node:events";
 import type { Server } from "node:http";
 import { after, before, beforeEach, afterEach, mock, test } from "node:test";
 import { bountyEventSchema } from "@marksman/contracts";
-import { bounties, ledgerEntries, sessions, users } from "../src/db/schema";
+import { bounties, bountyHunts, ledgerEntries, sessions, users } from "../src/db/schema";
 import { createTestDatabase } from "./fixtures/test-database";
 import { qualifyingBounty } from "./fixtures/completion";
 
@@ -240,3 +240,42 @@ test("reading history does not mutate users, bounties or ledger entries", async 
   assert.deepEqual(await snapshot(), original);
 });
 
+
+
+test("hunt history retains every start/end, includes automatic closures and isolates the viewed user", async () => {
+  const bounty = await seedBounty({ creatorOsuUserId: creator.osuUserId });
+  const times = Array.from({ length: 5 }, (_, i) => new Date(`2026-10-0${i + 1}T12:00:00.123Z`));
+  await db.insert(bountyHunts).values([
+    { userId: alice.id, bountyId: bounty.id, status: "stopped", startedAt: times[0], endedAt: times[1] },
+    { userId: alice.id, bountyId: bounty.id, status: "closed", startedAt: times[2], endedAt: times[3] },
+    { userId: alice.id, bountyId: bounty.id, status: "ongoing", startedAt: times[4] },
+    { userId: bob.id, bountyId: bounty.id, status: "ongoing", startedAt: times[4] },
+  ]);
+  const expected = times.map((time, i) => ({
+    type: i % 2 === 0 ? "hunt_started" : "hunt_ended",
+    timestamp: time.toISOString(), bountyId: bounty.id, creator: null, winner: null,
+  })).reverse();
+  assert.deepEqual(await readEvents(await request()), expected);
+  assert.deepEqual(await readEvents(await request(alice.id, "", bob.id)), expected);
+  assert.deepEqual(await readEvents(await request(bob.id)), [expected[0]]);
+});
+
+test("hunt and bounty events are sorted together before pagination without losing repeated hunts", async () => {
+  const bounty = await seedBounty();
+  const expected = [];
+  for (let i = 0; i < 6; i++) {
+    const startedAt = new Date(createdAt.getTime() + (i * 2 + 1) * 1000);
+    const endedAt = new Date(startedAt.getTime() + 1000);
+    await db.insert(bountyHunts).values({ userId: alice.id, bountyId: bounty.id,
+      status: "stopped", startedAt, endedAt });
+    expected.push(
+      { type: "hunt_started", timestamp: startedAt.toISOString(), bountyId: bounty.id, creator: null, winner: null },
+      { type: "hunt_ended", timestamp: endedAt.toISOString(), bountyId: bounty.id, creator: null, winner: null },
+    );
+  }
+  expected.reverse();
+  expected.push({ type: "created", timestamp: createdAt.toISOString(), bountyId: bounty.id, creator: identity(alice), winner: null });
+  assert.deepEqual(await readEvents(await request()), expected.slice(0, 10));
+  assert.deepEqual(await readEvents(await request(alice.id, "?page=2")), expected.slice(10));
+  assert.deepEqual(await readEvents(await request(alice.id, "?page=3")), []);
+});

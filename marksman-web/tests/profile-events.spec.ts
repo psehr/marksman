@@ -356,3 +356,23 @@ for (const width of [320, 1280]) {
     }
   });
 }
+
+
+test("repeated hunt starts and ends retain separate linked history rows", async ({ page }) => {
+  await setup(page);
+  const errors: string[] = [];
+  page.on("console", message => { if (message.type() === "error") errors.push(message.text()); });
+  const events = ["hunt_ended", "hunt_started", "hunt_ended", "hunt_started"].map((type, index) => ({
+    ...event(1, type as BountyEvent["type"]), creator: null, winner: null,
+    timestamp: new Date(Date.UTC(2026, 0, 5 - index)).toISOString(),
+  }));
+  await page.route("**/users/*/bounty-events?*", route => route.fulfill({ json: events }));
+  await visit(page);
+  await expect(table(page).locator("tbody tr")).toHaveCount(4);
+  await expect(table(page).getByText("Started hunting a bounty", { exact: true })).toHaveCount(2);
+  await expect(table(page).getByText("Hunt ended", { exact: true })).toHaveCount(2);
+  for (const link of await table(page).getByRole("link").all()) {
+    await expect(link).toHaveAttribute("href", `/bounties/${event(1).bountyId}`);
+  }
+  expect(errors.filter(message => /same key|unique.*key/i.test(message))).toEqual([]);
+});

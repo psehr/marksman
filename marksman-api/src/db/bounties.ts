@@ -20,7 +20,13 @@ import {
   sum,
 } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
-import { bounties, bountyBeatmaps, bountyBookmarks, users } from "./schema";
+import {
+  bounties,
+  bountyBeatmaps,
+  bountyBookmarks,
+  bountyHunts,
+  users,
+} from "./schema";
 
 const creator = alias(users, "creator");
 const winner = alias(users, "winner");
@@ -330,6 +336,36 @@ export async function getBountyEventsOfUser(
       ),
     );
 
+  const hunts = await db
+    .select()
+    .from(bountyHunts)
+    .where(eq(bountyHunts.userId, identity.id));
+
+  const huntEvents: BountyEvent[] = [];
+
+  for (let index = 0; index < hunts.length; index++) {
+    const hunt = hunts[index];
+    huntEvents.push({
+      type: "hunt_started",
+      bountyId: hunt.bountyId,
+      timestamp: hunt.startedAt.toISOString(),
+      creator: null,
+      winner: null,
+    });
+
+    if (hunt.status === "closed" || hunt.status === "stopped") {
+      if (hunt.endedAt) {
+        huntEvents.push({
+          type: "hunt_ended",
+          bountyId: hunt.bountyId,
+          timestamp: hunt.endedAt.toISOString(),
+          creator: null,
+          winner: null,
+        });
+      }
+    }
+  }
+
   const events = rows
     .flatMap((row) => {
       const rowEvents: BountyEvent[] = [];
@@ -372,6 +408,7 @@ export async function getBountyEventsOfUser(
 
       return rowEvents;
     })
+    .concat(huntEvents)
     .sort(
       (a, b) =>
         Date.parse(b.timestamp) - Date.parse(a.timestamp) ||

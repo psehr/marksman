@@ -44,11 +44,20 @@ export function EventHistory({ events }: { events: BountyEvent[] }) {
               case "cancelled":
                 text_color = "text-danger";
                 break;
+              case "created":
+                text_color = "text-info";
+                break;
+              case "hunt_started":
+                text_color = "text-accent";
+                break;
+              case "hunt_ended":
+                text_color = "text-danger";
+                break;
             }
 
             return (
               <tr
-                key={event.bountyId + event.type}
+                key={event.bountyId + event.type + event.timestamp}
                 className={linkedRowClassName}
               >
                 <td className="italic text-foreground-muted">
@@ -72,6 +81,10 @@ export function EventHistory({ events }: { events: BountyEvent[] }) {
                     {event.type === "cancelled" ? (
                       <p>Cancelled a bounty</p>
                     ) : null}
+                    {event.type === "hunt_started" ? (
+                      <p>Started hunting a bounty</p>
+                    ) : null}
+                    {event.type === "hunt_ended" ? <p>Hunt ended</p> : null}
                   </Link>
                 </td>
               </tr>
