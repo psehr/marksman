@@ -17,13 +17,13 @@ export function LedgerEntries({ entries }: { entries: LedgerEntry[] }) {
     );
 
   return (
-    <div className="min-h-0 flex-1 overflow-auto">
+    <div className="min-h-0 flex-1 overflow-auto pr-2">
       <table className={tableClassName}>
         <caption className="sr-only">BP transaction history</caption>
         <colgroup>
-          <col className="w-[30%]" />
-          <col className="w-[50%]" />
-          <col className="w-[20%]" />
+          <col className="w-[35%]" />
+          <col className="w-[25%] sm:w-[30%]" />
+          <col className="w-[40%] sm:w-[35%]" />
         </colgroup>
         <thead>
           <tr>
@@ -67,12 +67,18 @@ export function LedgerEntries({ entries }: { entries: LedgerEntry[] }) {
             return (
               <tr
                 key={entry.id}
-                className={entry.bountyId ? linkedRowClassName : rowClassName}
+                className={
+                  entry.bountyId ? linkedRowClassName + " group" : rowClassName
+                }
               >
                 <td className="italic text-foreground-muted">
-                  <p>{formatDistance(Date.now(), entry.createdAt)} ago</p>
+                  <p>
+                    {formatDistance(entry.createdAt, Date.now(), {
+                      addSuffix: true,
+                    })}
+                  </p>
                 </td>
-                <td className="text-center">
+                <td className={`text-end ${text_color}`}>
                   {entry.bountyId ? (
                     <Link
                       href={"/bounties/" + entry.bountyId}
@@ -84,9 +90,21 @@ export function LedgerEntries({ entries }: { entries: LedgerEntry[] }) {
                     reason_text
                   )}
                 </td>
-                <td className={`${text_color} font-bold text-end`}>
-                  {entry.amount > 0 ? "+" : ""}
-                  {entry.amount} BP
+                <td className={`${text_color} font-bold`}>
+                  <div className="flex items-center justify-between gap-1 text-xs whitespace-nowrap sm:gap-2 sm:text-sm">
+                    <span>
+                      {entry.amount > 0 ? "+" : ""}
+                      {entry.amount} BP
+                    </span>
+                    {entry.bountyId ? (
+                      <span
+                        aria-hidden="true"
+                        className="shrink-0 text-foreground-muted font-normal group-hover:font-bold group-hover:text-accent group-focus-within:text-accent"
+                      >
+                        ›
+                      </span>
+                    ) : null}
+                  </div>
                 </td>
               </tr>
             );

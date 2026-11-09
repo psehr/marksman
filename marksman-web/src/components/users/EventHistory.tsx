@@ -16,12 +16,12 @@ export function EventHistory({ events }: { events: BountyEvent[] }) {
     );
 
   return (
-    <div className="min-h-0 flex-1 overflow-auto">
+    <div className="min-h-0 flex-1 overflow-auto pr-2">
       <table className={tableClassName}>
         <caption className="sr-only">Bounty Events History</caption>
         <colgroup>
-          <col className="w-[30%]" />
-          <col className="w-[70%]" />
+          <col className="w-[35%]" />
+          <col className="w-[65%]" />
         </colgroup>
         <thead>
           <tr>
@@ -61,12 +61,16 @@ export function EventHistory({ events }: { events: BountyEvent[] }) {
                 className={linkedRowClassName}
               >
                 <td className="italic text-foreground-muted">
-                  <p>{formatDistance(Date.now(), event.timestamp)} ago</p>
+                  <p>
+                    {formatDistance(event.timestamp, Date.now(), {
+                      addSuffix: true,
+                    })}
+                  </p>
                 </td>
                 <td className="text-end">
                   <Link
                     href={`/bounties/${event.bountyId}`}
-                    className={`${rowLinkClassName} ${text_color}`}
+                    className={`${rowLinkClassName} ${text_color} flex place-content-end gap-2 group`}
                   >
                     {event.type === "created" ? (
                       <p>Funded a new bounty</p>
@@ -85,6 +89,12 @@ export function EventHistory({ events }: { events: BountyEvent[] }) {
                       <p>Started hunting a bounty</p>
                     ) : null}
                     {event.type === "hunt_ended" ? <p>Hunt ended</p> : null}
+                    <span
+                      className="text-foreground-muted group-hover:font-bold group-hover:text-accent group-focus-within:text-accent"
+                      aria-hidden="true"
+                    >
+                      ›
+                    </span>
                   </Link>
                 </td>
               </tr>

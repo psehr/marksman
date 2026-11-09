@@ -265,7 +265,7 @@ for (const width of [320, 1280]) {
         const table = el.getBoundingClientRect();
         const content = el.parentElement!.getBoundingClientRect();
         const section = panel.getBoundingClientRect();
-        return { tableWidth: table.width, contentWidth: content.width,
+        return { tableWidth: table.width, contentWidth: el.parentElement!.clientWidth - parseFloat(getComputedStyle(el.parentElement!).paddingRight),
           contentBottom: content.bottom, panelBottom: section.bottom };
       });
       expect(Math.abs(bounds.tableWidth - bounds.contentWidth)).toBeLessThan(2);
@@ -376,3 +376,38 @@ test("repeated hunt starts and ends retain separate linked history rows", async 
   }
   expect(errors.filter(message => /same key|unique.*key/i.test(message))).toEqual([]);
 });
+
+
+for (const width of [320, 375, 390, 1280]) {
+  test(`history chevrons and large linked amounts fit at ${width}px`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 900 });
+    await setup(page, creator);
+    const recent = new Date(Date.now() - 10_000).toISOString();
+    await page.route("**/users/*/bounty-events?*", route => route.fulfill({ json: [
+      { ...event(1, "completed"), timestamp: recent },
+    ] }));
+    await page.route("**/users/me/ledger?*", route => route.fulfill({ json: [
+      { id: event(1).bountyId, userId: creator.identity.id, amount: 10000, reason: "bounty_reward", bountyId: event(1).bountyId, createdAt: recent },
+      { id: event(2).bountyId, userId: creator.identity.id, amount: 25, reason: "daily_claim", bountyId: null, createdAt: recent },
+    ] }));
+    await visit(page);
+    const ledger = page.getByRole("table", { name: "BP transaction history" });
+    await expect(ledger.locator("tbody tr")).toHaveCount(2);
+    await expect(table(page).locator('[aria-hidden="true"]').filter({ hasText: "›" })).toHaveCount(1);
+    await expect(ledger.locator('[aria-hidden="true"]').filter({ hasText: "›" })).toHaveCount(1);
+    if (width === 320) await page.screenshot({ path: "/tmp/marksman-history-chevrons-320.png", fullPage: true });
+    const amount = ledger.locator("tbody tr").first().locator("td").last();
+    const amountBounds = await amount.evaluate(cell => {
+      const cellBounds = cell.getBoundingClientRect();
+      return { cellWidth: cellBounds.width, spans: [...cell.querySelectorAll("span")].map(span => ({ width: span.getBoundingClientRect().width, overflow: span.getBoundingClientRect().right - cellBounds.right })) };
+    });
+    expect(await amount.evaluate(cell => {
+      const bounds = cell.getBoundingClientRect();
+      return [...cell.querySelectorAll("span")].every(span => {
+        const item = span.getBoundingClientRect();
+        return item.left >= bounds.left && item.right <= bounds.right;
+      });
+    }), JSON.stringify(amountBounds)).toBe(true);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  });
+}

@@ -31,7 +31,9 @@ export default function BountyCard({ bounty }: { bounty: ExtendedBounty }) {
       status = (
         <p className="text-foreground-muted text-xs">
           Created by {bounty.owner?.username ?? "owner"}{" "}
-          {formatDistance(new Date(), bounty.createdAt)} ago
+          {formatDistance(bounty.createdAt, new Date(), {
+            addSuffix: true,
+          })}
         </p>
       );
       break;
@@ -40,7 +42,9 @@ export default function BountyCard({ bounty }: { bounty: ExtendedBounty }) {
         status = (
           <p className="text-foreground-muted text-xs">
             Completed by {bounty.winner.username}{" "}
-            {formatDistance(new Date(), bounty.completedAt)} ago
+            {formatDistance(bounty.completedAt, new Date(), {
+              addSuffix: true,
+            })}
           </p>
         );
       } else {
@@ -51,7 +55,10 @@ export default function BountyCard({ bounty }: { bounty: ExtendedBounty }) {
       if (bounty.cancelledAt) {
         status = (
           <p className="text-foreground-muted text-xs">
-            Cancelled {formatDistance(new Date(), bounty.cancelledAt)} ago
+            Cancelled{" "}
+            {formatDistance(bounty.cancelledAt, new Date(), {
+              addSuffix: true,
+            })}
           </p>
         );
       }
