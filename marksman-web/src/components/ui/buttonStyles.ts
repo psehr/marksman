@@ -29,10 +29,12 @@ export function buttonStyles(
   return [
     "whitespace-nowrap shrink-0",
     "inline-flex items-center justify-center rounded border cursor-pointer",
-    "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring font-normal",
+    "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring",
     sizes[size],
     variant === "textual" ? textualTextSizes[size] : textSizes[size],
     variants[variant],
-    base_font.className,
+    variant === "textual"
+      ? `${aes_font.className} font-bold`
+      : `${base_font.className} font-normal`,
   ].join(" ");
 }
