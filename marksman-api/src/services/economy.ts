@@ -1,6 +1,6 @@
-import { UserIdentity } from "@marksman/contracts";
+import { DailyClaimStatus, UserIdentity } from "@marksman/contracts";
 import { db } from "../db";
-import { insertDailyClaim } from "../db/daily-claims";
+import { getDailyClaimForUser, insertDailyClaim } from "../db/daily-claims";
 import { createDailyClaimLedgerEntry } from "../db/ledger";
 import { creditUserBp } from "../db/users";
 
@@ -22,4 +22,21 @@ export async function attemptDailyClaim(user: UserIdentity): Promise<boolean> {
       return true;
     } else return false;
   });
+}
+
+export async function fetchDailyClaimStatus(
+  user: UserIdentity,
+): Promise<DailyClaimStatus> {
+  const now = new Date();
+  const claimDate = now.toISOString().slice(0, 10);
+
+  const claimedToday = await getDailyClaimForUser(db, user.id, claimDate);
+
+  const nextClaim = new Date(now);
+  nextClaim.setUTCHours(0, 0, 0, 0);
+  nextClaim.setUTCDate(nextClaim.getUTCDate() + 1);
+
+  return !claimedToday
+    ? { claimedToday }
+    : { claimedToday, nextClaimAt: nextClaim.toISOString() };
 }

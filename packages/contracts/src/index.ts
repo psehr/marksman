@@ -9,3 +9,4 @@ export * from "./hunt";
 export * from "./hunt-attempt";
 export * from "./bounty-tiers";
 export * from "./pagination";
+export * from "./economy";

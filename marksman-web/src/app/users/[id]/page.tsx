@@ -47,6 +47,9 @@ function UserProfile() {
     refreshEvents,
     claimed,
     claimPending,
+    claimStatusLoading,
+    claimStatusError,
+    refreshClaimStatus,
     claimMessage,
     claimError,
     claimDailyReward,
@@ -307,6 +310,9 @@ function UserProfile() {
               <DailyClaim
                 claimed={claimed}
                 claimPending={claimPending}
+                claimStatusLoading={claimStatusLoading}
+                claimStatusError={claimStatusError}
+                refreshClaimStatus={refreshClaimStatus}
                 claimMessage={claimMessage}
                 claimError={claimError}
                 claimDailyReward={claimDailyReward}
@@ -320,7 +326,7 @@ function UserProfile() {
               variant="textual"
               aria-pressed={view === "hunting"}
               onClick={() => setView("hunting")}
-              size="lg"
+              size="md"
             >
               Hunting
             </Button>
@@ -329,7 +335,7 @@ function UserProfile() {
               variant="textual"
               aria-pressed={view === "created"}
               onClick={() => setView("created")}
-              size="lg"
+              size="md"
             >
               Created
             </Button>
@@ -338,7 +344,7 @@ function UserProfile() {
               variant="textual"
               aria-pressed={view === "won"}
               onClick={() => setView("won")}
-              size="lg"
+              size="md"
             >
               Completed
             </Button>
@@ -347,7 +353,7 @@ function UserProfile() {
               variant="textual"
               aria-pressed={view === "activity"}
               onClick={() => setView("activity")}
-              size="lg"
+              size="md"
             >
               Activity
             </Button>

@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { requireAuth } from "../middleware/requireAuth";
 import { requireTrustedOrigin } from "../middleware/requireTrustedOrigin";
-import { attemptDailyClaim } from "../services/economy";
+import { attemptDailyClaim, fetchDailyClaimStatus } from "../services/economy";
 
 export const economyRouter = Router();
 
@@ -9,7 +9,7 @@ economyRouter.post(
   "/daily-claim",
   requireAuth,
   requireTrustedOrigin,
-  async (req, res) => {
+  async (_req, res) => {
     const user = res.locals.user.identity;
 
     const dailyClaim = await attemptDailyClaim(user);
@@ -24,3 +24,11 @@ economyRouter.post(
     }
   },
 );
+
+economyRouter.get("/daily-claim", requireAuth, async (_req, res) => {
+  const user = res.locals.user.identity;
+
+  const claimStatus = await fetchDailyClaimStatus(user);
+
+  return res.json(claimStatus);
+});

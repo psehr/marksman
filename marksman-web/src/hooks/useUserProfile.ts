@@ -1,6 +1,6 @@
 import { useAuth } from "@/components/auth/AuthProvider";
 import { getUser, getUserLedger, getUserBountyEvents } from "@/lib/api/users";
-import { claimDailyBp } from "@/lib/api/economy";
+import { claimDailyBp, getDailyClaimStatus } from "@/lib/api/economy";
 import { ApiError } from "@/lib/api/client";
 import type {
   BountyEvent,
@@ -99,7 +99,20 @@ export function useUserProfile(id: string) {
   const [eventsRefresh, setEventsRefresh] = useState(0);
 
   const [claimPending, setClaimPending] = useState(false);
-  const [claimed, setClaimed] = useState(false);
+  const claimKey = user?.identity.id === id ? id : null;
+  const [claimStatus, setClaimStatus] = useState<{
+    key: string;
+    state: "loading" | "ready" | "error";
+    claimed: boolean;
+    nextClaimAt?: string;
+  }>();
+  const [claimStatusRefresh, setClaimStatusRefresh] = useState(0);
+  const claimStatusRevision = useRef(0);
+  const currentClaimStatus = claimStatus?.key === claimKey ? claimStatus : undefined;
+  const claimed = currentClaimStatus?.claimed ?? false;
+  const claimStatusLoading = !currentClaimStatus || currentClaimStatus.state === "loading";
+  const claimStatusError = currentClaimStatus?.state === "error";
+  const refreshClaimStatus = () => setClaimStatusRefresh(value => value + 1);
   const [claimMessage, setClaimMessage] = useState<string | null>(null);
   const [claimError, setClaimError] = useState<string | null>(null);
   const claimRequest = useRef({ active: true, pending: false });
@@ -112,7 +125,6 @@ export function useUserProfile(id: string) {
     const request = { active: true, pending: false };
     claimRequest.current = request;
     setClaimPending(false);
-    setClaimed(false);
     setClaimMessage(null);
     setClaimError(null);
 
@@ -123,6 +135,45 @@ export function useUserProfile(id: string) {
       request.active = false;
     };
   }, [id, user?.identity.id]);
+
+  useEffect(() => {
+    const revision = ++claimStatusRevision.current;
+    let active = true;
+    if (!claimKey) {
+      setClaimStatus(undefined);
+      return;
+    }
+    setClaimStatus({ key: claimKey, state: "loading", claimed: false });
+    void getDailyClaimStatus().then(status => {
+      if (!active || revision !== claimStatusRevision.current) return;
+      setClaimStatus({
+        key: claimKey, state: "ready", claimed: status.claimedToday,
+        nextClaimAt: status.claimedToday ? status.nextClaimAt : undefined,
+      });
+    }).catch(() => {
+      if (active && revision === claimStatusRevision.current) {
+        setClaimStatus({ key: claimKey, state: "error", claimed: false });
+      }
+    });
+    return () => { active = false; };
+  }, [claimKey, claimStatusRefresh]);
+
+  useEffect(() => {
+    if (!currentClaimStatus?.nextClaimAt || currentClaimStatus.state !== "ready") return;
+    const timeout = setTimeout(() => {
+      setClaimStatusRefresh(value => value + 1);
+    }, Math.max(1000, Date.parse(currentClaimStatus.nextClaimAt) - Date.now()));
+    return () => clearTimeout(timeout);
+  }, [currentClaimStatus]);
+
+  function markDailyClaimed() {
+    if (!claimKey) return;
+    // Ignore any status read started before this mutation completed.
+    claimStatusRevision.current++;
+    const next = new Date();
+    next.setUTCHours(24, 0, 0, 0);
+    setClaimStatus({ key: claimKey, state: "ready", claimed: true, nextClaimAt: next.toISOString() });
+  }
 
   useEffect(() => {
     setEvents([]);
@@ -143,7 +194,7 @@ export function useUserProfile(id: string) {
 
   async function claimDailyReward() {
     const request = claimRequest.current;
-    if (!userIsPageOwner || request.pending || claimed) return;
+    if (!userIsPageOwner || request.pending || claimed || claimStatusLoading || claimStatusError) return;
 
     request.pending = true;
     setClaimPending(true);
@@ -153,7 +204,7 @@ export function useUserProfile(id: string) {
     try {
       await claimDailyBp();
       if (!request.active) return;
-      setClaimed(true);
+      markDailyClaimed();
       setClaimMessage("Claimed 25 BP.");
       refreshUser();
       refreshLedger();
@@ -162,7 +213,7 @@ export function useUserProfile(id: string) {
     } catch (error) {
       if (request.active) {
         if (error instanceof ApiError && error.status === 409) {
-          setClaimed(true);
+          markDailyClaimed();
           setClaimMessage(
             "Already claimed today. Daily rewards reset at 00:00 UTC.",
           );
@@ -315,6 +366,9 @@ export function useUserProfile(id: string) {
     refreshEvents,
     claimed,
     claimPending,
+    claimStatusLoading,
+    claimStatusError,
+    refreshClaimStatus,
     claimMessage,
     claimError,
     claimDailyReward,
