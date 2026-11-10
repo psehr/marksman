@@ -2,10 +2,10 @@ import assert from "node:assert/strict";
 import { createHmac, randomUUID } from "node:crypto";
 import { once } from "node:events";
 import type { Server } from "node:http";
-import { after, before, beforeEach, test } from "node:test";
+import { after, before, beforeEach, mock, test } from "node:test";
 import { setTimeout as delay } from "node:timers/promises";
 import { sql } from "drizzle-orm";
-import type { UserIdentity } from "@marksman/contracts";
+import { dailyClaimStatusSchema, type UserIdentity } from "@marksman/contracts";
 import { dailyClaims, ledgerEntries, sessions, users } from "../src/db/schema";
 import { createTestDatabase } from "./fixtures/test-database";
 
@@ -15,11 +15,14 @@ Object.assign(process.env, {
   FRONTEND_URL: "http://localhost:3000/", OSU_CLIENT_ID: "123",
   OSU_CLIENT_SECRET: "fixture-client-secret", OSU_REDIRECT_URI: "http://localhost:3001/auth/osu/callback",
   SESSION_SECRET: "fixture-session-secret-at-least-32-characters",
+  ALLOWED_OSU_USER_IDS: "42,43",
 });
 const { db } = require("../src/db") as typeof import("../src/db");
 const { app } = require("../src/app") as typeof import("../src/app");
 const { sessionStore } = require("../src/db/session-store") as typeof import("../src/db/session-store");
-const { attemptDailyClaim } = require("../src/services/economy") as typeof import("../src/services/economy");
+const { attemptDailyClaim, fetchDailyClaimStatus } = require("../src/services/economy") as typeof import("../src/services/economy");
+const { getDailyClaimForUser } = require("../src/db/daily-claims") as typeof import("../src/db/daily-claims");
+const httpFetch = globalThis.fetch;
 const testDatabase = createTestDatabase(db, true);
 let server: Server;
 let baseUrl: string;
@@ -27,6 +30,7 @@ let player: UserIdentity;
 let other: UserIdentity;
 
 before(async () => {
+  mock.method(globalThis, "fetch", async () => { throw new Error("Unexpected upstream request in daily-claim tests"); });
   await testDatabase.prepare();
   server = app.listen(0, "127.0.0.1");
   await once(server, "listening");
@@ -51,7 +55,7 @@ after(async () => {
     });
     sessionStore.close();
     await testDatabase.clearIfMigrated();
-  } finally { await db.$client.end(); }
+  } finally { mock.restoreAll(); await db.$client.end(); }
 });
 async function snapshot() {
   return {
@@ -89,7 +93,7 @@ async function request(cookie?: string, origin: string | null = "http://localhos
   if (cookie) headers.Cookie = cookie;
   if (origin !== null) headers.Origin = origin;
   if (body !== undefined) headers["Content-Type"] = "application/json";
-  return fetch(`${baseUrl}/economy/daily-claim`, { method: "POST", headers,
+  return httpFetch(`${baseUrl}/economy/daily-claim`, { method: "POST", headers,
     body: body === undefined ? undefined : JSON.stringify(body), signal: AbortSignal.timeout(5000) });
 }
 
@@ -99,6 +103,118 @@ test("first claim awards 25 BP; same-day repeat changes nothing", async t => {
   await assertAwards([{ userId: player.id, claimDate: "2026-10-05" }]);
   const original = await snapshot();
   assert.equal(await attemptDailyClaim(player), false);
+  assert.deepEqual(await snapshot(), original);
+});
+
+async function statusRequest(cookie?: string, query = "") {
+  return httpFetch(`${baseUrl}/economy/daily-claim${query}`, {
+    headers: cookie ? { Cookie: cookie } : {}, signal: AbortSignal.timeout(5000),
+  });
+}
+
+test("status lookup ignores old claims and other users' claims without mutation", async t => {
+  t.mock.timers.enable({ apis: ["Date"], now: new Date("2026-11-10T12:00:00Z") });
+  assert.deepEqual(await fetchDailyClaimStatus(player), { claimedToday: false });
+  await db.insert(dailyClaims).values([
+    { userId: player.id, claimDate: "2026-11-09" },
+    { userId: other.id, claimDate: "2026-11-10" },
+  ]);
+  const original = await snapshot();
+  assert.deepEqual(await fetchDailyClaimStatus(player), { claimedToday: false });
+  assert.deepEqual(await fetchDailyClaimStatus(other), {
+    claimedToday: true, nextClaimAt: "2026-11-11T00:00:00.000Z",
+  });
+  assert.deepEqual(await snapshot(), original);
+});
+
+test("status lookup finds today's claim among multiple stored dates and supports transactions", async t => {
+  t.mock.timers.enable({ apis: ["Date"], now: new Date("2026-11-10T12:00:00Z") });
+  await db.insert(dailyClaims).values([
+    { userId: player.id, claimDate: "2026-11-08" },
+    { userId: player.id, claimDate: "2026-11-10" },
+    { userId: player.id, claimDate: "2026-11-09" },
+  ]);
+  const original = await snapshot();
+  assert.deepEqual(await fetchDailyClaimStatus(player), {
+    claimedToday: true, nextClaimAt: "2026-11-11T00:00:00.000Z",
+  });
+  await db.transaction(async tx => {
+    assert.equal(await getDailyClaimForUser(tx, player.id, "2026-11-10"), true);
+    assert.equal(await getDailyClaimForUser(tx, other.id, "2026-11-10"), false);
+  });
+  assert.deepEqual(await snapshot(), original);
+});
+
+for (const [now, claimDate, nextClaimAt] of [
+  ["2026-11-11T00:30:00+02:00", "2026-11-10", "2026-11-11T00:00:00.000Z"],
+  ["2026-11-30T23:59:59.999Z", "2026-11-30", "2026-12-01T00:00:00.000Z"],
+  ["2026-12-31T23:59:59.999Z", "2026-12-31", "2027-01-01T00:00:00.000Z"],
+  ["2028-02-28T23:59:59.999Z", "2028-02-28", "2028-02-29T00:00:00.000Z"],
+  ["2028-02-29T23:59:59.999Z", "2028-02-29", "2028-03-01T00:00:00.000Z"],
+] as const) {
+  test(`daily status resets at next UTC midnight from ${now}`, async t => {
+    t.mock.timers.enable({ apis: ["Date"], now: new Date(now) });
+    await db.insert(dailyClaims).values({ userId: player.id, claimDate });
+    const original = await snapshot();
+    assert.deepEqual(await fetchDailyClaimStatus(player), { claimedToday: true, nextClaimAt });
+    t.mock.timers.setTime(Date.parse(nextClaimAt));
+    assert.deepEqual(await fetchDailyClaimStatus(player), { claimedToday: false });
+    assert.deepEqual(await snapshot(), original);
+  });
+}
+
+test("GET status uses session identity, needs no Origin, and tracks POST without changing balances", async () => {
+  const cookie = await cookieFor();
+  const original = await snapshot();
+  const before = await statusRequest(cookie, `?userId=${other.id}&claimDate=2000-01-01`);
+  assert.equal(before.status, 200);
+  assert.deepEqual(dailyClaimStatusSchema.parse(await before.json()), { claimedToday: false });
+  assert.deepEqual(await snapshot(), original);
+  assert.equal((await request(cookie)).status, 200);
+  const funded = await snapshot();
+  const after = await statusRequest(cookie);
+  assert.equal(after.status, 200);
+  const result = dailyClaimStatusSchema.parse(await after.json());
+  assert.equal(result.claimedToday, true);
+  if (!result.claimedToday) assert.fail("expected today's claim");
+  const next = new Date(`${funded.claims[0].claimDate}T00:00:00Z`);
+  next.setUTCDate(next.getUTCDate() + 1);
+  assert.equal(result.nextClaimAt, next.toISOString());
+  const otherResponse = await statusRequest(await cookieFor(other));
+  assert.equal(otherResponse.status, 200);
+  assert.deepEqual(await otherResponse.json(), { claimedToday: false });
+  assert.deepEqual(await snapshot(), funded);
+});
+
+test("GET status rejects anonymous, deleted-user and non-allowlisted sessions", async () => {
+  const original = await snapshot();
+  for (const cookie of [undefined, await cookieFor({ ...player, id: randomUUID() })]) {
+    const response = await statusRequest(cookie);
+    assert.equal(response.status, 401);
+    assert.equal((await response.json()).code, "NOT_LOGGED_IN");
+  }
+  const [denied] = await db.insert(users).values({ osuUserId: 44, username: "denied", bpBalance: 0 }).returning();
+  const response = await statusRequest(await cookieFor({ id: denied.id, osuUserId: 44, username: denied.username }));
+  assert.equal(response.status, 403);
+  assert.equal((await response.json()).code, "ALPHA_ACCESS_REQUIRED");
+  assert.deepEqual((await snapshot()).claims, original.claims);
+  assert.deepEqual((await snapshot()).ledger, original.ledger);
+});
+
+test("GET status database failure returns 500 without writes and recovers", async t => {
+  const cookie = await cookieFor();
+  const original = await snapshot();
+  const log = t.mock.method(console, "error", () => {});
+  await db.execute(sql`ALTER TABLE daily_claims RENAME TO test_daily_claims_unavailable`);
+  try {
+    const response = await statusRequest(cookie);
+    assert.equal(response.status, 500);
+    assert.deepEqual(await response.json(), { code: "UNEXPECTED_ERROR", error: "Internal server error" });
+    assert.equal(log.mock.callCount(), 1);
+  } finally {
+    await db.execute(sql`ALTER TABLE test_daily_claims_unavailable RENAME TO daily_claims`);
+  }
+  assert.equal((await statusRequest(cookie)).status, 200);
   assert.deepEqual(await snapshot(), original);
 });
 test("claims reset at UTC midnight, not local midnight or after 24 hours", async t => {
