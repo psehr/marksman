@@ -46,6 +46,7 @@ services:
       OSU_REDIRECT_URI: ${OSU_REDIRECT_URI:?Set OSU_REDIRECT_URI}
       SESSION_SECRET: ${SESSION_SECRET:?Set SESSION_SECRET}
       TRUST_PROXY_HOPS: "1"
+      ALLOWED_OSU_USER_IDS: ${ALLOWED_OSU_USER_IDS:-}
     depends_on:
       postgres:
         condition: service_healthy
