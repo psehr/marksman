@@ -1,3 +1,4 @@
+import ActionIcon from "@/components/ui/ActionIcon";
 import type { CreateBountyInput } from "@marksman/contracts";
 import Button from "@/components/ui/Button";
 import Link from "next/link";
@@ -60,6 +61,7 @@ export default function ReviewStep({ props }: { props: ReviewStepProps }) {
           disabled={props.pending}
           onClick={props.onBack}
         >
+          <ActionIcon action="back" />
           Back
         </Button>
         <Button

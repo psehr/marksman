@@ -126,6 +126,7 @@ export default function BountyActions(props: Props) {
           variant="accent"
           href={`${process.env.NEXT_PUBLIC_API_URL}/auth/osu`}
         >
+          <ActionIcon action="sign-in" />
           Log in with osu! to interact
         </ButtonLink>
         <ShareBounty key={props.bounty.id} bountyId={props.bounty.id} />

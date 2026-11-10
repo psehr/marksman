@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useAuth } from "./AuthProvider";
 import Button from "../ui/Button";
 import ButtonLink from "../ui/ButtonLink";
+import ActionIcon from "../ui/ActionIcon";
 
 export function AuthButton() {
   const { user, loading, error, refreshUser } = useAuth();
@@ -46,6 +47,7 @@ export function AuthButton() {
         href={`${process.env.NEXT_PUBLIC_API_URL}/auth/osu`}
         variant="accent"
       >
+        <ActionIcon action="sign-in" />
         Log in with osu!
       </ButtonLink>
     );
@@ -54,6 +56,7 @@ export function AuthButton() {
   return (
     <>
       <Button variant="outline" onClick={() => logout()}>
+        <ActionIcon action="sign-out" />
         Log out
       </Button>
       {logoutError && <p role="alert">{logoutError}</p>}

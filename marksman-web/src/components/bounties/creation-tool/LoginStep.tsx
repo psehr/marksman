@@ -1,3 +1,4 @@
+import ActionIcon from "@/components/ui/ActionIcon";
 import { AuthButton } from "@/components/auth/AuthButton";
 import Button from "@/components/ui/Button";
 import type { LoginStepProps } from "./creation-tool.types";
@@ -22,6 +23,7 @@ export default function LoginStep({ props }: { props: LoginStepProps }) {
           <p>Logged in as {props.user.identity.username}</p>
           <Button variant="accent" onClick={props.onContinue} type="button">
             Continue
+            <ActionIcon action="continue" />
           </Button>
         </div>
       ) : null}

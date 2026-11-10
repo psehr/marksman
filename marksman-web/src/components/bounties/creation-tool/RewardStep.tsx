@@ -1,3 +1,4 @@
+import ActionIcon from "@/components/ui/ActionIcon";
 import BPIcon from "@/components/economy/BPIcon";
 import { RewardStepProps } from "./creation-tool.types";
 import TextInput from "@/components/ui/TextInput";
@@ -108,6 +109,7 @@ export default function RewardStep({ props }: { props: RewardStepProps }) {
 
       <div className="flex gap-2 place-content-end w-full">
         <Button onClick={props.onBack} variant="outline">
+          <ActionIcon action="back" />
           Back
         </Button>
 
@@ -117,6 +119,7 @@ export default function RewardStep({ props }: { props: RewardStepProps }) {
           disabled={!props.isRewardValid}
         >
           Continue
+          <ActionIcon action="continue" />
         </Button>
       </div>
     </div>

@@ -1,3 +1,4 @@
+import ActionIcon from "@/components/ui/ActionIcon";
 import Button from "@/components/ui/Button";
 import type { GoalStepProps } from "./creation-tool.types";
 
@@ -167,11 +168,13 @@ export default function GoalStep({ props }: { props: GoalStepProps }) {
       </fieldset>
       <div className="flex gap-2 place-content-end w-full">
         <Button onClick={props.onBack} variant="outline">
+          <ActionIcon action="back" />
           Back
         </Button>
 
         <Button onClick={props.onContinue} variant="accent">
           Continue
+          <ActionIcon action="continue" />
         </Button>
       </div>
     </div>

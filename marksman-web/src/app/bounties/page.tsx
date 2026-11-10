@@ -21,6 +21,7 @@ import { useSearchParams } from "next/navigation";
 import { Suspense } from "react";
 import { aes_font } from "@/lib/fonts";
 import PageHeaderBadge from "@/components/ui/PageHeaderBadge";
+import ActionIcon from "@/components/ui/ActionIcon";
 
 export default function BountiesPage() {
   return (
@@ -126,6 +127,7 @@ function Bounties() {
               variant="accent"
               className="font-bold"
             >
+              <ActionIcon action="create" />
               Create a bounty
             </ButtonLink>
             <ButtonLink href="/about/bounties">Learn about bounties</ButtonLink>

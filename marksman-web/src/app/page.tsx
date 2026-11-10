@@ -3,6 +3,7 @@ import { InfoSection } from "@/components/ui/InfoSection";
 import MarksmanLogo from "@/components/ui/MarksmanLogo";
 import { aes_font } from "@/lib/fonts";
 import Link from "next/link";
+import ActionIcon from "@/components/ui/ActionIcon";
 
 export default function Home() {
   return (
@@ -22,6 +23,7 @@ export default function Home() {
           <div className="text-foreground-muted flex flex-col gap-2">
             <p>Start hunting now</p>
             <ButtonLink href="/bounties" size="lg" variant="accent">
+              <ActionIcon action="browse" />
               Browse bounties
             </ButtonLink>
           </div>
@@ -33,6 +35,7 @@ export default function Home() {
               size="lg"
               variant="accent"
             >
+              <ActionIcon action="create" />
               Create a bounty
             </ButtonLink>
           </div>
