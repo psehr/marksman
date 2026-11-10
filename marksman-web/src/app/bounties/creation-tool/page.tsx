@@ -4,7 +4,7 @@ import PageHeaderBadge from "@/components/ui/PageHeaderBadge";
 export default function BountyCreationToolPage() {
   return (
     <main className="flex flex-col items-center py-6 sm:py-12 gap-4 sm:gap-8 px-4">
-      <PageHeaderBadge>Bounty Creation Tool</PageHeaderBadge>
+      <PageHeaderBadge icon="create">Bounty Creation Tool</PageHeaderBadge>
       <BountyCreationTool />
     </main>
   );

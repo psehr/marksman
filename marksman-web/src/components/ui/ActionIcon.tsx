@@ -15,12 +15,20 @@ type Action =
   | "browse"
   | "create"
   | "back"
-  | "continue";
+  | "continue"
+  | "info"
+  | "economy";
 
 /** Decorative, current-color icons for labelled action controls. */
 export default function ActionIcon({ action }: { action: Action }) {
   let artwork: ReactNode;
   switch (action) {
+    case "info":
+      artwork = <><circle cx="12" cy="12" r="9" /><path d="M12 11v6" /><circle cx="12" cy="7" r="1" fill="currentColor" stroke="none" /></>;
+      break;
+    case "economy":
+      artwork = <><ellipse cx="9" cy="6" rx="6" ry="3" /><path d="M3 6v5c0 1.7 2.7 3 6 3m6-8v3" /><ellipse cx="15" cy="13" rx="6" ry="3" /><path d="M9 13v5c0 1.7 2.7 3 6 3s6-1.3 6-3v-5" /></>;
+      break;
     case "back":
       artwork = <path d="M20 12H4m7-7-7 7 7 7" />;
       break;

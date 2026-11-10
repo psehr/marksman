@@ -1,5 +1,7 @@
 "use client";
 
+import ActionIcon from "@/components/ui/ActionIcon";
+
 import { AboutLink } from "@/components/about/AboutLink";
 import { AboutSection } from "@/components/about/AboutSection";
 import { AccentText } from "@/components/about/AccentText";
@@ -12,7 +14,7 @@ export default function AboutPage() {
   const { user } = useAuth();
   return (
     <div className="flex flex-col w-full h-full place-content-center items-center px-4 py-12 gap-4">
-      <PageHeaderBadge>About - Marksman</PageHeaderBadge>
+      <PageHeaderBadge icon="info">About - Marksman</PageHeaderBadge>
       <AboutSection id="core-concept" title="Core Concept">
         <p>
           <AccentText>Marksman</AccentText> is an osu! project with the goal of{" "}
@@ -81,15 +83,19 @@ export default function AboutPage() {
         </p>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
           <ButtonLink href="/about/bounties" variant="outline" size="lg">
+            <ActionIcon action="browse" />
             About - Bounties
           </ButtonLink>
           <ButtonLink href="/about/bounty-creation" variant="outline" size="lg">
+            <ActionIcon action="create" />
             About - Bounty Creation
           </ButtonLink>
           <ButtonLink href="/about/hunting" variant="outline" size="lg">
+            <ActionIcon action="hunt" />
             About - Hunting
           </ButtonLink>
           <ButtonLink href="/about/economy" variant="outline" size="lg">
+            <ActionIcon action="economy" />
             About - Economy
           </ButtonLink>
         </div>

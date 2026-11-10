@@ -40,7 +40,8 @@ export default function Home() {
             </ButtonLink>
           </div>
         </div>
-        <Link href="/about" className="text-foreground-muted text-xs underline">
+        <Link href="/about" className="inline-flex items-center gap-2 text-foreground-muted text-xs underline">
+          <ActionIcon action="info" />
           How does it work?
         </Link>
       </div>

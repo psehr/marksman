@@ -12,7 +12,7 @@ import BPIcon from "@/components/economy/BPIcon";
 export default function AboutBountiesPage() {
   return (
     <div className="flex flex-col w-full h-full place-content-center items-center px-4 py-12 gap-4">
-      <PageHeaderBadge>About - Bounties</PageHeaderBadge>
+      <PageHeaderBadge icon="browse">About - Bounties</PageHeaderBadge>
       <AboutSection id="what-are-bounties" title="What are bounties?">
         <p>
           Bounties are <AccentText>user-made challenges</AccentText> that can be

@@ -44,7 +44,7 @@ export default function BountyDetailsPage() {
   } else {
     return (
       <div className="flex flex-col w-full h-full place-content-center items-center py-12 px-4 gap-8">
-        <PageHeaderBadge>Bounty Details</PageHeaderBadge>
+        <PageHeaderBadge icon="info">Bounty Details</PageHeaderBadge>
 
         <div className="flex flex-col w-full max-w-2xl h-fit gap-4">
           {queryStatus === "complete" && bounty ? (

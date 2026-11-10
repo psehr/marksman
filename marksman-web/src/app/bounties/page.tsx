@@ -118,7 +118,7 @@ function Bounties() {
 
   return (
     <div className="flex flex-col w-full h-full items-center gap-8 py-12 px-4">
-      <PageHeaderBadge>Bounty Board</PageHeaderBadge>
+      <PageHeaderBadge icon="browse">Bounty Board</PageHeaderBadge>
       <div className="flex flex-col w-full max-w-6xl h-full items-center gap-4">
         <div className="flex flex-col w-full gap-4">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
@@ -130,7 +130,10 @@ function Bounties() {
               <ActionIcon action="create" />
               Create a bounty
             </ButtonLink>
-            <ButtonLink href="/about/bounties">Learn about bounties</ButtonLink>
+            <ButtonLink href="/about/bounties">
+              <ActionIcon action="info" />
+              Learn about bounties
+            </ButtonLink>
           </div>
           <BountyFilters
             selectedFilters={selectedFilters}

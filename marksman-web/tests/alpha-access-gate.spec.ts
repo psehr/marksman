@@ -196,3 +196,40 @@ for (const width of [320, 640, 1280]) {
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   });
 }
+
+for (const width of [320, 640, 1280]) {
+  test(`About navigation icons preserve names, targets and fit at ${width}px`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 900 });
+    await mockAuth(page, async (route, path) => {
+      await route.fulfill(path === "/auth/me" ? { json: user } : { status: 204 });
+    });
+    await page.route(/\/bounties(?:\?.*)?$/, async route => {
+      if (new URL(route.request().url()).origin === "http://127.0.0.1:3100") return route.fallback();
+      await route.fulfill({ json: { items: [], total: 0, page: 1, pageSize: 20 } });
+    });
+    async function check(name: string, href: string) {
+      const action = page.getByRole("link", { name, exact: true });
+      await expect(action).toHaveAttribute("href", href);
+      await expect(action.locator("svg")).toHaveAttribute("aria-hidden", "true");
+      await expect(action.locator("svg")).toHaveAttribute("focusable", "false");
+      expect(await action.evaluate(element => element.scrollWidth <= element.clientWidth)).toBe(true);
+      return action;
+    }
+    await page.goto("/");
+    const help = await check("How does it work?", "/about");
+    await help.focus();
+    await page.keyboard.press("Enter");
+    await expect(page).toHaveURL(/\/about$/);
+    for (const [name, href] of [
+      ["About - Bounties", "/about/bounties"],
+      ["About - Bounty Creation", "/about/bounty-creation"],
+      ["About - Hunting", "/about/hunting"],
+      ["About - Economy", "/about/economy"],
+    ]) await check(name, href);
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+    await page.goto("/bounties");
+    const learn = await check("Learn about bounties", "/about/bounties");
+    await learn.click();
+    await expect(page).toHaveURL(/\/about\/bounties$/);
+  });
+}
