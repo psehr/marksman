@@ -17,6 +17,7 @@ import { healthRouter } from "./routes/health";
 import { beatmapsRouter } from "./routes/beatmaps";
 import { economyRouter } from "./routes/economy";
 import { huntsRouter } from "./routes/hunt";
+import { requireAlphaAccess } from "./middleware/requireAlphaAccess";
 
 export const app = express();
 
@@ -49,10 +50,11 @@ app.use(
 );
 
 app.use("/health", healthRouter);
+app.use("/auth", authRouter);
+app.use(requireAlphaAccess);
 app.use("/bounties", bountiesRouter);
 app.use("/users", usersRouter);
 app.use("/beatmaps", beatmapsRouter);
-app.use("/auth", authRouter);
 app.use("/economy", economyRouter);
 app.use("/hunts", huntsRouter);
 
