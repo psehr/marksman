@@ -371,3 +371,41 @@ test("missing clipboard API offers manual copying", async ({ page }) => {
   await page.getByRole("button", { name: "Share bounty", exact: true }).click();
   await expect(page.getByRole("textbox", { name: "Bounty link", exact: true })).toHaveValue(`http://127.0.0.1:3100/bounties/${id}`);
 });
+
+for (const width of [320, 640, 1280]) {
+  test(`decorative action icons keep text names and fit at ${width}px`, async ({ page }, testInfo) => {
+    await page.setViewportSize({ width, height: 900 });
+    await setup(page, { beatmap: linkedBeatmap });
+    await page.goto(`/bounties/${id}`);
+    const actions = [
+      page.getByRole("button", { name: "Start Hunting", exact: true }),
+      page.getByRole("button", { name: "Bookmark", exact: true }),
+      page.getByRole("button", { name: "Share bounty", exact: true }),
+      page.getByRole("link", { name: "Open in osu!", exact: true }),
+      page.getByRole("link", { name: "Download on osu!", exact: true }),
+    ];
+    for (const action of actions) {
+      await expect(action).toBeVisible();
+      await expect(action.locator("svg")).toHaveCount(1);
+      await expect(action.locator("svg")).toHaveAttribute("aria-hidden", "true");
+      await expect(action.locator("svg")).toHaveAttribute("focusable", "false");
+      expect(await action.evaluate(element => {
+        const icon = element.querySelector("svg")!.getBoundingClientRect();
+        return icon.width === 18 && icon.height === 18 && element.scrollWidth <= element.clientWidth;
+      })).toBe(true);
+    }
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+    if (width === 320) await page.screenshot({ path: testInfo.outputPath("action-icons-mobile.png"), fullPage: true });
+  });
+}
+
+test("owner cancellation and restored Stop/Unbookmark controls have icons", async ({ page }) => {
+  const state = await setup(page, { engagement: { bookmarkCount: 3, isBookmarkedByCurrentUser: true } });
+  state.ongoing = [hunt];
+  await page.goto(`/bounties/${id}`);
+  await expect(page.getByRole("button", { name: "Stop Hunting", exact: true }).locator("svg")).toHaveCount(1);
+  await expect(page.getByRole("button", { name: "Unbookmark", exact: true }).locator("svg")).toHaveCount(1);
+  state.bounty.creatorOsuUserId = 99;
+  await page.reload();
+  await expect(page.getByRole("button", { name: "Cancel bounty", exact: true }).locator("svg")).toHaveCount(1);
+});

@@ -1,5 +1,7 @@
 "use client";
 
+import ActionIcon from "@/components/ui/ActionIcon";
+
 import { useEffect, useRef, useState } from "react";
 import Button from "@/components/ui/Button";
 
@@ -39,6 +41,7 @@ export default function ShareBounty({ bountyId }: { bountyId: string }) {
   return (
     <div className="flex min-w-0 flex-col gap-2">
       <Button size="lg" disabled={pending} onClick={() => void share()}>
+        <ActionIcon action={pending ? "refresh" : "share"} />
         {pending ? "Copying…" : "Share bounty"}
       </Button>
       {copied ? <p role="status" className="text-sm text-success">Link copied!</p> : null}

@@ -1,5 +1,7 @@
 "use client";
 
+import ActionIcon from "@/components/ui/ActionIcon";
+
 import type { ExtendedBounty } from "@marksman/contracts";
 import { useAuth } from "../../auth/AuthProvider";
 import Button from "@/components/ui/Button";
@@ -56,6 +58,7 @@ function ConnectedActions({
               disabled={cancel.pending}
               onClick={() => void cancel.run()}
             >
+              <ActionIcon action={cancel.pending ? "refresh" : "cancel"} />
               {cancel.pending ? "Cancelling..." : "Cancel bounty"}
             </Button>
             {cancel.error && <p role="alert">{cancel.error}</p>}
@@ -69,6 +72,7 @@ function ConnectedActions({
               disabled={bookmark.pending}
               onClick={() => void bookmark.run()}
             >
+              <ActionIcon action={bookmark.pending || bookmark.refreshFailed ? "refresh" : canUnbookmark ? "bookmarked" : "bookmark"} />
               {bookmark.pending
                 ? "Saving..."
                 : bookmark.refreshFailed

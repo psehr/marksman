@@ -1,3 +1,4 @@
+import ActionIcon from "@/components/ui/ActionIcon";
 import Button from "@/components/ui/Button";
 
 type HuntControlsProps = {
@@ -33,6 +34,7 @@ export default function HuntControls({
           onClick={onToggle}
           disabled={loading || pending}
         >
+          <ActionIcon action={loading || pending ? "refresh" : isHunting ? "stop" : "hunt"} />
           {loading
             ? "Loading hunt..."
             : pending
@@ -51,6 +53,7 @@ export default function HuntControls({
           onClick={onRefresh}
           disabled={pending}
         >
+          <ActionIcon action="refresh" />
           Reload hunts
         </Button>
       )}

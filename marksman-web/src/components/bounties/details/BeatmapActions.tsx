@@ -1,3 +1,4 @@
+import ActionIcon from "@/components/ui/ActionIcon";
 import type { ExtendedBounty } from "@marksman/contracts";
 import Button from "@/components/ui/Button";
 import ButtonLink from "@/components/ui/ButtonLink";
@@ -12,6 +13,7 @@ export default function BeatmapActions({ bounty }: { bounty: ExtendedBounty }) {
         variant="primary"
         href={`osu://b/${bounty.goal.beatmapId}`}
       >
+        <ActionIcon action="osu" />
         Open in osu!
       </ButtonLink>
       {downloadUrl ? (
@@ -22,6 +24,7 @@ export default function BeatmapActions({ bounty }: { bounty: ExtendedBounty }) {
           target="_blank"
           rel="noopener noreferrer"
         >
+          <ActionIcon action="download" />
           Download on osu!
         </ButtonLink>
       ) : (
@@ -31,6 +34,7 @@ export default function BeatmapActions({ bounty }: { bounty: ExtendedBounty }) {
           disabled
           title="Beatmap set information is unavailable."
         >
+          <ActionIcon action="download" />
           Download on osu!
         </Button>
       )}
