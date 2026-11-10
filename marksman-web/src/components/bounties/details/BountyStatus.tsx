@@ -1,3 +1,4 @@
+import { aes_font } from "@/lib/fonts";
 import { ExtendedBounty } from "@marksman/contracts";
 
 export default function BountyStatus({
@@ -24,8 +25,12 @@ export default function BountyStatus({
   }
 
   return (
-    <p className={`w-full bg-card shadow-md rounded py-2 ${text_color}`}>
-      {text}
-    </p>
+    <div className="flex w-full place-content-center items-center bg-surface border border-border rounded py-2">
+      <p
+        className={`font-bold text-4xl tracking-widest ${text_color} ${aes_font.className}`}
+      >
+        {text}
+      </p>
+    </div>
   );
 }

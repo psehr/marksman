@@ -5,10 +5,12 @@ export default function StatContainer({
   stat,
   title,
   unit,
+  disabled = false,
 }: {
   stat: number;
   title: string;
   unit: "bp" | "count";
+  disabled?: boolean;
 }) {
   return (
     <div className="flex flex-col place-content-center items-center">
@@ -16,7 +18,7 @@ export default function StatContainer({
         <span
           className={`text-3xl text-accent font-bold ${aes_font.className}`}
         >
-          {stat.toLocaleString()}
+          {disabled ? "-" : stat.toLocaleString()}
         </span>
         {unit === "bp" ? <BPIcon size="md" /> : null}
       </div>

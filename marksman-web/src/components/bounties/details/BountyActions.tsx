@@ -40,10 +40,6 @@ function ConnectedActions({
   );
   const { canCancel, canHunt, canBookmark, canUnbookmark } = availableActions;
 
-  if (!canCancel && !canHunt && !canBookmark && !canUnbookmark) {
-    return <p>There are currently no available actions</p>;
-  }
-
   return (
     <div
       className={`grid items-start gap-4 ${canHunt && (canBookmark || canUnbookmark) ? "grid-cols-2" : "grid-cols-1"}`}
