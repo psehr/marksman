@@ -201,7 +201,9 @@ export default function BountyFilters(props: {
         </div>
       </div>
       <details className="border-t border-border pt-4 text-center">
-        <summary className="cursor-pointer">Show additional filters</summary>
+        <summary className="cursor-pointer text-foreground-muted">
+          Show additional filters
+        </summary>
 
         <div className="mt-4 grid grid-cols-1 gap-4 lg:grid-cols-3">
           <fieldset className="min-w-0">

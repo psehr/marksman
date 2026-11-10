@@ -2,12 +2,12 @@ import { aes_font } from "@/lib/fonts";
 import type { BountyTier } from "@marksman/contracts";
 
 const tierStyles = {
-  Easy: "border-[#a3cf83]/40 bg-[#a3cf83]/10 text-[#a3cf83]",
-  Normal: "border-[#83bfcf]/40 bg-[#83bfcf]/10 text-[#83bfcf]",
-  Hard: "border-[#efa85c]/40 bg-[#efa85c]/10 text-[#efa85c]",
-  Lunatic: "border-[#ed8d83]/40 bg-[#ed8d83]/10 text-[#ed8d83]",
-  Extra: "border-[#c4a3ed]/40 bg-[#c4a3ed]/10 text-[#c4a3ed]",
-  Phantasm: "border-[#c4a3ed]/30 bg-card text-[#c4a3ed]",
+  Easy: "border-[#a3cf83]/20 bg-[#a3cf83]/30 text-[#a3cf83]",
+  Normal: "border-[#83bfcf]/20 bg-[#83bfcf]/30 text-[#83bfcf]",
+  Hard: "border-[#efa85c]/20 bg-[#efa85c]/30 text-[#efa85c]",
+  Lunatic: "border-[#ed8d83]/20 bg-[#ed8d83]/30 text-[#ed8d83]",
+  Extra: "border-[#c4a3ed]/20 bg-[#c4a3ed]/30 text-[#c4a3ed]",
+  Phantasm: "border-[#c4a3ed]/20 bg-card text-[#c4a3ed]",
 } satisfies Record<BountyTier, string>;
 
 const sizes = {

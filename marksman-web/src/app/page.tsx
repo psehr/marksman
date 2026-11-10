@@ -1,6 +1,7 @@
 import ButtonLink from "@/components/ui/ButtonLink";
 import { InfoSection } from "@/components/ui/InfoSection";
 import MarksmanLogo from "@/components/ui/MarksmanLogo";
+import { aes_font } from "@/lib/fonts";
 import Link from "next/link";
 
 export default function Home() {
@@ -10,7 +11,9 @@ export default function Home() {
         <h1>
           <MarksmanLogo size="lg" />
         </h1>
-        <div className="text-foreground-muted max-w-lg text-lg sm:text-xl">
+        <div
+          className={`text-foreground-muted max-w-lg text-lg sm:text-lg font-bold ${aes_font.className}`}
+        >
           <p>Create and complete osu! bounties.</p>
           <p>Hunt user-made challenges and earn Bounty Points.</p>
           <p>Compete against other hunters in the rankings.</p>
@@ -41,7 +44,7 @@ export default function Home() {
       <InfoSection title="Disclaimer ⚠️" className="w-full max-w-lg text-sm">
         <p>This project is currently in alpha-state.</p>
         <p>Expect game-breaking bugs and potential resets.</p>
-        <p className="font-bold">Have fun!</p>
+        <p className="font-bold text-foreground">Have fun!</p>
       </InfoSection>
     </main>
   );

@@ -10,12 +10,13 @@ const textSizes = { sm: "text-sm", md: "text-sm", lg: "text-base" };
 const textualTextSizes = { sm: "text-lg", md: "text-xl", lg: "text-2xl" };
 
 const variants = {
-  primary: "border-transparent bg-surface hover:bg-surface-hover",
+  primary:
+    "border-transparent bg-surface hover:bg-surface-hover text-foreground-muted",
   accent: "border-transparent bg-accent text-on-accent hover:bg-accent-hover",
   danger: "border-danger text-danger hover:bg-danger hover:text-background",
   confirm: "border-success text-success hover:bg-success hover:text-background",
   outline:
-    "border-border bg-surface-raised text-foreground hover:bg-surface-hover",
+    "border-border bg-surface-raised text-foreground-muted hover:text-foreground hover:bg-surface-hover",
   textual: `border-transparent aria-pressed:text-accent text-foreground-muted font-bold ${aes_font.className}`,
 };
 

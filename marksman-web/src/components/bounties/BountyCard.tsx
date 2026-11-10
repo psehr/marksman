@@ -189,7 +189,7 @@ export function BountyCardContent({
             sizes="(min-width: 1024px) 50vw, 100vw"
           />
           <div
-            className="pointer-events-none absolute inset-0 bg-linear-to-b from-black/90 via-black/40 to-black/90"
+            className="pointer-events-none absolute inset-0 bg-linear-to-b from-black/90 via-black/45 to-black/90"
             aria-hidden="true"
           />
         </>

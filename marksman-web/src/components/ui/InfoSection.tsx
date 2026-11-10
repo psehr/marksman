@@ -13,7 +13,7 @@ export function InfoSection({
 }) {
   return (
     <section
-      className={`flex flex-col rounded border border-border bg-surface text-center ${className}`}
+      className={`flex flex-col  rounded border border-border bg-surface text-center ${className}`}
     >
       <h1
         className={`bg-linear-to-br from-transparent to-background rounded-t px-4 p-2 font-bold text-lg text-right border-b border-dashed border-border ${titleClassName}`}
@@ -23,7 +23,7 @@ export function InfoSection({
       <div
         className={
           contentClassName ??
-          "mx-4 m-2 h-full flex flex-col place-content-center items-center"
+          "mx-4 m-2 h-full flex flex-col place-content-center items-center text-foreground-muted"
         }
       >
         {children}
