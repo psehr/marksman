@@ -21,7 +21,10 @@ export default function HuntControls({
   onRefresh,
 }: HuntControlsProps) {
   return (
-    <div className="flex min-w-0 flex-col gap-2" aria-busy={loading || pending}>
+    <div
+      className="flex min-w-0 flex-col gap-2 col-span-full"
+      aria-busy={loading || pending}
+    >
       {loading || ready ? (
         <Button
           size="lg"
@@ -37,8 +40,8 @@ export default function HuntControls({
                 ? "Stopping..."
                 : "Starting..."
               : isHunting
-                ? "Stop Hunt"
-                : "Start Hunt"}
+                ? "Stop Hunting"
+                : "Start Hunting"}
         </Button>
       ) : (
         <Button

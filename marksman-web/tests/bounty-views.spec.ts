@@ -1,4 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
+import { linkedBeatmap } from "./fixtures/beatmap-links";
 import type { ExtendedBounty, Hunt } from "@marksman/contracts";
 
 const id = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
@@ -71,7 +72,7 @@ test("switching preserves params/hash, Back/Forward, and mounted action controls
   await selected(page, "Overview");
   await expect.poll(() => state.hunts).toBe(1);
   await expect(page.getByRole("button", { name: "Bookmark", exact: true })).toBeVisible();
-  const hunt = await page.getByRole("button", { name: "Start Hunt", exact: true }).elementHandle();
+  const hunt = await page.getByRole("button", { name: "Start Hunting", exact: true }).elementHandle();
   await views(page).getByRole("button", { name: "Engagement", exact: true }).click();
   await selected(page, "Engagement");
   expect(new URL(page.url()).searchParams.getAll("keep")).toEqual(["1", "2"]);
@@ -121,7 +122,7 @@ for (const status of ["open", "completed", "cancelled"] as const) {
       expect(await banner.evaluate(element => !!(element.compareDocumentPosition(document.querySelector('[aria-label="Bounty views"]')!) & Node.DOCUMENT_POSITION_FOLLOWING))).toBe(true);
     }
     if (status !== "open") {
-      await expect(page.getByRole("button", { name: "Start Hunt", exact: true })).toHaveCount(0);
+      await expect(page.getByRole("button", { name: "Start Hunting", exact: true })).toHaveCount(0);
       await expect(page.getByRole("button", { name: "Bookmark", exact: true })).toHaveCount(0);
       await expect(page.getByText("There are currently no available actions")).toHaveCount(0);
     }
@@ -182,7 +183,7 @@ test("restored hunt message sits between the card and actions and survives view 
   await expect(huntingMessage(page)).toBeVisible();
   expect(await huntingMessage(page).evaluate(element => {
     const card = document.querySelector('a[href="/bounties/aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa"]')!;
-    const stop = [...document.querySelectorAll('button')].find(button => button.textContent === "Stop Hunt")!;
+    const stop = [...document.querySelectorAll('button')].find(button => button.textContent === "Stop Hunting")!;
     return !!(card.compareDocumentPosition(element) & Node.DOCUMENT_POSITION_FOLLOWING)
       && !!(element.compareDocumentPosition(stop) & Node.DOCUMENT_POSITION_FOLLOWING);
   })).toBe(true);
@@ -204,13 +205,13 @@ test("message appears after start and disappears after stop", async ({ page }) =
     await route.fulfill({ json: { ...hunt, status: "stopped", endedAt: "2026-11-10T13:00:00.000Z" } });
   });
   await page.goto(`/bounties/${id}`);
-  await expect(page.getByRole("button", { name: "Start Hunt", exact: true })).toBeEnabled();
+  await expect(page.getByRole("button", { name: "Start Hunting", exact: true })).toBeEnabled();
   await expect(huntingMessage(page)).toHaveCount(0);
-  await page.getByRole("button", { name: "Start Hunt", exact: true }).click();
+  await page.getByRole("button", { name: "Start Hunting", exact: true }).click();
   await expect(huntingMessage(page)).toBeVisible();
-  await page.getByRole("button", { name: "Stop Hunt", exact: true }).click();
+  await page.getByRole("button", { name: "Stop Hunting", exact: true }).click();
   await expect(huntingMessage(page)).toHaveCount(0);
-  await expect(page.getByRole("button", { name: "Start Hunt", exact: true })).toBeEnabled();
+  await expect(page.getByRole("button", { name: "Start Hunting", exact: true })).toBeEnabled();
 });
 
 test("uncertain hunt state hides the message until reload confirms the hunt", async ({ page }) => {
@@ -219,7 +220,7 @@ test("uncertain hunt state hides the message until reload confirms the hunt", as
   await page.route(`**/hunts/${hunt.id}/stop`, route => route.abort());
   await page.goto(`/bounties/${id}`);
   await expect(huntingMessage(page)).toBeVisible();
-  await page.getByRole("button", { name: "Stop Hunt", exact: true }).click();
+  await page.getByRole("button", { name: "Stop Hunting", exact: true }).click();
   await expect(page.getByRole("button", { name: "Reload hunts", exact: true })).toBeVisible();
   await expect(huntingMessage(page)).toHaveCount(0);
   await page.getByRole("button", { name: "Reload hunts", exact: true }).click();
@@ -233,9 +234,140 @@ for (const mode of ["other-bounty", "owner", "closed", "failed-load"] as const) 
     state.huntFailure = mode === "failed-load";
     await page.goto(`/bounties/${id}`);
     await selected(page, "Overview");
-    if (mode === "other-bounty") await expect(page.getByRole("button", { name: "Start Hunt", exact: true })).toBeEnabled();
+    if (mode === "other-bounty") await expect(page.getByRole("button", { name: "Start Hunting", exact: true })).toBeEnabled();
     if (mode === "failed-load") await expect(page.getByRole("button", { name: "Reload hunts", exact: true })).toBeVisible();
     await expect(huntingMessage(page)).toHaveCount(0);
     if (mode === "owner" || mode === "closed") expect(state.hunts).toBe(0);
   });
 }
+
+
+for (const mode of ["hunter", "owner", "completed", "cancelled"] as const) {
+  test(`beatmap actions remain available for ${mode} across views`, async ({ page }) => {
+    await setup(page, {
+      beatmap: linkedBeatmap,
+      ...(mode === "owner" ? { creatorOsuUserId: 99 } : {}),
+      ...(mode === "completed" || mode === "cancelled" ? { status: mode } : {}),
+    });
+    await page.goto(`/bounties/${id}`);
+    for (const name of ["Overview", "Activity", "Funding"]) {
+      await views(page).getByRole("button", { name, exact: true }).click();
+      const open = page.getByRole("link", { name: "Open in osu!", exact: true });
+      const download = page.getByRole("link", { name: "Download on osu!", exact: true });
+      await expect(open).toHaveAttribute("href", "osu://b/42");
+      await expect(download).toHaveAttribute("href", "https://osu.ppy.sh/beatmapsets/987/download");
+      await expect(download).toHaveAttribute("target", "_blank");
+      await expect(open).toBeVisible();
+      await expect(download).toBeVisible();
+      expect(await open.evaluate(element => element.parentElement!.closest("a"))).toBeNull();
+    }
+  });
+}
+
+test("missing metadata still opens the difficulty but disables the download", async ({ page }) => {
+  await setup(page);
+  await page.goto(`/bounties/${id}`);
+  await expect(page.getByRole("link", { name: "Open in osu!", exact: true })).toHaveAttribute("href", "osu://b/42");
+  await expect(page.getByRole("button", { name: "Download on osu!", exact: true })).toBeDisabled();
+  await expect(page.getByRole("link", { name: "Download on osu!", exact: true })).toHaveCount(0);
+});
+
+for (const width of [320, 375, 390, 640, 1280]) {
+  test(`beatmap action labels fit and accept keyboard focus at ${width}px`, async ({ page }) => {
+    await page.setViewportSize({ width, height: 900 });
+    await setup(page, { beatmap: linkedBeatmap });
+    await page.goto(`/bounties/${id}`);
+    for (const name of ["Open in osu!", "Download on osu!"]) {
+      const action = page.getByRole("link", { name, exact: true });
+      await action.focus();
+      await expect(action).toBeFocused();
+      expect(await action.evaluate(element => element.scrollWidth <= element.clientWidth)).toBe(true);
+    }
+    expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+  });
+}
+
+test("Share bounty follows Bookmark, copies a clean URL and clears feedback", async ({ page }) => {
+  await page.clock.install();
+  await page.addInitScript(() => {
+    const links: string[] = [];
+    (window as unknown as { copiedLinks: string[] }).copiedLinks = links;
+    Object.defineProperty(navigator, "clipboard", { configurable: true, value: { writeText: async (url: string) => { links.push(url); } } });
+  });
+  const state = await setup(page);
+  await page.goto(`/bounties/${id}?view=funding&keep=1#rules`);
+  const share = page.getByRole("button", { name: "Share bounty", exact: true });
+  await expect(share).toBeVisible();
+  expect(await share.evaluate(element => element.parentElement!.previousElementSibling?.textContent)).toBe("Bookmark");
+  await share.focus();
+  await page.keyboard.press("Enter");
+  await expect(page.getByText("Link copied!", { exact: true })).toBeVisible();
+  expect(await page.evaluate(() => (window as unknown as { copiedLinks: string[] }).copiedLinks)).toEqual([`http://127.0.0.1:3100/bounties/${id}`]);
+  expect(state.posts).toBe(0);
+  await page.clock.fastForward(2600);
+  await expect(page.getByText("Link copied!", { exact: true })).toHaveCount(0);
+});
+
+test("clipboard failure provides a manual link and permits retry", async ({ page }) => {
+  await page.addInitScript(() => {
+    let calls = 0;
+    Object.defineProperty(navigator, "clipboard", { configurable: true, value: { writeText: async () => { if (++calls === 1) throw new Error("Permission denied"); } } });
+  });
+  await setup(page);
+  await page.goto(`/bounties/${id}`);
+  await page.getByRole("button", { name: "Share bounty", exact: true }).click();
+  const manual = page.getByRole("textbox", { name: "Bounty link", exact: true });
+  await expect(manual).toHaveValue(`http://127.0.0.1:3100/bounties/${id}`);
+  await manual.focus();
+  expect(await manual.evaluate(element => {
+    const input = element as HTMLInputElement;
+    return input.selectionStart === 0 && input.selectionEnd === input.value.length;
+  })).toBe(true);
+  await page.getByRole("button", { name: "Share bounty", exact: true }).click();
+  await expect(page.getByText("Link copied!", { exact: true })).toBeVisible();
+  await expect(manual).toHaveCount(0);
+  await expect(page.getByText("Could not copy the link. You can copy it below.")).toHaveCount(0);
+});
+
+test("share is locked while clipboard write is pending", async ({ page }) => {
+  await page.addInitScript(() => {
+    const harness = window as unknown as { finishCopy: () => void; copyCalls: number };
+    harness.copyCalls = 0;
+    Object.defineProperty(navigator, "clipboard", { configurable: true, value: { writeText: () => {
+      harness.copyCalls++;
+      return new Promise<void>(resolve => { harness.finishCopy = resolve; });
+    } } });
+  });
+  await setup(page);
+  await page.goto(`/bounties/${id}`);
+  await page.getByRole("button", { name: "Share bounty", exact: true }).click();
+  await expect(page.getByRole("button", { name: "Copying…", exact: true })).toBeDisabled();
+  expect(await page.evaluate(() => (window as unknown as { copyCalls: number }).copyCalls)).toBe(1);
+  await page.evaluate(() => (window as unknown as { finishCopy: () => void }).finishCopy());
+  await expect(page.getByRole("button", { name: "Share bounty", exact: true })).toBeEnabled();
+  await expect(page.getByText("Link copied!", { exact: true })).toBeVisible();
+});
+
+for (const status of ["completed", "cancelled"] as const) {
+  test(`closed ${status} bounty still has a share action`, async ({ page }) => {
+    await setup(page, { status });
+    await page.goto(`/bounties/${id}`);
+    await expect(page.getByRole("button", { name: "Share bounty", exact: true })).toBeVisible();
+  });
+}
+
+test("share follows Unbookmark for a saved bounty", async ({ page }) => {
+  await setup(page, { engagement: { bookmarkCount: 3, isBookmarkedByCurrentUser: true } });
+  await page.goto(`/bounties/${id}`);
+  const share = page.getByRole("button", { name: "Share bounty", exact: true });
+  await expect(share).toBeVisible();
+  expect(await share.evaluate(element => element.parentElement!.previousElementSibling?.textContent)).toBe("Unbookmark");
+});
+
+test("missing clipboard API offers manual copying", async ({ page }) => {
+  await page.addInitScript(() => { Object.defineProperty(navigator, "clipboard", { configurable: true, value: undefined }); });
+  await setup(page);
+  await page.goto(`/bounties/${id}`);
+  await page.getByRole("button", { name: "Share bounty", exact: true }).click();
+  await expect(page.getByRole("textbox", { name: "Bounty link", exact: true })).toHaveValue(`http://127.0.0.1:3100/bounties/${id}`);
+});

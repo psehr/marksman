@@ -8,6 +8,8 @@ import BountyHunt from "@/components/hunts/BountyHunt";
 import { useBountyActions } from "@/hooks/useBountyActions";
 import HuntControls from "@/components/hunts/HuntControls";
 import type { ReactNode } from "react";
+import BeatmapActions from "./BeatmapActions";
+import ShareBounty from "./ShareBounty";
 
 export type AvailableActions = {
   canCancel: boolean;
@@ -44,10 +46,22 @@ function ConnectedActions({
 
   function renderActions(huntControls?: ReactNode) {
     return (
-      <div
-        className={`grid items-start gap-4 ${canHunt && (canBookmark || canUnbookmark) ? "grid-cols-2" : "grid-cols-1"}`}
-      >
+      <div className="grid grid-cols-1 sm:grid-cols-2 items-start gap-4">
         {huntControls}
+        {canCancel && (
+          <div className="flex flex-col gap-2 col-span-full">
+            <Button
+              size="lg"
+              variant="danger"
+              disabled={cancel.pending}
+              onClick={() => void cancel.run()}
+            >
+              {cancel.pending ? "Cancelling..." : "Cancel bounty"}
+            </Button>
+            {cancel.error && <p role="alert">{cancel.error}</p>}
+          </div>
+        )}
+        <BeatmapActions bounty={bounty} />
         {(canBookmark || canUnbookmark) && (
           <div className="flex flex-col gap-2">
             <Button
@@ -66,19 +80,7 @@ function ConnectedActions({
             {bookmark.error && <p role="alert">{bookmark.error}</p>}
           </div>
         )}
-        {canCancel && (
-          <div className="flex flex-col gap-2">
-            <Button
-              size="lg"
-              variant="danger"
-              disabled={cancel.pending}
-              onClick={() => void cancel.run()}
-            >
-              {cancel.pending ? "Cancelling..." : "Cancel bounty"}
-            </Button>
-            {cancel.error && <p role="alert">{cancel.error}</p>}
-          </div>
-        )}
+        <ShareBounty key={bounty.id} bountyId={bounty.id} />
       </div>
     );
   }
@@ -88,15 +90,25 @@ function ConnectedActions({
       {(controls) => (
         <>
           {controls.ready && !controls.loading && controls.isHunting ? (
-            <p role="status" className="text-sm text-accent text-center">
-              You are currently hunting this bounty.
-            </p>
+            <div className="flex flex-col gap-1">
+              <p role="status" className="text-sm text-accent text-center">
+                You are currently hunting this bounty.
+              </p>
+              <p
+                role="status"
+                className="text-xs text-foreground-muted text-center"
+              >
+                Marksman tracks your submitted scores on this beatmap.
+              </p>
+            </div>
           ) : null}
           {renderActions(<HuntControls {...controls} />)}
         </>
       )}
     </BountyHunt>
-  ) : renderActions();
+  ) : (
+    renderActions()
+  );
 }
 
 export default function BountyActions(props: Props) {
@@ -104,13 +116,17 @@ export default function BountyActions(props: Props) {
   if (loading) return <p role="status">Loading actions...</p>;
   if (!props.isAuthenticated || !user) {
     return (
-      <ButtonLink
-        size="lg"
-        variant="accent"
-        href={`${process.env.NEXT_PUBLIC_API_URL}/auth/osu`}
-      >
-        Log in with osu! to interact
-      </ButtonLink>
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        <ButtonLink
+          size="lg"
+          variant="accent"
+          href={`${process.env.NEXT_PUBLIC_API_URL}/auth/osu`}
+        >
+          Log in with osu! to interact
+        </ButtonLink>
+        <ShareBounty key={props.bounty.id} bountyId={props.bounty.id} />
+        <BeatmapActions bounty={props.bounty} />
+      </div>
     );
   }
   return (
