@@ -15,6 +15,10 @@ export async function getCurrentUser() {
   );
 }
 
+export async function checkAlphaAccess(): Promise<void> {
+  await apiFetch("/auth/access");
+}
+
 export async function getUser(id: string) {
   return detailedUserSchema.parse(
     await apiFetch(`/users/${encodeURIComponent(id)}`),

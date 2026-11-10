@@ -1,4 +1,4 @@
-import { aes_font } from "@/lib/fonts";
+import { aes_font, base_font } from "@/lib/fonts";
 
 const sizes = {
   sm: "h-8 px-3 gap-1.5",
@@ -29,9 +29,10 @@ export function buttonStyles(
   return [
     "whitespace-nowrap shrink-0",
     "inline-flex items-center justify-center rounded border cursor-pointer",
-    "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring",
+    "focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus-ring font-normal",
     sizes[size],
     variant === "textual" ? textualTextSizes[size] : textSizes[size],
     variants[variant],
+    base_font.className,
   ].join(" ");
 }

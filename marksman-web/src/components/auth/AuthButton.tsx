@@ -53,7 +53,7 @@ export function AuthButton() {
 
   return (
     <>
-      <Button variant="danger" onClick={() => logout()}>
+      <Button variant="outline" onClick={() => logout()}>
         Log out
       </Button>
       {logoutError && <p role="alert">{logoutError}</p>}

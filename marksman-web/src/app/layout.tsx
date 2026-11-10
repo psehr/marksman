@@ -4,6 +4,7 @@ import { AuthProvider } from "@/components/auth/AuthProvider";
 import NavBar from "@/components/layout/NavBar";
 import { base_font } from "@/lib/fonts";
 import Footer from "@/components/layout/Footer";
+import AlphaAccessGate from "@/components/auth/AlphaAccessGate";
 
 export const metadata: Metadata = {
   title: "🎯 Marksman - osu! bounties",
@@ -19,7 +20,10 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       >
         <AuthProvider>
           <NavBar />
-          <div className="flex-1">{children}</div>
+
+          <div className="flex flex-1 flex-col">
+            <AlphaAccessGate>{children}</AlphaAccessGate>
+          </div>
           <Footer />
         </AuthProvider>
       </body>

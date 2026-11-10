@@ -17,6 +17,7 @@ import {
   SESSION_COOKIE_PATH,
 } from "../auth/session";
 import { registerOrUpdateUserFromOsuProfile } from "../services/users";
+import { requireAlphaAccess } from "../middleware/requireAlphaAccess";
 
 const OAUTH_STATE_TTL_MS = 10 * 60 * 1000;
 
@@ -135,6 +136,10 @@ authRouter.get("/osu/callback", async (req, res) => {
 
 authRouter.get("/me", requireAuth, (_req, res) => {
   return res.json(res.locals.user satisfies User);
+});
+
+authRouter.get("/access", requireAlphaAccess, (_req, res) => {
+  return res.status(204).end();
 });
 
 authRouter.post("/logout", requireTrustedOrigin, async (req, res) => {
