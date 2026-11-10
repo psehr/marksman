@@ -4,13 +4,16 @@ import { useAuth } from "@/components/auth/AuthProvider";
 import HuntControls from "./HuntControls";
 import { useHunt } from "@/hooks/useHunt";
 import type { ExtendedBounty } from "@marksman/contracts";
+import type { ReactNode } from "react";
 
-function ConnectedHuntControls({ bountyId }: { bountyId: string }) {
+type HuntContent = (controls: ReturnType<typeof useHunt>) => ReactNode;
+
+function ConnectedHuntControls({ bountyId, children }: { bountyId: string; children?: HuntContent }) {
   const controls = useHunt(bountyId);
-  return <HuntControls {...controls} />;
+  return children ? children(controls) : <HuntControls {...controls} />;
 }
 
-export default function BountyHunt({ bounty }: { bounty: ExtendedBounty }) {
+export default function BountyHunt({ bounty, children }: { bounty: ExtendedBounty; children?: HuntContent }) {
   const { user, loading } = useAuth();
   if (
     loading ||
@@ -25,6 +28,8 @@ export default function BountyHunt({ bounty }: { bounty: ExtendedBounty }) {
     <ConnectedHuntControls
       key={`${user.identity.id}:${bounty.id}`}
       bountyId={bounty.id}
-    />
+    >
+      {children}
+    </ConnectedHuntControls>
   );
 }

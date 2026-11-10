@@ -1,9 +1,11 @@
 import { useSearchParams } from "next/navigation";
 
-export type BountyView = "overview" | "engagement" | "comments";
+export type BountyView = "overview" | "engagement" | "activity" | "funding" | "comments";
 
 export function parseBountyView(value: string | null): BountyView {
-  return value === "engagement" || value === "comments" ? value : "overview";
+  return value === "engagement" || value === "activity" || value === "funding" || value === "comments"
+    ? value
+    : "overview";
 }
 
 export function getBountyViewUrl(currentUrl: string, view: BountyView): URL {

@@ -25,7 +25,7 @@ export default function HuntControls({
       {loading || ready ? (
         <Button
           size="lg"
-          variant="accent"
+          variant={isHunting ? "danger" : "accent"}
           className="w-full"
           onClick={onToggle}
           disabled={loading || pending}

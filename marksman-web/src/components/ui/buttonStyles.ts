@@ -36,6 +36,6 @@ export function buttonStyles(
     variants[variant],
     variant === "textual"
       ? `${aes_font.className} font-bold`
-      : `${base_font.className} font-normal`,
+      : `${base_font.className} font-bold`,
   ].join(" ");
 }

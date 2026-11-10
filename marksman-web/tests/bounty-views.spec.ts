@@ -1,5 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
-import type { ExtendedBounty } from "@marksman/contracts";
+import type { ExtendedBounty, Hunt } from "@marksman/contracts";
 
 const id = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
 const bounty: ExtendedBounty = {
@@ -11,7 +11,7 @@ const bounty: ExtendedBounty = {
   engagement: { bookmarkCount: 3, isBookmarkedByCurrentUser: false },
 };
 async function setup(page: Page, overrides: Partial<ExtendedBounty> = {}) {
-  const state = { hunts: 0, reads: 0, posts: 0, bounty: { ...bounty, ...overrides } };
+  const state = { hunts: 0, reads: 0, posts: 0, ongoing: [] as Hunt[], huntFailure: false, bounty: { ...bounty, ...overrides } };
   await page.route("**/*", async route => {
     const req = route.request();
     const url = new URL(req.url());
@@ -22,7 +22,7 @@ async function setup(page: Page, overrides: Partial<ExtendedBounty> = {}) {
       stats: { bpBalance: 100 }, createdAt: "2026-01-01T00:00:00.000Z",
     } });
     if (url.pathname === "/auth/access") return route.fulfill({ status: 204 });
-    if (url.pathname === "/users/me/hunts") { state.hunts++; return route.fulfill({ json: [] }); }
+    if (url.pathname === "/users/me/hunts") { state.hunts++; return state.huntFailure ? route.fulfill({ status: 500, json: {} }) : route.fulfill({ json: state.ongoing }); }
     if (url.pathname === `/bounties/${id}`) { state.reads++; return route.fulfill({ json: state.bounty }); }
     return route.abort();
   });
@@ -43,13 +43,14 @@ for (const query of ["", "?view=invalid", "?view=overview"]) {
     await expect(page.getByText("OPEN", { exact: true })).toBeVisible();
   });
 }
-for (const view of ["engagement", "comments"] as const) {
+for (const view of ["engagement", "activity", "funding", "comments"] as const) {
   test(`direct ${view} URL and reload select the matching view`, async ({ page }) => {
     await setup(page);
     await page.goto(`/bounties/${id}?view=${view}`);
-    await selected(page, view === "comments" ? "Comments" : "Engagement");
-    if (view === "comments") {
-      await expect(page.getByText("Comments coming soon.")).toBeVisible();
+    await selected(page, view[0].toUpperCase() + view.slice(1));
+    if (view !== "engagement") {
+      const message = view === "activity" ? "Activity feed coming soon." : view === "funding" ? "Funding details coming soon." : "Comments coming soon.";
+      await expect(page.getByText(message)).toBeVisible();
       await expect(page.getByText("Ongoing Hunts", { exact: true })).toHaveCount(0);
     } else {
       await expect(page.getByText("Ongoing Hunts", { exact: true }).locator("..")).toHaveText(/-\s*Ongoing Hunts/);
@@ -59,8 +60,8 @@ for (const view of ["engagement", "comments"] as const) {
     await expect(page.getByText("OPEN", { exact: true })).toBeVisible();
     await expect(page.getByRole("heading", { name: "Goal", exact: true })).toHaveCount(0);
     await page.reload();
-    await selected(page, view === "comments" ? "Comments" : "Engagement");
-    await expect(page.getByText(view === "comments" ? "Comments coming soon." : "Ongoing Hunts", { exact: true })).toBeVisible();
+    await selected(page, view[0].toUpperCase() + view.slice(1));
+    await expect(page.getByText(view === "comments" ? "Comments coming soon." : view === "activity" ? "Activity feed coming soon." : view === "funding" ? "Funding details coming soon." : "Ongoing Hunts", { exact: true })).toBeVisible();
   });
 }
 
@@ -78,10 +79,16 @@ test("switching preserves params/hash, Back/Forward, and mounted action controls
   await views(page).getByRole("button", { name: "Comments", exact: true }).focus();
   await page.keyboard.press("Enter");
   await selected(page, "Comments");
+  for (const name of ["Activity", "Funding"]) {
+    await views(page).getByRole("button", { name, exact: true }).click();
+    await selected(page, name);
+    expect(new URL(page.url()).searchParams.getAll("keep")).toEqual(["1", "2"]);
+    expect(new URL(page.url()).hash).toBe("#rules");
+  }
   await page.goBack();
-  await selected(page, "Engagement");
+  await selected(page, "Activity");
   await page.goForward();
-  await selected(page, "Comments");
+  await selected(page, "Funding");
   await views(page).getByRole("button", { name: "Overview", exact: true }).click();
   await selected(page, "Overview");
   expect(new URL(page.url()).searchParams.has("view")).toBe(false);
@@ -89,12 +96,12 @@ test("switching preserves params/hash, Back/Forward, and mounted action controls
   expect(state.hunts).toBe(1);
   expect(state.posts).toBe(0);
 });
-for (const width of [320, 375, 390, 1280]) {
+for (const width of [320, 375, 390, 640, 768, 1280]) {
   test(`view controls fit and remain usable at ${width}px`, async ({ page }) => {
     await page.setViewportSize({ width, height: 900 });
     await setup(page);
     await page.goto(`/bounties/${id}`);
-    for (const name of ["Overview", "Engagement", "Comments"]) {
+    for (const name of ["Overview", "Engagement", "Activity", "Funding", "Comments"]) {
       await views(page).getByRole("button", { name, exact: true }).click();
       await selected(page, name);
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
@@ -107,7 +114,7 @@ for (const status of ["open", "completed", "cancelled"] as const) {
   test(`${status} banner stays above every view and closed bounties hide actions`, async ({ page }) => {
     await setup(page, { status });
     await page.goto(`/bounties/${id}`);
-    for (const name of ["Overview", "Engagement", "Comments"]) {
+    for (const name of ["Overview", "Engagement", "Activity", "Funding", "Comments"]) {
       await views(page).getByRole("button", { name, exact: true }).click();
       const banner = page.getByText(status.toUpperCase(), { exact: true });
       await expect(banner).toBeVisible();
@@ -158,4 +165,77 @@ for (const status of ["completed", "cancelled"] as const) {
       })).toBe(true);
     });
   }
+}
+
+
+const hunt: Hunt = {
+  id: "cccccccc-cccc-4ccc-8ccc-cccccccccccc",
+  userId: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb", bountyId: id,
+  startedAt: "2026-11-10T12:00:00.000Z", endedAt: null, status: "ongoing",
+};
+const huntingMessage = (page: Page) => page.getByText("You are currently hunting this bounty.", { exact: true });
+
+test("restored hunt message sits between the card and actions and survives view changes", async ({ page }) => {
+  const state = await setup(page);
+  state.ongoing = [hunt];
+  await page.goto(`/bounties/${id}`);
+  await expect(huntingMessage(page)).toBeVisible();
+  expect(await huntingMessage(page).evaluate(element => {
+    const card = document.querySelector('a[href="/bounties/aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa"]')!;
+    const stop = [...document.querySelectorAll('button')].find(button => button.textContent === "Stop Hunt")!;
+    return !!(card.compareDocumentPosition(element) & Node.DOCUMENT_POSITION_FOLLOWING)
+      && !!(element.compareDocumentPosition(stop) & Node.DOCUMENT_POSITION_FOLLOWING);
+  })).toBe(true);
+  await views(page).getByRole("button", { name: "Funding", exact: true }).click();
+  await expect(huntingMessage(page)).toBeVisible();
+  expect(state.hunts).toBe(1);
+  await page.reload();
+  await expect(huntingMessage(page)).toBeVisible();
+});
+
+test("message appears after start and disappears after stop", async ({ page }) => {
+  const state = await setup(page);
+  await page.route(`**/bounties/${id}/hunt`, async route => {
+    state.ongoing = [hunt];
+    await route.fulfill({ json: hunt });
+  });
+  await page.route(`**/hunts/${hunt.id}/stop`, async route => {
+    state.ongoing = [];
+    await route.fulfill({ json: { ...hunt, status: "stopped", endedAt: "2026-11-10T13:00:00.000Z" } });
+  });
+  await page.goto(`/bounties/${id}`);
+  await expect(page.getByRole("button", { name: "Start Hunt", exact: true })).toBeEnabled();
+  await expect(huntingMessage(page)).toHaveCount(0);
+  await page.getByRole("button", { name: "Start Hunt", exact: true }).click();
+  await expect(huntingMessage(page)).toBeVisible();
+  await page.getByRole("button", { name: "Stop Hunt", exact: true }).click();
+  await expect(huntingMessage(page)).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Start Hunt", exact: true })).toBeEnabled();
+});
+
+test("uncertain hunt state hides the message until reload confirms the hunt", async ({ page }) => {
+  const state = await setup(page);
+  state.ongoing = [hunt];
+  await page.route(`**/hunts/${hunt.id}/stop`, route => route.abort());
+  await page.goto(`/bounties/${id}`);
+  await expect(huntingMessage(page)).toBeVisible();
+  await page.getByRole("button", { name: "Stop Hunt", exact: true }).click();
+  await expect(page.getByRole("button", { name: "Reload hunts", exact: true })).toBeVisible();
+  await expect(huntingMessage(page)).toHaveCount(0);
+  await page.getByRole("button", { name: "Reload hunts", exact: true }).click();
+  await expect(huntingMessage(page)).toBeVisible();
+});
+
+for (const mode of ["other-bounty", "owner", "closed", "failed-load"] as const) {
+  test(`hunting feedback stays hidden for ${mode}`, async ({ page }) => {
+    const state = await setup(page, mode === "owner" ? { creatorOsuUserId: 99 } : mode === "closed" ? { status: "completed" } : {});
+    state.ongoing = [{ ...hunt, bountyId: mode === "other-bounty" ? "dddddddd-dddd-4ddd-8ddd-dddddddddddd" : id }];
+    state.huntFailure = mode === "failed-load";
+    await page.goto(`/bounties/${id}`);
+    await selected(page, "Overview");
+    if (mode === "other-bounty") await expect(page.getByRole("button", { name: "Start Hunt", exact: true })).toBeEnabled();
+    if (mode === "failed-load") await expect(page.getByRole("button", { name: "Reload hunts", exact: true })).toBeVisible();
+    await expect(huntingMessage(page)).toHaveCount(0);
+    if (mode === "owner" || mode === "closed") expect(state.hunts).toBe(0);
+  });
 }

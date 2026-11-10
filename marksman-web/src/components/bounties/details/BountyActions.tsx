@@ -6,6 +6,8 @@ import Button from "@/components/ui/Button";
 import ButtonLink from "@/components/ui/ButtonLink";
 import BountyHunt from "@/components/hunts/BountyHunt";
 import { useBountyActions } from "@/hooks/useBountyActions";
+import HuntControls from "@/components/hunts/HuntControls";
+import type { ReactNode } from "react";
 
 export type AvailableActions = {
   canCancel: boolean;
@@ -40,44 +42,61 @@ function ConnectedActions({
   );
   const { canCancel, canHunt, canBookmark, canUnbookmark } = availableActions;
 
-  return (
-    <div
-      className={`grid items-start gap-4 ${canHunt && (canBookmark || canUnbookmark) ? "grid-cols-2" : "grid-cols-1"}`}
-    >
-      {canHunt && <BountyHunt bounty={bounty} />}
-      {(canBookmark || canUnbookmark) && (
-        <div className="flex flex-col gap-2">
-          <Button
-            size="lg"
-            disabled={bookmark.pending}
-            onClick={() => void bookmark.run()}
-          >
-            {bookmark.pending
-              ? "Saving..."
-              : bookmark.refreshFailed
-                ? "Retry refresh"
-                : canUnbookmark
-                  ? "Unbookmark"
-                  : "Bookmark"}
-          </Button>
-          {bookmark.error && <p role="alert">{bookmark.error}</p>}
-        </div>
+  function renderActions(huntControls?: ReactNode) {
+    return (
+      <div
+        className={`grid items-start gap-4 ${canHunt && (canBookmark || canUnbookmark) ? "grid-cols-2" : "grid-cols-1"}`}
+      >
+        {huntControls}
+        {(canBookmark || canUnbookmark) && (
+          <div className="flex flex-col gap-2">
+            <Button
+              size="lg"
+              disabled={bookmark.pending}
+              onClick={() => void bookmark.run()}
+            >
+              {bookmark.pending
+                ? "Saving..."
+                : bookmark.refreshFailed
+                  ? "Retry refresh"
+                  : canUnbookmark
+                    ? "Unbookmark"
+                    : "Bookmark"}
+            </Button>
+            {bookmark.error && <p role="alert">{bookmark.error}</p>}
+          </div>
+        )}
+        {canCancel && (
+          <div className="flex flex-col gap-2">
+            <Button
+              size="lg"
+              variant="danger"
+              disabled={cancel.pending}
+              onClick={() => void cancel.run()}
+            >
+              {cancel.pending ? "Cancelling..." : "Cancel bounty"}
+            </Button>
+            {cancel.error && <p role="alert">{cancel.error}</p>}
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  return canHunt ? (
+    <BountyHunt bounty={bounty}>
+      {(controls) => (
+        <>
+          {controls.ready && !controls.loading && controls.isHunting ? (
+            <p role="status" className="text-sm text-accent text-center">
+              You are currently hunting this bounty.
+            </p>
+          ) : null}
+          {renderActions(<HuntControls {...controls} />)}
+        </>
       )}
-      {canCancel && (
-        <div className="flex flex-col gap-2">
-          <Button
-            size="lg"
-            variant="danger"
-            disabled={cancel.pending}
-            onClick={() => void cancel.run()}
-          >
-            {cancel.pending ? "Cancelling..." : "Cancel bounty"}
-          </Button>
-          {cancel.error && <p role="alert">{cancel.error}</p>}
-        </div>
-      )}
-    </div>
-  );
+    </BountyHunt>
+  ) : renderActions();
 }
 
 export default function BountyActions(props: Props) {

@@ -1,5 +1,6 @@
 "use client";
 
+import { Fragment } from "react";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { useParams, notFound } from "next/navigation";
 import BountyActions, {
@@ -60,44 +61,36 @@ export default function BountyDetailsPage() {
               <div
                 role="group"
                 aria-label="Bounty views"
-                className="flex w-full flex-col sm:flex-row justify-center items-center border-y border-border py-2 mt-4"
+                className="flex w-full flex-col sm:flex-row flex-wrap justify-center items-center border-y border-border py-2 mt-4"
               >
-                <Button
-                  variant="textual"
-                  size="md"
-                  aria-pressed={view === "overview"}
-                  onClick={() => setView("overview")}
-                >
-                  Overview
-                </Button>
-                <span
-                  aria-hidden="true"
-                  className="text-border hidden md:inline"
-                >
-                  •
-                </span>
-                <Button
-                  variant="textual"
-                  size="md"
-                  aria-pressed={view === "engagement"}
-                  onClick={() => setView("engagement")}
-                >
-                  Engagement
-                </Button>
-                <span
-                  aria-hidden="true"
-                  className="text-border hidden md:inline"
-                >
-                  •
-                </span>
-                <Button
-                  variant="textual"
-                  size="md"
-                  aria-pressed={view === "comments"}
-                  onClick={() => setView("comments")}
-                >
-                  Comments
-                </Button>
+                {(
+                  [
+                    ["overview", "Overview"],
+                    ["engagement", "Engagement"],
+                    ["activity", "Activity"],
+                    ["funding", "Funding"],
+                    ["comments", "Comments"],
+                  ] as const
+                ).map(([value, label], index) => (
+                  <Fragment key={label}>
+                    {index > 0 ? (
+                      <span
+                        aria-hidden="true"
+                        className="text-border hidden md:inline"
+                      >
+                        •
+                      </span>
+                    ) : null}
+                    <Button
+                      variant="textual"
+                      size="md"
+                      aria-pressed={view === value}
+                      onClick={() => setView(value)}
+                    >
+                      {label}
+                    </Button>
+                  </Fragment>
+                ))}
               </div>
               {view === "overview" ? (
                 <div className="grid grid-cols-2 gap-4">
@@ -135,6 +128,14 @@ export default function BountyDetailsPage() {
                     />
                   </UserStatsCardContainer>
                 </div>
+              ) : view === "activity" ? (
+                <InfoSection title="Activity">
+                  <p>Activity feed coming soon.</p>
+                </InfoSection>
+              ) : view === "funding" ? (
+                <InfoSection title="Funding">
+                  <p>Funding details coming soon.</p>
+                </InfoSection>
               ) : (
                 <InfoSection title="Comments">
                   <p>Comments coming soon.</p>
