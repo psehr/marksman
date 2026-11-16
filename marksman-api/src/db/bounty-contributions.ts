@@ -22,6 +22,7 @@ export async function insertBountyContribution(
   userId: string,
   amountBp: number,
   feeBp: number,
+  idempotencyKey?: string,
 ): Promise<BountyContribution> {
   const [row] = await tx
     .insert(bountyContributions)
@@ -30,6 +31,7 @@ export async function insertBountyContribution(
       userId,
       amountBp,
       feeBp,
+      idempotencyKey,
     })
     .returning();
 

@@ -1,0 +1,2 @@
+ALTER TABLE "bounty_contributions" ADD COLUMN "idempotency_key" uuid;--> statement-breakpoint
+CREATE UNIQUE INDEX "bounty_contributions_user_id_idempotency_key_idx" ON "bounty_contributions" USING btree ("user_id","idempotency_key");

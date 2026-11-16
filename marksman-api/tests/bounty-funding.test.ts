@@ -505,3 +505,34 @@ test("contribution insertion failure rolls back funding and allows retry", async
   await createFundedBounty(bountyInput(30), creatorOsuUserId);
   await assertDatabaseState(67, 1);
 });
+
+test("contribution keys are unique per user across bounties, while initial funding needs no key", async () => {
+  const { insertBountyContribution } = require("../src/db/bounty-contributions") as typeof import("../src/db/bounty-contributions");
+  await seedCreator(100);
+  const first = await createFundedBounty(bountyInput(10), creatorOsuUserId);
+  const second = await createFundedBounty(bountyInput(10), creatorOsuUserId);
+  const [creator] = await db.select().from(users).where(eq(users.osuUserId, creatorOsuUserId));
+  const [other] = await db.insert(users).values({ osuUserId: 555, username: "other", bpBalance: 100 }).returning();
+  const key = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
+  const anotherKey = "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb";
+  // These helper calls test storage constraints only; no contribution service exists yet.
+  const insert = (bountyId: string, userId: string, idempotencyKey?: string) =>
+    db.transaction(tx => insertBountyContribution(tx, bountyId, userId, 1, 1, idempotencyKey));
+  await insert(first.id, creator.id, key);
+  const uniqueViolation = (error: unknown) => {
+    let cause = error;
+    while (cause instanceof Error) {
+      if ((cause as Error & { code?: string }).code === "23505") return true;
+      cause = cause.cause;
+    }
+    return false;
+  };
+  await assert.rejects(() => insert(first.id, creator.id, key), uniqueViolation);
+  await assert.rejects(() => insert(second.id, creator.id, key), uniqueViolation);
+  await insert(second.id, other.id, key);
+  await insert(first.id, creator.id, anotherKey);
+  await insert(first.id, creator.id);
+  const rows = await db.select().from(bountyContributions);
+  assert.equal(rows.length, 6);
+  assert.equal(rows.filter(row => row.idempotencyKey === null).length, 3);
+});

@@ -5,6 +5,8 @@ import { userIdentitySchema } from "./user";
 import { osuGradeSchema, scoreResponseSchema } from "./score";
 import { bountyTierSchema } from "./bounty-tiers";
 
+export const MAX_BOUNTY_REWARD_BP = 1_000_000;
+
 const baseGoalSchema = z.object({
   beatmapId: z.number().int().positive(),
   beatmapChecksum: z
@@ -83,6 +85,8 @@ export const createBountySchema = bountySchema.pick({
   // the user only has to supply the following fields when creating a bounty, the rest will be implied serverside
   rewardBp: true,
   goal: true,
+}).extend({
+  rewardBp: z.number().int().positive().max(MAX_BOUNTY_REWARD_BP),
 });
 
 export const bountyEngagementSchema = z.object({
@@ -173,6 +177,11 @@ export const bountyContributionSchema = z.object({
   createdAt: z.iso.datetime(),
 });
 
+export const bountyContributionRequestSchema = z.object({
+  amountBp: z.number().int().positive().max(MAX_BOUNTY_REWARD_BP),
+  idempotencyKey: z.uuid(),
+});
+
 export type Bounty = z.infer<typeof bountySchema>;
 export type CreateBountyInput = z.infer<typeof createBountySchema>;
 export type ExtendedBounty = z.infer<typeof extendedBountySchema>;
@@ -184,3 +193,4 @@ export type BountyEngagement = z.infer<typeof bountyEngagementSchema>;
 export type BountySearchQuery = z.infer<typeof bountySearchQuerySchema>;
 export type BountyListResponse = z.infer<typeof bountyListResponseSchema>;
 export type BountyContribution = z.infer<typeof bountyContributionSchema>;
+export type BountyContributionRequest = z.infer<typeof bountyContributionRequestSchema>;

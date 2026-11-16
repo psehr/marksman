@@ -295,6 +295,8 @@ export const bountyContributions = pgTable(
       .references(() => users.id),
     amountBp: integer("amount_bp").notNull(),
     feeBp: integer("fee_bp").notNull(),
+    // Initial creation funding has no contribution request key.
+    idempotencyKey: uuid("idempotency_key"),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),
@@ -306,5 +308,9 @@ export const bountyContributions = pgTable(
     ),
     check("bounty_contributions_nonnegative_fee", sql`${table.feeBp} >= 0`),
     index("bounty_contributions_bounty_id_idx").on(table.bountyId),
+    uniqueIndex("bounty_contributions_user_id_idempotency_key_idx").on(
+      table.userId,
+      table.idempotencyKey,
+    ),
   ],
 );
