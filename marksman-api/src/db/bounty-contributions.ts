@@ -1,6 +1,7 @@
 import { BountyContribution } from "@marksman/contracts";
-import { Transaction } from ".";
+import { db, Transaction } from ".";
 import { bountyContributions } from "./schema";
+import { eq } from "drizzle-orm";
 
 export function toBountyContribution(
   row: typeof bountyContributions.$inferSelect,
@@ -33,4 +34,16 @@ export async function insertBountyContribution(
     .returning();
 
   return toBountyContribution(row);
+}
+
+export async function fetchBountyContributions(
+  tx: Transaction | typeof db,
+  bountyId: string,
+): Promise<BountyContribution[]> {
+  const rows = await tx
+    .select()
+    .from(bountyContributions)
+    .where(eq(bountyContributions.bountyId, bountyId));
+
+  return rows.map(toBountyContribution);
 }

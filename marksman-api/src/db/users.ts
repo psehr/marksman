@@ -135,3 +135,24 @@ export async function creditUserBp(
     return { ok: false };
   }
 }
+
+export async function creditUserBpById(
+  tx: Transaction,
+  userId: string,
+  creditedBp: number,
+): Promise<{ ok: true; userId: string } | { ok: false }> {
+  const [updatedUser] = await tx
+    .update(users)
+    .set({ bpBalance: sql`${users.bpBalance} + ${creditedBp}` })
+    .where(eq(users.id, userId))
+    .returning({ id: users.id });
+
+  if (updatedUser) {
+    return {
+      ok: true,
+      userId: updatedUser.id,
+    };
+  } else {
+    return { ok: false };
+  }
+}

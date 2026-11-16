@@ -5,7 +5,7 @@ import { randomUUID } from "node:crypto";
 import { after, before, beforeEach, mock, test } from "node:test";
 import { setTimeout as delay } from "node:timers/promises";
 import { eq, sql } from "drizzle-orm";
-import { bounties, ledgerEntries, users } from "../src/db/schema";
+import { bounties, bountyContributions, bountyHunts, ledgerEntries, users } from "../src/db/schema";
 import { createBountySchema } from "@marksman/contracts";
 import {
   BountyNotFoundError,
@@ -223,22 +223,13 @@ test("a database refund error rolls back the cancellation", async () => {
   }
 });
 
-test("a missing refund recipient rolls back the cancellation", async () => {
+test("refunds use contributor UUID even when the creator account reference is missing", async () => {
   const bounty = await seedFundedBounty();
-  // Arrange an orphaned creator reference without deleting immutable ledger history.
-  // Bounty ownership currently has no user foreign key.
+  // Ownership uses osu! ID, but funding records retain the actual recipient UUID.
   const missingCreator = 99999;
   await db.update(bounties).set({ creatorOsuUserId: missingCreator }).where(eq(bounties.id, bounty.id));
-
-  await assert.rejects(() => cancelBounty(bounty.id, missingCreator), {
-    message: "Could not refund, cancellation aborted",
-  });
-
-  const rows = await db.select().from(bounties);
-  assert.equal(rows.length, 1);
-  assert.equal(rows[0].id, bounty.id);
-  assert.equal(rows[0].status, "open");
-  await assertState(bounty.id, "open", 72);
+  await cancelBounty(bounty.id, missingCreator);
+  await assertState(bounty.id, "cancelled", 97);
 });
 
 test("concurrent cancellations refund the bounty exactly once", async () => {
@@ -332,4 +323,148 @@ test("cancellation ledger failure rolls back all changes and allows retry", asyn
   }
   await cancelBounty(bounty.id, creatorOsuUserId);
   await assertState(bounty.id, "cancelled", 97);
+});
+
+// Arrange additional funding directly: the contribution endpoint is not implemented.
+// Keep balances, ledger, aggregate reward and contributions consistent with real funding.
+async function seedMultipleFunders() {
+  const bounty = await seedFundedBounty();
+  const [creator] = await db.select().from(users).where(eq(users.osuUserId, creatorOsuUserId));
+  const others = await db.insert(users).values([
+    { id: "00000000-0000-4000-8000-000000000001", osuUserId: 201, username: "first_funder", bpBalance: 100 },
+    { id: "ffffffff-ffff-4fff-8fff-ffffffffffff", osuUserId: 202, username: "last_funder", bpBalance: 100 },
+    { osuUserId: 203, username: "unrelated", bpBalance: 100 },
+  ]).returning();
+  await db.insert(ledgerEntries).values(others.map(user => ({ userId: user.id, amount: 100, reason: "initial_grant" as const })));
+  const first = others.find(user => user.osuUserId === 201)!;
+  const last = others.find(user => user.osuUserId === 202)!;
+  const unrelated = others.find(user => user.osuUserId === 203)!;
+  // Insert in deliberately unsorted order; repeat contributions from creator and first funder.
+  await db.transaction(async tx => {
+    for (const [userId, amountBp] of [[last.id, 20], [creator.id, 1], [first.id, 11], [first.id, 1]] as const) {
+      const feeBp = Math.ceil(amountBp / 10);
+      await tx.update(users).set({ bpBalance: sql`${users.bpBalance} - ${amountBp + feeBp}` }).where(eq(users.id, userId));
+      await tx.insert(bountyContributions).values({ bountyId: bounty.id, userId, amountBp, feeBp });
+      await tx.insert(ledgerEntries).values([
+        { bountyId: bounty.id, userId, amount: -amountBp, reason: "bounty_funding" },
+        { bountyId: bounty.id, userId, amount: -feeBp, reason: "bounty_fee" },
+      ]);
+      await tx.update(bounties).set({ rewardBp: sql`${bounties.rewardBp} + ${amountBp}` }).where(eq(bounties.id, bounty.id));
+    }
+  });
+  await db.insert(bountyHunts).values({ userId: first.id, bountyId: bounty.id, status: "ongoing" });
+  return { bounty, creator, first, last, unrelated };
+}
+
+async function refundSnapshot() {
+  return {
+    users: await db.select().from(users).orderBy(users.id),
+    bounties: await db.select().from(bounties).orderBy(bounties.id),
+    contributions: await db.select().from(bountyContributions).orderBy(bountyContributions.id),
+    ledger: await db.select().from(ledgerEntries).orderBy(ledgerEntries.id),
+    hunts: await db.select().from(bountyHunts).orderBy(bountyHunts.id),
+  };
+}
+
+async function assertMultipleRefunds(fixture: Awaited<ReturnType<typeof seedMultipleFunders>>) {
+  const { bounty, creator, first, last, unrelated } = fixture;
+  const snapshot = await refundSnapshot();
+  const stored = snapshot.bounties.find(row => row.id === bounty.id)!;
+  assert.equal(stored.status, "cancelled");
+  assert.equal(stored.rewardBp, 58);
+  const refunds = snapshot.ledger.filter(row => row.reason === "bounty_refund");
+  assert.deepEqual(
+    refunds.map(({ userId, amount }) => ({ userId, amount })).sort((a, b) => a.userId.localeCompare(b.userId)),
+    [{ userId: creator.id, amount: 26 }, { userId: first.id, amount: 12 }, { userId: last.id, amount: 20 }]
+      .sort((a, b) => a.userId.localeCompare(b.userId)),
+  );
+  for (const [userId, balance] of [[creator.id, 96], [first.id, 97], [last.id, 98], [unrelated.id, 100]] as const) {
+    assert.equal(snapshot.users.find(user => user.id === userId)!.bpBalance, balance);
+    assert.equal(snapshot.ledger.filter(row => row.userId === userId).reduce((sum, row) => sum + row.amount, 0), balance);
+  }
+  assert.equal(snapshot.contributions.length, 5, "Preserve funding history");
+  assert.equal(snapshot.hunts[0].status, "closed");
+  assert.equal(snapshot.hunts[0].endedAt?.toISOString(), stored.cancelledAt?.toISOString());
+}
+
+function hasErrorMessage(message: string) {
+  return (error: unknown) => {
+    let cause = error;
+    while (cause instanceof Error) {
+      if (cause.message === message) return true;
+      cause = cause.cause;
+    }
+    return false;
+  };
+}
+
+test("multiple funders receive one principal-only refund each, including repeat creator funding", async () => {
+  const fixture = await seedMultipleFunders();
+  const original = await refundSnapshot();
+  // Other contributors remain unable to cancel.
+  await assert.rejects(() => cancelBounty(fixture.bounty.id, fixture.first.osuUserId), BountyNotOwnedError);
+  assert.deepEqual(await refundSnapshot(), original);
+  await cancelBounty(fixture.bounty.id, creatorOsuUserId);
+  await assertMultipleRefunds(fixture);
+  const cancelled = await refundSnapshot();
+  await assert.rejects(() => cancelBounty(fixture.bounty.id, creatorOsuUserId), BountyNotOpenError);
+  assert.deepEqual(await refundSnapshot(), cancelled);
+});
+
+for (const failure of ["credit", "missing recipient", "ledger"] as const) {
+  test(`later contributor ${failure} failure rolls back earlier refunds and permits retry`, async () => {
+    const fixture = await seedMultipleFunders();
+    const original = await refundSnapshot();
+    // Force failure for the lexically last UUID, after the first two users' refunds.
+    const triggerTable = failure === "ledger" ? "ledger_entries" : "users";
+    await db.execute(sql`
+      CREATE OR REPLACE FUNCTION test_later_refund_failure() RETURNS trigger LANGUAGE plpgsql AS $$
+      BEGIN
+        IF TG_TABLE_NAME = 'users' THEN
+          IF NEW.id <> 'ffffffff-ffff-4fff-8fff-ffffffffffff'::uuid THEN RETURN NEW; END IF;
+        ELSE
+          IF NEW.reason <> 'bounty_refund' OR NEW.user_id <> 'ffffffff-ffff-4fff-8fff-ffffffffffff'::uuid THEN RETURN NEW; END IF;
+        END IF;
+        IF (SELECT count(*) FROM ledger_entries WHERE reason = 'bounty_refund') <> 2 THEN
+          RAISE EXCEPTION 'Expected two preceding refunds';
+        END IF;
+        IF TG_ARGV[0] = 'missing recipient' THEN RETURN NULL; END IF;
+        RAISE EXCEPTION 'Forced later refund failure';
+      END; $$
+    `);
+    try {
+      if (failure === "ledger") {
+        await db.execute(sql`CREATE TRIGGER test_later_refund_failure BEFORE INSERT ON ledger_entries
+          FOR EACH ROW EXECUTE FUNCTION test_later_refund_failure('ledger')`);
+      } else if (failure === "credit") {
+        await db.execute(sql`CREATE TRIGGER test_later_refund_failure BEFORE UPDATE OF bp_balance ON users
+          FOR EACH ROW EXECUTE FUNCTION test_later_refund_failure('credit')`);
+      } else {
+        // RETURN NULL simulates an UPDATE returning no row without violating foreign keys.
+        await db.execute(sql`CREATE TRIGGER test_later_refund_failure BEFORE UPDATE OF bp_balance ON users
+          FOR EACH ROW EXECUTE FUNCTION test_later_refund_failure('missing recipient')`);
+      }
+      await assert.rejects(() => cancelBounty(fixture.bounty.id, creatorOsuUserId),
+        hasErrorMessage(failure === "missing recipient" ? "Could not refund, cancellation aborted" : "Forced later refund failure"));
+      assert.deepEqual(await refundSnapshot(), original);
+    } finally {
+      await db.execute(sql.raw(`DROP TRIGGER IF EXISTS test_later_refund_failure ON ${triggerTable}`));
+      await db.execute(sql`DROP FUNCTION test_later_refund_failure()`);
+    }
+    await cancelBounty(fixture.bounty.id, creatorOsuUserId);
+    await assertMultipleRefunds(fixture);
+  });
+}
+
+test("concurrent cancellations of a multifunded bounty refund each contributor exactly once", async () => {
+  const fixture = await seedMultipleFunders();
+  const results = await Promise.allSettled([
+    cancelBounty(fixture.bounty.id, creatorOsuUserId),
+    cancelBounty(fixture.bounty.id, creatorOsuUserId),
+  ]);
+  assert.equal(results.filter(result => result.status === "fulfilled").length, 1);
+  const rejected = results.filter(result => result.status === "rejected");
+  assert.equal(rejected.length, 1);
+  assert.ok(rejected[0].reason instanceof BountyNotOpenError);
+  await assertMultipleRefunds(fixture);
 });

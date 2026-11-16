@@ -9,7 +9,12 @@ import {
   findBountyByIdForUpdate,
   markOpenBountyCancelled,
 } from "../db/bounties";
-import { creditUserBp, deductUserBp, findUserByOsuId } from "../db/users";
+import {
+  creditUserBp,
+  creditUserBpById,
+  deductUserBp,
+  findUserByOsuId,
+} from "../db/users";
 import {
   BountyNotFoundError,
   BountyNotOpenError,
@@ -27,7 +32,10 @@ import {
 import { getBeatmap } from "../integrations/osu/beatmaps";
 import { closeOngoingHuntsForBounty } from "../db/bounty-hunts";
 import { upsertBountyBeatmap } from "../db/bounty-beatmaps";
-import { insertBountyContribution } from "../db/bounty-contributions";
+import {
+  fetchBountyContributions,
+  insertBountyContribution,
+} from "../db/bounty-contributions";
 
 export async function createFundedBounty(
   input: CreateBountyInput,
@@ -129,22 +137,26 @@ export async function cancelBounty(
       );
     }
 
-    const refunded = await creditUserBp(
-      tx,
-      bounty.creatorOsuUserId,
-      bounty.rewardBp,
-    );
+    const contributions = await fetchBountyContributions(tx, bounty.id);
 
-    if (!refunded.ok) {
-      throw new Error("Could not refund, cancellation aborted");
+    const refunds = new Map<string, number>();
+
+    for (const contribution of contributions) {
+      const previous = refunds.get(contribution.userId) ?? 0;
+      refunds.set(contribution.userId, previous + contribution.amountBp);
     }
 
-    await createRefundLedgerEntry(
-      tx,
-      bounty.id,
-      bounty.rewardBp,
-      refunded.userId,
-    );
+    for (const [userId, bpSum] of [...refunds].sort(([a], [b]) =>
+      a.localeCompare(b),
+    )) {
+      const refunded = await creditUserBpById(tx, userId, bpSum);
+
+      if (!refunded.ok) {
+        throw new Error("Could not refund, cancellation aborted");
+      }
+
+      await createRefundLedgerEntry(tx, bounty.id, bpSum, refunded.userId);
+    }
 
     if (!cancelledBounty.cancelledAt) {
       throw new Error(
