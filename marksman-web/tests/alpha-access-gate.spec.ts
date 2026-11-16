@@ -198,7 +198,7 @@ for (const width of [320, 640, 1280]) {
 }
 
 for (const width of [320, 640, 1280]) {
-  test(`About navigation icons preserve names, targets and fit at ${width}px`, async ({ page }) => {
+  test(`Wiki navigation icons preserve names, targets and fit at ${width}px`, async ({ page }) => {
     await page.setViewportSize({ width, height: 900 });
     await mockAuth(page, async (route, path) => {
       await route.fulfill(path === "/auth/me" ? { json: user } : { status: 204 });
@@ -216,20 +216,20 @@ for (const width of [320, 640, 1280]) {
       return action;
     }
     await page.goto("/");
-    const help = await check("How does it work?", "/about");
+    const help = await check("How does it work?", "/wiki");
     await help.focus();
     await page.keyboard.press("Enter");
-    await expect(page).toHaveURL(/\/about$/);
+    await expect(page).toHaveURL(/\/wiki$/);
     for (const [name, href] of [
-      ["About - Bounties", "/about/bounties"],
-      ["About - Bounty Creation", "/about/bounty-creation"],
-      ["About - Hunting", "/about/hunting"],
-      ["About - Economy", "/about/economy"],
+      ["Wiki - Bounties", "/wiki/bounties"],
+      ["Wiki - Bounty Creation", "/wiki/bounty-creation"],
+      ["Wiki - Hunting", "/wiki/hunting"],
+      ["Wiki - Economy", "/wiki/economy"],
     ]) await check(name, href);
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
     await page.goto("/bounties");
-    const learn = await check("Learn about bounties", "/about/bounties");
+    const learn = await check("Learn about bounties", "/wiki/bounties");
     await learn.click();
-    await expect(page).toHaveURL(/\/about\/bounties$/);
+    await expect(page).toHaveURL(/\/wiki\/bounties$/);
   });
 }

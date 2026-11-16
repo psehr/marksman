@@ -2,6 +2,9 @@ import type { NextConfig } from "next";
 import path from "node:path";
 
 const nextConfig: NextConfig = {
+  async redirects() {
+    return [{ source: "/about/:path*", destination: "/wiki/:path*", permanent: true }];
+  },
   images: {
     remotePatterns: [
       {

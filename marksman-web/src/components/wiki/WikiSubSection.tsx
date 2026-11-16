@@ -1,6 +1,6 @@
 import { SectionAnchor } from "./SectionAnchor";
 
-export function AboutSubSection({
+export function WikiSubSection({
   children,
   index,
   id,

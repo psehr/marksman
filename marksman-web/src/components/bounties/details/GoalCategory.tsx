@@ -32,7 +32,7 @@ export default function GoalCategory({ bounty }: { bounty: ExtendedBounty }) {
             ) : null}
           </div>
           <Link
-            href="/about/bounties#fc-ruling"
+            href="/wiki/bounties#fc-ruling"
             className="text-sm text-foreground-muted underline"
           >
             Learn more

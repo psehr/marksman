@@ -31,11 +31,11 @@ export function SectionAnchor({
     update();
     window.addEventListener("hashchange", update);
     window.addEventListener("popstate", update);
-    window.addEventListener("about-section-navigation", navigate);
+    window.addEventListener("wiki-section-navigation", navigate);
     return () => {
       window.removeEventListener("hashchange", update);
       window.removeEventListener("popstate", update);
-      window.removeEventListener("about-section-navigation", navigate);
+      window.removeEventListener("wiki-section-navigation", navigate);
     };
   }, [id, pathname]);
 

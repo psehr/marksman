@@ -1,13 +1,17 @@
 import { expect, test } from "@playwright/test";
 
 test.beforeEach(async ({ page }) => {
-  await page.route("**/auth/me", route => route.fulfill({ status: 401, json: { error: "Signed out" } }));
+  await page.route("**/auth/me", route => route.fulfill({ json: {
+    identity: { id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa", osuUserId: 123, username: "wiki_fixture" },
+    stats: { bpBalance: 250 }, createdAt: "2026-01-01T00:00:00.000Z",
+  } }));
+  await page.route("**/auth/access", route => route.fulfill({ status: 204 }));
 });
 
 test("reward tiers fit narrow screens without overlapping labels or thresholds", async ({ page }) => {
   for (const width of [320, 375, 390, 768]) {
     await page.setViewportSize({ width, height: 800 });
-    await page.goto("/about/bounties#reward-tiers");
+    await page.goto("/wiki/bounties#reward-tiers");
     await page.evaluate(() => document.fonts.ready);
     const section = page.locator("#reward-tiers");
     const badges = section.locator('[title^="Reward tier:"]');
@@ -35,7 +39,7 @@ test("reward tiers fit narrow screens without overlapping labels or thresholds",
 });
 
 test("section links update the URL and highlight only the selected section through history and reload", async ({ page }) => {
-  await page.goto("/about#core-concept");
+  await page.goto("/wiki#core-concept");
   const core = page.locator("#core-concept");
   const how = page.locator("#how-to-play");
   await expect(core).toHaveAttribute("data-selected", "true");
@@ -43,7 +47,7 @@ test("section links update the URL and highlight only the selected section throu
   await expect(core).toHaveJSProperty("id", "core-concept");
   expect(await how.evaluate(el => getComputedStyle(el).borderColor)).not.toBe(border);
   await page.getByRole("link", { name: "# How to play?", exact: true }).click();
-  await expect(page).toHaveURL(/\/about#how-to-play$/);
+  await expect(page).toHaveURL(/\/wiki#how-to-play$/);
   await expect(how).toHaveAttribute("data-selected", "true");
   expect(await how.evaluate(el => getComputedStyle(el).borderColor)).toBe(border);
   expect(await core.evaluate(el => getComputedStyle(el).borderColor)).not.toBe(border);
@@ -51,13 +55,13 @@ test("section links update the URL and highlight only the selected section throu
   await expect(how).toHaveAttribute("data-selected", "true");
   expect(await how.evaluate(el => getComputedStyle(el).borderColor)).toBe(border);
   await page.goBack();
-  await expect(page).toHaveURL(/\/about#core-concept$/);
+  await expect(page).toHaveURL(/\/wiki#core-concept$/);
   await expect(core).toHaveAttribute("data-selected", "true");
   expect(await core.evaluate(el => getComputedStyle(el).borderColor)).toBe(border);
 });
 
 test("nested bounty sections support direct links and keyboard selection", async ({ page }) => {
-  await page.goto("/about/bounties#full-combo");
+  await page.goto("/wiki/bounties#full-combo");
   const fc = page.locator("#full-combo");
   await expect(fc).toHaveAttribute("data-selected", "true");
   const selectedBorder = await fc.evaluate(el => getComputedStyle(el).borderColor);
@@ -72,10 +76,10 @@ test("nested bounty sections support direct links and keyboard selection", async
 });
 
 test("client navigation to another page selects its fragment without a reload", async ({ page }) => {
-  await page.goto("/about/bounties#full-combo");
+  await page.goto("/wiki/bounties#full-combo");
   await page.evaluate(() => { (window as unknown as { navigationMarker: boolean }).navigationMarker = true; });
   await page.getByRole("link", { name: "valid score", exact: true }).first().click();
-  await expect(page).toHaveURL(/\/about\/hunting#what-is-valid-score$/);
+  await expect(page).toHaveURL(/\/wiki\/hunting#what-is-valid-score$/);
   const selected = page.locator("#what-is-valid-score");
   await expect(selected).toHaveAttribute("data-selected", "true");
   const accentBorder = await selected.evaluate(el => getComputedStyle(el).borderColor);
@@ -84,6 +88,19 @@ test("client navigation to another page selects its fragment without a reload", 
   await page.goBack();
   await expect(page.locator("#full-combo")).toHaveAttribute("data-selected", "true");
   await page.getByRole("link", { name: "hunting system", exact: true }).click();
-  await expect(page).toHaveURL(/\/about\/hunting$/);
+  await expect(page).toHaveURL(/\/wiki\/hunting$/);
   await expect(page.locator("section[data-selected=true]")).toHaveCount(0);
+});
+
+
+test("old About links redirect to Wiki with query and section intact", async ({ page }) => {
+  for (const [oldPath, newPath, section] of [
+    ["/about", "/wiki", "core-concept"],
+    ["/about/bounties", "/wiki/bounties", "full-combo"],
+  ]) {
+    await page.goto(oldPath + "?source=saved#" + section);
+    await expect(page).toHaveURL(new RegExp(newPath + "\\?source=saved#" + section + "$"));
+    await expect(page.locator("#" + section)).toHaveAttribute("data-selected", "true");
+    await expect(page.getByRole("link", { name: "Wiki", exact: true })).toHaveAttribute("aria-current", "page");
+  }
 });

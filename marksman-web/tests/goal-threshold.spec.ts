@@ -72,7 +72,7 @@ for (const [label, ratio, missing] of [
     await page.goto(`/bounties/${bounty.id}`);
     await expect(page.getByText("osu!stable requirements:", { exact: true })).toBeVisible();
     await expect(page.getByText(`Stable-Combo-Threshold: ${(ratio ?? 0.99) * 100}%`, { exact: true })).toBeVisible();
-    await expect(page.getByRole("link", { name: "Learn more", exact: true })).toHaveAttribute("href", "/about/bounties#fc-ruling");
+    await expect(page.getByRole("link", { name: "Learn more", exact: true })).toHaveAttribute("href", "/wiki/bounties#fc-ruling");
     if (missing) {
       await expect(page.getByText("Minimum required combo: /", { exact: true })).toHaveCount(0);
     } else {

@@ -117,9 +117,9 @@ export default function NavBar() {
           />
           <span className="text-border hidden md:inline">•</span>
           <RouteLink
-            url="/about"
-            title="About"
-            selected={path.startsWith("/about")}
+            url="/wiki"
+            title="Wiki"
+            selected={path.startsWith("/wiki")}
             onClick={closeMenu}
           />
         </div>

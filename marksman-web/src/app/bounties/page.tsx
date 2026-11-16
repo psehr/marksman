@@ -130,7 +130,7 @@ function Bounties() {
               <ActionIcon action="create" />
               Create a bounty
             </ButtonLink>
-            <ButtonLink href="/about/bounties">
+            <ButtonLink href="/wiki/bounties">
               <ActionIcon action="info" />
               Learn about bounties
             </ButtonLink>

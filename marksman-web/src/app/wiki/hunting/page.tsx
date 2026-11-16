@@ -1,14 +1,14 @@
-import { AboutLink } from "@/components/about/AboutLink";
-import { AboutSection } from "@/components/about/AboutSection";
-import { AboutSubSection } from "@/components/about/AboutSubSection";
-import { AccentText } from "@/components/about/AccentText";
+import { WikiLink } from "@/components/wiki/WikiLink";
+import { WikiSection } from "@/components/wiki/WikiSection";
+import { WikiSubSection } from "@/components/wiki/WikiSubSection";
+import { AccentText } from "@/components/wiki/AccentText";
 import PageHeaderBadge from "@/components/ui/PageHeaderBadge";
 
-export default function AboutHuntingPage() {
+export default function WikiHuntingPage() {
   return (
     <div className="flex flex-col w-full h-full place-content-center items-center px-4 py-12 gap-4">
-      <PageHeaderBadge icon="hunt">About - Hunting</PageHeaderBadge>
-      <AboutSection title="What is hunting?" id="what-is-hunting">
+      <PageHeaderBadge icon="hunt">Wiki - Hunting</PageHeaderBadge>
+      <WikiSection title="What is hunting?" id="what-is-hunting">
         <p>
           In Marksman,{" "}
           <AccentText>
@@ -42,15 +42,15 @@ export default function AboutHuntingPage() {
           Hunting doesn’t reserve a bounty,{" "}
           <AccentText>other players can hunt it at the same time</AccentText>.
         </p>
-      </AboutSection>
-      <AboutSection title="How does completion work?" id="bounty-completion">
+      </WikiSection>
+      <WikiSection title="How does completion work?" id="bounty-completion">
         <p>
           To qualify for completion, a valid score must be{" "}
           <AccentText>submitted while the hunt is active</AccentText> and
           satisfy every other{" "}
-          <AboutLink url="/about/bounties#what-are-bounties">
+          <WikiLink url="/wiki/bounties#what-are-bounties">
             bounty goal requirement
-          </AboutLink>
+          </WikiLink>
           .
         </p>
         <p>
@@ -67,92 +67,92 @@ export default function AboutHuntingPage() {
         <p>
           Once <AccentText>the result is confirmed</AccentText>, the bounty
           closes and its reward is added to the winner’s{" "}
-          <AboutLink url="/about/economy#bounty-points">BP balance</AboutLink>.
+          <WikiLink url="/wiki/economy#bounty-points">BP balance</WikiLink>.
         </p>
-      </AboutSection>
-      <AboutSection title="What is a valid score?" id="what-is-valid-score">
+      </WikiSection>
+      <WikiSection title="What is a valid score?" id="what-is-valid-score">
         <p>
           In Marksman, a valid score is a submitted{" "}
           <AccentText>osu! score</AccentText> that can, after settlement,
           successfully{" "}
-          <AboutLink url="/about/hunting#bounty-completion">
+          <WikiLink url="/wiki/hunting#bounty-completion">
             complete a bounty
-          </AboutLink>
+          </WikiLink>
           .
         </p>
         <p>To be valid, it must respect the following:</p>
-        <AboutSubSection index="I." id="player-is-claimant">
+        <WikiSubSection index="I." id="player-is-claimant">
           The score must{" "}
           <AccentText>
             belong to the osu! account linked to the hunter
           </AccentText>
           .
-        </AboutSubSection>
-        <AboutSubSection index="II." id="player-is-not-owner">
+        </WikiSubSection>
+        <WikiSubSection index="II." id="player-is-not-owner">
           The player <AccentText>must not be the bounty’s creator</AccentText>.
-        </AboutSubSection>
-        <AboutSubSection index="III." id="bounty-is-open">
+        </WikiSubSection>
+        <WikiSubSection index="III." id="bounty-is-open">
           The bounty <AccentText>must still be open</AccentText>.
-        </AboutSubSection>
-        <AboutSubSection index="IV." id="valid-timestamp">
+        </WikiSubSection>
+        <WikiSubSection index="IV." id="valid-timestamp">
           The score must be{" "}
           <AccentText>submitted after the bounty was created</AccentText> and
           while the <AccentText>player’s hunt is active</AccentText>.
-        </AboutSubSection>
-        <AboutSubSection index="V." id="valid-beatmap">
+        </WikiSubSection>
+        <WikiSubSection index="V." id="valid-beatmap">
           The score must be on the{" "}
           <AccentText>exact beatmap difficulty</AccentText> specified by the
           bounty.
-        </AboutSubSection>
-        <AboutSubSection index="VI." id="valid-ruleset">
+        </WikiSubSection>
+        <WikiSubSection index="VI." id="valid-ruleset">
           The score must use the <AccentText>osu!standard</AccentText> ruleset.
-        </AboutSubSection>
-        <AboutSubSection index="VII." id="score-passed">
+        </WikiSubSection>
+        <WikiSubSection index="VII." id="score-passed">
           The score must be a <AccentText>passed play</AccentText>.
-        </AboutSubSection>
-        <AboutSubSection index="VIII." id="acc-goal">
+        </WikiSubSection>
+        <WikiSubSection index="VIII." id="acc-goal">
           The accuracy must{" "}
           <AccentText>meet or exceed the bounty’s minimum accuracy</AccentText>,
           if one is specified.
-        </AboutSubSection>
-        <AboutSubSection index="IX." id="mod-requirement">
+        </WikiSubSection>
+        <WikiSubSection index="IX." id="mod-requirement">
           The score must satisfy the bounty’s{" "}
           <AccentText>mod requirement</AccentText>, see{" "}
-          <AboutLink url="/about/bounties#mod-rules">mod rules</AboutLink>.
-        </AboutSubSection>
-        <AboutSubSection index="X." id="supported-mods">
+          <WikiLink url="/wiki/bounties#mod-rules">mod rules</WikiLink>.
+        </WikiSubSection>
+        <WikiSubSection index="X." id="supported-mods">
           Only <AccentText>supported mods may be used</AccentText> (or no mods,
           if allowed). See{" "}
-          <AboutLink url="/about/bounties#supported-mods">
+          <WikiLink url="/wiki/bounties#supported-mods">
             supported mods.
-          </AboutLink>
-        </AboutSubSection>
-        <AboutSubSection index="XI." id="custom-mods">
+          </WikiLink>
+        </WikiSubSection>
+        <WikiSubSection index="XI." id="custom-mods">
           Mods must use their default settings:{" "}
           <AccentText>customization is not allowed</AccentText>.
-        </AboutSubSection>
-        <AboutSubSection index="XII." id="grade-requirement">
+        </WikiSubSection>
+        <WikiSubSection index="XII." id="grade-requirement">
           For a grade requirement, the achieved grade must{" "}
           <AccentText>meet or exceed the selected grade</AccentText>. See{" "}
-          <AboutLink url="/about/bounties#grade-requirement">
+          <WikiLink url="/wiki/bounties#grade-requirement">
             grade requirement
-          </AboutLink>
+          </WikiLink>
           .
-        </AboutSubSection>
-        <AboutSubSection index="XIII." id="fc-requirement">
+        </WikiSubSection>
+        <WikiSubSection index="XIII." id="fc-requirement">
           For a full-combo requirement, see{" "}
-          <AboutLink url="/about/bounties#fc-ruling">FC ruling</AboutLink>.
-        </AboutSubSection>
+          <WikiLink url="/wiki/bounties#fc-ruling">FC ruling</WikiLink>.
+        </WikiSubSection>
         <p>
           When <AccentText>all</AccentText> these conditions are successfully
           met, Marksman initiates the settlement period and, if suitable, closes
           the bounty before awarding the winner. See{" "}
-          <AboutLink url="/about/hunting#bounty-completion">
+          <WikiLink url="/wiki/hunting#bounty-completion">
             completion
-          </AboutLink>
+          </WikiLink>
           .
         </p>
-      </AboutSection>
+      </WikiSection>
     </div>
   );
 }

@@ -5,11 +5,11 @@ const pages = [
   ["/bounties", "Bounty Board"],
   ["/bounties/creation-tool", "Bounty Creation Tool"],
   [`/bounties/${id}`, "Bounty Details"],
-  ["/about", "About - Marksman"],
-  ["/about/bounties", "About - Bounties"],
-  ["/about/bounty-creation", "About - Bounty Creation"],
-  ["/about/hunting", "About - Hunting"],
-  ["/about/economy", "About - Economy"],
+  ["/wiki", "Wiki - Marksman"],
+  ["/wiki/bounties", "Wiki - Bounties"],
+  ["/wiki/bounty-creation", "Wiki - Bounty Creation"],
+  ["/wiki/hunting", "Wiki - Hunting"],
+  ["/wiki/economy", "Wiki - Economy"],
 ];
 for (const width of [320, 640, 1280]) {
   test(`page header icons preserve heading names and fit at ${width}px`, async ({ page }) => {

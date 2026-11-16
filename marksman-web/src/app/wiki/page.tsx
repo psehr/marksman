@@ -2,20 +2,20 @@
 
 import ActionIcon from "@/components/ui/ActionIcon";
 
-import { AboutLink } from "@/components/about/AboutLink";
-import { AboutSection } from "@/components/about/AboutSection";
-import { AccentText } from "@/components/about/AccentText";
+import { WikiLink } from "@/components/wiki/WikiLink";
+import { WikiSection } from "@/components/wiki/WikiSection";
+import { AccentText } from "@/components/wiki/AccentText";
 import { AuthButton } from "@/components/auth/AuthButton";
 import { useAuth } from "@/components/auth/AuthProvider";
 import ButtonLink from "@/components/ui/ButtonLink";
 import PageHeaderBadge from "@/components/ui/PageHeaderBadge";
 
-export default function AboutPage() {
+export default function WikiPage() {
   const { user } = useAuth();
   return (
     <div className="flex flex-col w-full h-full place-content-center items-center px-4 py-12 gap-4">
-      <PageHeaderBadge icon="info">About - Marksman</PageHeaderBadge>
-      <AboutSection id="core-concept" title="Core Concept">
+      <PageHeaderBadge icon="info">Wiki - Marksman</PageHeaderBadge>
+      <WikiSection id="core-concept" title="Core Concept">
         <p>
           <AccentText>Marksman</AccentText> is an osu! project with the goal of{" "}
           <AccentText>creating fun interactions between players</AccentText> in
@@ -35,20 +35,20 @@ export default function AboutPage() {
           At the moment, only osu!standard is supported, but other official
           modes support is planned in the future.
         </p>
-      </AboutSection>
-      <AboutSection id="how-to-play" title="How to play?">
+      </WikiSection>
+      <WikiSection id="how-to-play" title="How to play?">
         <p>To start playing, you first have to log in to your osu! account.</p>
         {!user ? <AuthButton /> : null}
         <p>
           Once you’re logged in, navigate to the{" "}
-          <AboutLink url="/bounties">bounties page</AboutLink> where you’ll find
+          <WikiLink url="/bounties">bounties page</WikiLink> where you’ll find
           a <AccentText>browsable list</AccentText> of the{" "}
           <AccentText>current ongoing bounties</AccentText> created by other
           users, as well as the <AccentText>Bounty Creation Tool</AccentText>{" "}
           button.
         </p>
-      </AboutSection>
-      <AboutSection
+      </WikiSection>
+      <WikiSection
         id="hunting-your-first-bounty"
         title="Hunting your first bounty"
       >
@@ -68,38 +68,38 @@ export default function AboutPage() {
           If you <AccentText>currently have an open slot</AccentText>, starting
           the hunt will <AccentText>automatically track</AccentText> all
           subsequent submitted scores set on this map by you. For more details
-          about hunting <AboutLink url="/about/hunting">click here</AboutLink>.
+          about hunting <WikiLink url="/wiki/hunting">click here</WikiLink>.
         </p>
         <p>
           When a <AccentText>valid attempt is found</AccentText> and after a{" "}
           <AccentText>30-second settlement window</AccentText>, Marksman awards
           the player with the earliest valid attempt.
         </p>
-      </AboutSection>
-      <AboutSection title="Other about pages" id="about-pages">
+      </WikiSection>
+      <WikiSection title="Other wiki pages" id="wiki-pages">
         <p>
           These pages detail how the Marksman system works{" "}
           <AccentText>more precisely</AccentText>.
         </p>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-          <ButtonLink href="/about/bounties" variant="outline" size="lg">
+          <ButtonLink href="/wiki/bounties" variant="outline" size="lg">
             <ActionIcon action="browse" />
-            About - Bounties
+            Wiki - Bounties
           </ButtonLink>
-          <ButtonLink href="/about/bounty-creation" variant="outline" size="lg">
+          <ButtonLink href="/wiki/bounty-creation" variant="outline" size="lg">
             <ActionIcon action="create" />
-            About - Bounty Creation
+            Wiki - Bounty Creation
           </ButtonLink>
-          <ButtonLink href="/about/hunting" variant="outline" size="lg">
+          <ButtonLink href="/wiki/hunting" variant="outline" size="lg">
             <ActionIcon action="hunt" />
-            About - Hunting
+            Wiki - Hunting
           </ButtonLink>
-          <ButtonLink href="/about/economy" variant="outline" size="lg">
+          <ButtonLink href="/wiki/economy" variant="outline" size="lg">
             <ActionIcon action="economy" />
-            About - Economy
+            Wiki - Economy
           </ButtonLink>
         </div>
-      </AboutSection>
+      </WikiSection>
     </div>
   );
 }
