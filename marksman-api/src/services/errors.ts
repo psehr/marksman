@@ -15,6 +15,18 @@ export class InsufficientBpError extends Error {
   }
 }
 
+export class BountyRewardLimitError extends Error {
+  constructor() {
+    super("Contribution would exceed the maximum bounty reward");
+  }
+}
+
+export class ContributionIdempotencyConflictError extends Error {
+  constructor() {
+    super("This contribution key was already used for a different bounty or amount");
+  }
+}
+
 export class BountyNotOwnedError extends Error {
   constructor() {
     super("Bounty not owned by the requester");

@@ -2,6 +2,7 @@ import {
   BOUNTIES_LIST_PAGE_SIZE,
   bountyTiers,
   PROFILE_HISTORY_PAGE_SIZE,
+  MAX_BOUNTY_REWARD_BP,
 } from "@marksman/contracts";
 import {
   and,
@@ -266,6 +267,25 @@ export async function createBounty(
     .returning();
 
   return toBounty(row);
+}
+
+export async function increaseOpenBountyReward(
+  tx: Transaction,
+  bountyId: string,
+  amountBp: number,
+): Promise<Bounty | undefined> {
+  const [row] = await tx
+    .update(bounties)
+    .set({ rewardBp: sql`${bounties.rewardBp} + ${amountBp}` })
+    .where(
+      and(
+        eq(bounties.id, bountyId),
+        eq(bounties.status, "open"),
+        sql`${bounties.rewardBp} + ${amountBp} <= ${MAX_BOUNTY_REWARD_BP}`,
+      ),
+    )
+    .returning();
+  return row ? toBounty(row) : undefined;
 }
 
 export async function markOpenBountyCancelled(

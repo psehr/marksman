@@ -1,7 +1,37 @@
 import { BountyContribution } from "@marksman/contracts";
 import { db, Transaction } from ".";
 import { bountyContributions } from "./schema";
-import { eq } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
+
+// Serialize retries before locking a bounty. Different bounties can share a key,
+// so the bounty lock alone cannot protect the per-user idempotency lookup.
+export async function lockContributionRequest(
+  tx: Transaction,
+  userId: string,
+  idempotencyKey: string,
+): Promise<void> {
+  const lockKey = `bounty-contribution:${userId}:${idempotencyKey}`;
+  await tx.execute(
+    sql`SELECT pg_advisory_xact_lock(hashtextextended(${lockKey}, 0))`,
+  );
+}
+
+export async function findContributionByIdempotencyKey(
+  tx: Transaction,
+  userId: string,
+  idempotencyKey: string,
+): Promise<BountyContribution | undefined> {
+  const [row] = await tx
+    .select()
+    .from(bountyContributions)
+    .where(
+      and(
+        eq(bountyContributions.userId, userId),
+        eq(bountyContributions.idempotencyKey, idempotencyKey),
+      ),
+    );
+  return row ? toBountyContribution(row) : undefined;
+}
 
 export function toBountyContribution(
   row: typeof bountyContributions.$inferSelect,

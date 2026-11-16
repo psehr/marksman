@@ -156,3 +156,16 @@ export async function creditUserBpById(
     return { ok: false };
   }
 }
+
+export async function deductUserBpById(
+  tx: Transaction,
+  userId: string,
+  deductedBp: number,
+): Promise<{ ok: true; userId: string } | { ok: false }> {
+  const [updatedUser] = await tx
+    .update(users)
+    .set({ bpBalance: sql`${users.bpBalance} - ${deductedBp}` })
+    .where(and(eq(users.id, userId), gte(users.bpBalance, deductedBp)))
+    .returning({ id: users.id });
+  return updatedUser ? { ok: true, userId: updatedUser.id } : { ok: false };
+}
