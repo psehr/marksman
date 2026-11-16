@@ -164,6 +164,15 @@ export const bountyListResponseSchema = z.object({
   pageSize: z.number().int().positive(),
 });
 
+export const bountyContributionSchema = z.object({
+  id: z.uuid(),
+  bountyId: z.uuid(),
+  userId: z.uuid(),
+  amountBp: z.number().int().positive(),
+  feeBp: z.number().int().nonnegative(),
+  createdAt: z.iso.datetime(),
+});
+
 export type Bounty = z.infer<typeof bountySchema>;
 export type CreateBountyInput = z.infer<typeof createBountySchema>;
 export type ExtendedBounty = z.infer<typeof extendedBountySchema>;
@@ -174,3 +183,4 @@ export type BountyScoreCandidate = z.infer<typeof bountyScoreCandidateSchema>;
 export type BountyEngagement = z.infer<typeof bountyEngagementSchema>;
 export type BountySearchQuery = z.infer<typeof bountySearchQuerySchema>;
 export type BountyListResponse = z.infer<typeof bountyListResponseSchema>;
+export type BountyContribution = z.infer<typeof bountyContributionSchema>;

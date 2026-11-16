@@ -27,6 +27,7 @@ import {
 import { getBeatmap } from "../integrations/osu/beatmaps";
 import { closeOngoingHuntsForBounty } from "../db/bounty-hunts";
 import { upsertBountyBeatmap } from "../db/bounty-beatmaps";
+import { insertBountyContribution } from "../db/bounty-contributions";
 
 export async function createFundedBounty(
   input: CreateBountyInput,
@@ -75,6 +76,14 @@ export async function createFundedBounty(
     }
 
     const bounty = await createBounty(tx, extendedInput, creatorOsuUserId);
+
+    await insertBountyContribution(
+      tx,
+      bounty.id,
+      deducted.userId,
+      REWARD_COST,
+      FEE_COST,
+    );
 
     await upsertBountyBeatmap(tx, bountyBeatmapMetadata);
 

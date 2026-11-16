@@ -282,3 +282,29 @@ export const bountyBeatmaps = pgTable("bounty_beatmaps", {
     .notNull()
     .defaultNow(),
 });
+
+export const bountyContributions = pgTable(
+  "bounty_contributions",
+  {
+    id: uuid("id").defaultRandom().primaryKey(),
+    bountyId: uuid("bounty_id")
+      .notNull()
+      .references(() => bounties.id),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id),
+    amountBp: integer("amount_bp").notNull(),
+    feeBp: integer("fee_bp").notNull(),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .notNull()
+      .defaultNow(),
+  },
+  (table) => [
+    check(
+      "bounty_contributions_bp_amount_positive",
+      sql`${table.amountBp} > 0`,
+    ),
+    check("bounty_contributions_nonnegative_fee", sql`${table.feeBp} >= 0`),
+    index("bounty_contributions_bounty_id_idx").on(table.bountyId),
+  ],
+);

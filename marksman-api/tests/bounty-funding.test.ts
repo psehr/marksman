@@ -7,6 +7,7 @@ import { eq, sql } from "drizzle-orm";
 import {
   bounties,
   bountyBeatmaps,
+  bountyContributions,
   ledgerEntries,
   users,
 } from "../src/db/schema";
@@ -66,6 +67,16 @@ async function assertDatabaseState(balance: number, bountyCount: number) {
   assert.equal(creator.bpBalance, balance);
   const rows = await db.select().from(bounties);
   assert.equal(rows.length, bountyCount);
+  const contributions = await db.select().from(bountyContributions);
+  assert.equal(contributions.length, bountyCount);
+  for (const bounty of rows) {
+    const matching = contributions.filter(row => row.bountyId === bounty.id);
+    assert.equal(matching.length, 1);
+    assert.equal(matching[0].userId, creator.id);
+    assert.equal(matching[0].amountBp, bounty.rewardBp);
+    assert.equal(matching[0].feeBp, Math.ceil(bounty.rewardBp / 10));
+    assert.ok(matching[0].createdAt instanceof Date);
+  }
   const entries = await db.select().from(ledgerEntries);
   const funding = entries.filter((entry) => entry.reason === "bounty_funding");
   assert.equal(entries.length, 1 + 2 * bountyCount);
@@ -294,6 +305,7 @@ test("concurrent requests cannot spend the same available BP", async () => {
 test("funding ledger failure rolls back all changes and allows retry", async () => {
   await seedCreator(100);
   const snapshot = async () => ({
+    contributions: await db.select().from(bountyContributions).orderBy(bountyContributions.id),
     users: await db.select().from(users).orderBy(users.id),
     bounties: await db.select().from(bounties).orderBy(bounties.id),
     ledger: await db.select().from(ledgerEntries).orderBy(ledgerEntries.id),
@@ -384,6 +396,7 @@ for (const balance of [25, 27]) {
 test("fee ledger failure rolls back debit, bounty and funding entry and allows retry", async () => {
   await seedCreator(100);
   const snapshot = async () => ({
+    contributions: await db.select().from(bountyContributions).orderBy(bountyContributions.id),
     users: await db.select().from(users).orderBy(users.id),
     bounties: await db.select().from(bounties).orderBy(bounties.id),
     ledger: await db.select().from(ledgerEntries).orderBy(ledgerEntries.id),
@@ -455,4 +468,40 @@ test("creating another bounty refreshes the shared metadata without duplicating 
     rows[0].updatedAt.getTime() > new Date("2020-01-01T00:00:00Z").getTime(),
   );
   await assertDatabaseState(78, 2);
+});
+
+test("contribution insertion failure rolls back funding and allows retry", async () => {
+  await seedCreator(100);
+  await db.execute(sql`
+    CREATE OR REPLACE FUNCTION test_reject_contribution() RETURNS trigger LANGUAGE plpgsql AS $$
+    BEGIN
+      IF NOT EXISTS (SELECT 1 FROM users WHERE id = NEW.user_id AND bp_balance = 67)
+        OR NOT EXISTS (SELECT 1 FROM bounties WHERE id = NEW.bounty_id AND reward_bp = 30) THEN
+        RAISE EXCEPTION 'Expected debit and bounty before contribution';
+      END IF;
+      RAISE EXCEPTION 'Forced contribution failure';
+    END; $$
+  `);
+  try {
+    await db.execute(sql`CREATE TRIGGER test_reject_contribution BEFORE INSERT ON bounty_contributions
+      FOR EACH ROW EXECUTE FUNCTION test_reject_contribution()`);
+    await assert.rejects(
+      () => createFundedBounty(bountyInput(30), creatorOsuUserId),
+      (error: unknown) => {
+        let cause = error;
+        while (cause instanceof Error) {
+          if (cause.message === "Forced contribution failure") return true;
+          cause = cause.cause;
+        }
+        return false;
+      },
+    );
+    await assertDatabaseState(100, 0);
+    assert.deepEqual(await db.select().from(bountyBeatmaps), []);
+  } finally {
+    await db.execute(sql`DROP TRIGGER IF EXISTS test_reject_contribution ON bounty_contributions`);
+    await db.execute(sql`DROP FUNCTION test_reject_contribution()`);
+  }
+  await createFundedBounty(bountyInput(30), creatorOsuUserId);
+  await assertDatabaseState(67, 1);
 });
