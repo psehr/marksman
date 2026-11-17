@@ -15,6 +15,18 @@ export function useBountyDetails(bountyId: string) {
   };
   const generation = useRef(0);
   const engagementRevision = useRef(0);
+  const detailsRevision = useRef(0);
+  const refreshFunding = async () => {
+    const current = generation.current;
+    const revision = ++detailsRevision.current;
+    const engagement = ++engagementRevision.current;
+    const updated = await getBounty(bountyId);
+    if (generation.current !== current || detailsRevision.current !== revision) return;
+    detailsRevision.current++;
+    setBounty((previous) => engagementRevision.current !== engagement && previous
+      ? { ...updated, engagement: previous.engagement }
+      : updated);
+  };
   const refreshEngagement = async () => {
     const current = generation.current;
     const revision = ++engagementRevision.current;
@@ -42,10 +54,11 @@ export function useBountyDetails(bountyId: string) {
     async function load() {
       try {
         const revision = engagementRevision.current;
+        const details = detailsRevision.current;
         const bounty = await getBounty(bountyId);
         if (ignore) return;
 
-        setBounty((previous) =>
+        if (details === detailsRevision.current) setBounty((previous) =>
           revision !== engagementRevision.current && previous
             ? { ...bounty, engagement: previous.engagement }
             : bounty,
@@ -80,5 +93,5 @@ export function useBountyDetails(bountyId: string) {
     };
   }, [bountyId, refresh, user?.identity.id]);
 
-  return { bounty, queryStatus, refreshBounty, refreshEngagement };
+  return { bounty, queryStatus, refreshBounty, refreshEngagement, refreshFunding };
 }

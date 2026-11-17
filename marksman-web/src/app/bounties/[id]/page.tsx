@@ -18,12 +18,18 @@ import Button from "@/components/ui/Button";
 import { useBountyView } from "@/hooks/useBountyView";
 import UserStatsCardContainer from "@/components/users/UserStatsCard";
 import StatContainer from "@/components/users/StatContainer";
+import BountyFunding from "@/components/bounties/details/BountyFunding";
 
 export default function BountyDetailsPage() {
   const { id } = useParams<{ id: string }>();
   const { view, setView } = useBountyView();
-  const { bounty, queryStatus, refreshBounty, refreshEngagement } =
-    useBountyDetails(id);
+  const {
+    bounty,
+    queryStatus,
+    refreshBounty,
+    refreshEngagement,
+    refreshFunding,
+  } = useBountyDetails(id);
 
   const { user } = useAuth();
 
@@ -58,6 +64,7 @@ export default function BountyDetailsPage() {
                 availableActions={availableActions}
                 isAuthenticated={isAuthenticated}
               />
+              <BountyFunding bounty={bounty} refresh={refreshFunding} />
               <div
                 role="group"
                 aria-label="Bounty views"

@@ -1,5 +1,8 @@
 import {
   bountyListResponseSchema,
+  bountyContributionRequestSchema,
+  bountyContributionSchema,
+  type BountyContributionRequest,
   bountySchema,
   createBountySchema,
   type CreateBountyInput,
@@ -9,6 +12,16 @@ import {
 } from "@marksman/contracts";
 import { apiFetch } from "./client";
 import { z } from "zod";
+
+export async function contributeToBounty(bountyId: string, input: BountyContributionRequest) {
+  return bountyContributionSchema.parse(
+    await apiFetch(`/bounties/${encodeURIComponent(bountyId)}/contributions`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(bountyContributionRequestSchema.parse(input)),
+    }),
+  );
+}
 
 export async function cancelBounty(bountyId: string) {
   return z

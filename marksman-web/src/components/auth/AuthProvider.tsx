@@ -18,6 +18,7 @@ type AuthContextValue = {
   loading: boolean;
   error: string | null;
   refreshUser: () => Promise<void>;
+  refreshBalance: () => Promise<void>;
   alphaAccess: AlphaAccess;
 };
 
@@ -42,6 +43,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const [alphaAccess, setAlphaAccess] = useState<AlphaAccess>("unknown");
   const refreshId = useRef(0);
+
+  // A funding refresh must preserve the mounted form and its retry key.
+  const refreshBalance = useCallback(async () => {
+    const requestId = refreshId.current;
+    const currentUser = await getCurrentUser();
+    if (requestId !== refreshId.current) return;
+    if (currentUser.identity.id !== user?.identity.id) {
+      throw new Error("Account changed during balance refresh");
+    }
+    setUser((previous) => previous?.identity.id === currentUser.identity.id ? currentUser : previous);
+  }, [user?.identity.id]);
 
   const refreshUser = useCallback(async () => {
     const requestId = ++refreshId.current;
@@ -89,7 +101,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   return (
     <AuthContext.Provider
-      value={{ user, loading, error, refreshUser, alphaAccess }}
+      value={{ user, loading, error, refreshUser, refreshBalance, alphaAccess }}
     >
       {children}
     </AuthContext.Provider>
