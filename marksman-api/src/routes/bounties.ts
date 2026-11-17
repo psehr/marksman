@@ -3,6 +3,7 @@ import { db } from "../db";
 import { findBountyById, listBounties } from "../db/bounties";
 import {
   bountyCompletionRequestSchema,
+  bountyContributionRequestSchema,
   bountySearchQuerySchema,
   createBountySchema,
 } from "@marksman/contracts";
@@ -15,9 +16,11 @@ import {
   BountyNotFoundError,
   BountyNotOpenError,
   BountyNotOwnedError,
+  BountyRewardLimitError,
   BountyOwnBookmarkError,
   BountyOwnHuntError,
   CreatorNotFoundError,
+  ContributionIdempotencyConflictError,
   DuplicateHuntingError,
   HuntSlotsFullError,
   InsufficientBpError,
@@ -38,6 +41,7 @@ import { getBountyRecentScores } from "../services/bounty-recent-scores";
 import { getBountyScorePreview } from "../services/bounty-score-preview";
 import { startHunt } from "../services/bounty-hunts";
 import { findUserById } from "../db/users";
+import { contributeToBounty } from "../services/bounty-contributions";
 
 export const bountiesRouter = Router();
 
@@ -512,6 +516,61 @@ bountiesRouter.post(
           .json({ code: "DUPLICATE_HUNTING", error: error.message });
       }
 
+      throw error;
+    }
+  },
+);
+
+bountiesRouter.post(
+  "/:id/contributions",
+  requireAuth,
+  requireTrustedOrigin,
+  async (req, res) => {
+    const parsedBountyId = uuidSchema.safeParse(req.params.id);
+
+    if (!parsedBountyId.success) {
+      return res
+        .status(400)
+        .json({ code: "MALFORMED_BOUNTY_ID", error: "Malformed bounty ID" });
+    }
+
+    const parsedBody = bountyContributionRequestSchema.safeParse(req.body);
+
+    if (!parsedBody.success) {
+      return res.status(400).json({
+        code: "MALFORMED_BOUNTY_CONTRIBUTION",
+        error: "Malformed bounty contribution provided in body.",
+        details: parsedBody.error.issues,
+      });
+    }
+
+    try {
+      const contribution = await contributeToBounty(
+        parsedBountyId.data,
+        res.locals.user.identity.id,
+        parsedBody.data,
+      );
+
+      return res.json(contribution);
+    } catch (error) {
+      if (error instanceof BountyNotFoundError) {
+        return res.status(404).json({ code: "BOUNTY_NOT_FOUND", error: error.message });
+      }
+      if (error instanceof UserNotFoundError) {
+        return res.status(404).json({ code: "USER_NOT_FOUND", error: error.message });
+      }
+      if (error instanceof BountyNotOpenError) {
+        return res.status(409).json({ code: "BOUNTY_NOT_OPEN", error: error.message });
+      }
+      if (error instanceof BountyRewardLimitError) {
+        return res.status(409).json({ code: "BOUNTY_REWARD_LIMIT", error: error.message });
+      }
+      if (error instanceof ContributionIdempotencyConflictError) {
+        return res.status(409).json({ code: "CONTRIBUTION_IDEMPOTENCY_CONFLICT", error: error.message });
+      }
+      if (error instanceof InsufficientBpError) {
+        return res.status(409).json({ code: "INSUFFICIENT_BP", error: error.message });
+      }
       throw error;
     }
   },
