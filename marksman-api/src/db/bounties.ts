@@ -18,13 +18,13 @@ import {
   lt,
   or,
   sql,
-  sum,
 } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import {
   bounties,
   bountyBeatmaps,
   bountyBookmarks,
+  bountyContributions,
   bountyHunts,
   users,
 } from "./schema";
@@ -453,7 +453,16 @@ export async function getBountyWinStats(
   const [result] = await db
     .select({
       bountiesWon: count(),
-      bountyEarningsBp: sum(bounties.rewardBp),
+      bountyEarningsBp: sql`
+        sum(
+          ${bounties.rewardBp} - coalesce((
+            select sum(${bountyContributions.amountBp})
+            from ${bountyContributions}
+            where ${bountyContributions.bountyId} = ${bounties}.${sql.identifier("id")}
+              and ${bountyContributions.userId} = ${user.identity.id}
+          ), 0)
+        )
+      `,
     })
     .from(bounties)
     .where(

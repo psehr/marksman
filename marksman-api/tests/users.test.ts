@@ -3,7 +3,7 @@ import { createTestDatabase } from "./fixtures/test-database";
 import { after, before, beforeEach, test } from "node:test";
 import { setTimeout as delay } from "node:timers/promises";
 import { eq, sql } from "drizzle-orm";
-import { bounties, ledgerEntries, users } from "../src/db/schema";
+import { bounties, bountyContributions, ledgerEntries, users } from "../src/db/schema";
 import { detailedUserSchema, userSchema, type User } from "@marksman/contracts";
 import { qualifyingBounty } from "./fixtures/completion";
 
@@ -84,6 +84,39 @@ test("win stats count and sum only the viewed user's completed wins", async () =
   assert.deepEqual(await getBountyWinStats(other), { bountiesWon: 1, bountyEarningsBp: 900 });
   assert.equal((await db.select().from(users).where(eq(users.id, user.identity.id)))[0].bpBalance, 330);
   await assertGrant(user);
+});
+
+test("earnings subtract only the winner's principal across repeated contributions", async () => {
+  const user = await registerOrUpdateUserFromOsuProfile(profile);
+  const other = await registerOrUpdateUserFromOsuProfile({ osuUserId: 99999, username: "other" });
+  const base = { creatorOsuUserId: other.identity.osuUserId, goal: qualifyingBounty().goal };
+  const [funded, unfunded, open, cancelled, otherWin] = await db.insert(bounties).values([
+    { ...base, status: "completed", completedByOsuUserId: profile.osuUserId, rewardBp: 500 },
+    { ...base, status: "completed", completedByOsuUserId: profile.osuUserId, rewardBp: 500 },
+    { ...base, status: "open", rewardBp: 100 },
+    { ...base, status: "cancelled", rewardBp: 100 },
+    { ...base, creatorOsuUserId: profile.osuUserId, status: "completed", completedByOsuUserId: other.identity.osuUserId, rewardBp: 100 },
+  ]).returning();
+  await db.insert(bountyContributions).values([
+    { bountyId: funded.id, userId: user.identity.id, amountBp: 100, feeBp: 10 },
+    { bountyId: funded.id, userId: user.identity.id, amountBp: 50, feeBp: 5 },
+    { bountyId: funded.id, userId: other.identity.id, amountBp: 350, feeBp: 35 },
+    { bountyId: unfunded.id, userId: other.identity.id, amountBp: 500, feeBp: 50 },
+    ...[open, cancelled, otherWin].map(bounty => ({
+      bountyId: bounty.id, userId: user.identity.id, amountBp: 100, feeBp: 10,
+    })),
+  ]);
+  const storedBounties = await db.select().from(bounties).orderBy(bounties.id);
+  const storedLedger = await db.select().from(ledgerEntries).orderBy(ledgerEntries.id);
+
+  assert.deepEqual(await getBountyWinStats(user), { bountiesWon: 2, bountyEarningsBp: 850 });
+  assert.deepEqual(detailedUserSchema.parse(await enrichUser(user)).stats, {
+    bpBalance: 330, bountiesWon: 2, bountyEarningsBp: 850,
+  });
+  assert.deepEqual(await getBountyWinStats(other), { bountiesWon: 1, bountyEarningsBp: 100 });
+  assert.deepEqual(await db.select().from(bounties).orderBy(bounties.id), storedBounties);
+  assert.deepEqual(await db.select().from(ledgerEntries).orderBy(ledgerEntries.id), storedLedger);
+  assert.equal((await db.select().from(users).where(eq(users.id, user.identity.id)))[0].bpBalance, 330);
 });
 
 test("first login creates a user with the supplied profile and one 330 BP grant", async () => {
