@@ -103,7 +103,7 @@ export default function NavBar() {
         id="mobile-navigation"
         className={`${menuOpen ? "flex" : "hidden"} w-full flex-col gap-4 pt-4 md:contents`}
       >
-        <div className="flex flex-col gap-4 md:w-1/3 md:flex-row md:justify-center">
+        <div className="flex flex-col gap-4 text-center md:w-1/3 md:flex-row md:justify-center md:text-left">
           <RouteLink
             url="/bounties"
             title="Bounties"
@@ -125,14 +125,14 @@ export default function NavBar() {
             onClick={closeMenu}
           />
         </div>
-        <div className="flex flex-wrap items-center gap-x-3 gap-y-1 md:w-1/3 md:justify-end">
+        <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 md:w-1/3 md:justify-end">
           {user ? (
             <Link
               href={`/users/${user.identity.id}`}
               aria-label="Profile"
               aria-current={path.startsWith(`/users/${user.identity.id}`) ? "page" : undefined}
               onClick={closeMenu}
-              className={`flex min-w-36 max-w-full items-center justify-between gap-3 rounded border border-border bg-card px-3 py-1 text-right hover:border-accent focus-visible:outline-2 focus-visible:outline-accent ${aes_font.className} font-bold`}
+              className={`flex w-full min-w-36 max-w-full items-center justify-between gap-3 rounded border border-border bg-card px-3 py-1 text-right hover:border-accent focus-visible:outline-2 focus-visible:outline-accent md:w-auto ${aes_font.className} font-bold`}
             >
               <Image
                 src={`https://a.ppy.sh/${user.identity.osuUserId}`}

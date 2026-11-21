@@ -90,6 +90,15 @@ for (const width of [320, 390, 768, 1280]) {
         await page.screenshot({ path: `/tmp/marksman-navbar-card-${width}.png`, fullPage: true });
       }
       expect(await nav.evaluate(el => el.scrollWidth <= el.clientWidth)).toBe(true);
+      if (width < 768) {
+        const menuBox = (await page.locator("#mobile-navigation").boundingBox())!;
+        expect(Math.abs(profileBox.width - menuBox.width)).toBeLessThan(2);
+        expect(Math.abs(profileBox.x - menuBox.x)).toBeLessThan(2);
+        for (const name of ["Bounties", "Rankings", "Wiki"]) {
+          const link = nav.getByRole("link", { name, exact: true });
+          expect(await link.evaluate(el => getComputedStyle(el).textAlign)).toBe("center");
+        }
+      }
       if (width >= 768) {
         const wikiBox = (await nav.getByRole("link", { name: "Wiki", exact: true }).boundingBox())!;
         expect(wikiBox.x + wikiBox.width).toBeLessThan(profileBox.x);
