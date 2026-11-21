@@ -185,6 +185,17 @@ export async function listBounties(
           ? asc(bounties.rewardBp)
           : desc(bounties.rewardBp);
       break;
+    case "hunters": {
+      const hunterCount = sql`(
+    SELECT count(*)
+    FROM ${bountyHunts}
+    WHERE ${bountyHunts.bountyId} = ${sql.raw('"bounties"."id"')}
+      AND ${bountyHunts.status} = 'ongoing'
+  )`;
+
+      sortMethod = query.order === "asc" ? asc(hunterCount) : desc(hunterCount);
+      break;
+    }
   }
 
   const rows = await db

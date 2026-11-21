@@ -14,7 +14,7 @@ import TextInput from "../ui/TextInput";
 import ActionIcon from "../ui/ActionIcon";
 
 export type BountySortingMethod = {
-  type: "date" | "bpReward";
+  type: "date" | "bpReward" | "hunters";
   order: "asc" | "desc";
 };
 
@@ -172,7 +172,12 @@ export default function BountyFilters(props: {
               value={props.selectedSortingMethod.type}
               onChange={(event) => {
                 const type = event.currentTarget.value;
-                if (type !== "date" && type !== "bpReward") return;
+                if (
+                  type !== "date" &&
+                  type !== "bpReward" &&
+                  type !== "hunters"
+                )
+                  return;
 
                 props.setSelectedSortingMethod({
                   ...props.selectedSortingMethod,
@@ -180,6 +185,7 @@ export default function BountyFilters(props: {
                 });
               }}
             >
+              <option value="hunters">Ongoing hunts</option>
               <option value="date">
                 {props.bountyType === "completed"
                   ? "Completion date"

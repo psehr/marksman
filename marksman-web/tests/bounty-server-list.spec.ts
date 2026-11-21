@@ -31,6 +31,37 @@ async function setup(page: Page, handler: (params: URLSearchParams) => Promise<u
   });
 }
 
+test("board defaults to hunters and preserves explicit date and reward sorts", async ({ page }) => {
+  const requests: URLSearchParams[] = [];
+  await setup(page, params => {
+    requests.push(params);
+    return { items: [fixtures[0]], total: 1, page: 1, pageSize: 20 };
+  });
+  await page.route("**/auth/me", route => route.fulfill({ json: {
+    identity: { id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa", osuUserId: 42, username: "fixture" },
+    stats: { bpBalance: 100 }, createdAt: "2026-01-01T00:00:00.000Z",
+  } }));
+  await page.route("**/auth/access", route => route.fulfill({ status: 204 }));
+  await page.goto("/bounties");
+  const select = page.getByRole("combobox", { name: "Sort by" });
+  await expect(select).toHaveValue("hunters");
+  await expect.poll(() => Object.fromEntries(requests.at(-1) ?? [])).toMatchObject({ sort: "hunters", order: "desc" });
+  for (const [option, sort] of [["date", "date"], ["bpReward", "reward"]]) {
+    await select.selectOption(option);
+    await expect.poll(() => new URL(page.url()).searchParams.get("sort")).toBe(sort);
+    await expect.poll(() => requests.at(-1)?.get("sort")).toBe(sort);
+    await page.reload();
+    await expect(select).toHaveValue(option);
+  }
+  await select.selectOption("hunters");
+  await expect.poll(() => new URL(page.url()).searchParams.has("sort")).toBe(false);
+  await expect.poll(() => requests.at(-1)?.get("sort")).toBe("hunters");
+  await page.getByRole("button", { name: "Descending order; switch to ascending" }).click();
+  await expect.poll(() => requests.at(-1)?.get("order")).toBe("asc");
+  await page.goBack();
+  await expect.poll(() => requests.at(-1)?.get("order")).toBe("desc");
+});
+
 test("sends all URL filters, uses server results and totals, and falls back anonymously", async ({ page }) => {
   const requests: URLSearchParams[] = [];
   await setup(page, params => { requests.push(params); return { items: [fixtures[0]], total: 45, page: 2, pageSize: 20 }; });

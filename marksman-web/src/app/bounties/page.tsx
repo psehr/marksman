@@ -55,8 +55,15 @@ function Bounties() {
 
   const searchInput = searchParams.get("search") ?? "";
 
+  const rawSort = searchParams.get("sort");
+
   const selectedSortingMethod: BountySortingMethod = {
-    type: searchParams.get("sort") === "reward" ? "bpReward" : "date",
+    type:
+      rawSort === "reward"
+        ? "bpReward"
+        : rawSort === "date"
+          ? "date"
+          : "hunters",
     order: searchParams.get("order") === "asc" ? "asc" : "desc",
   };
 
@@ -66,7 +73,10 @@ function Bounties() {
     status: bountyType,
     relationship: relationship ?? "all",
     search: searchInput.trim(),
-    sort: selectedSortingMethod.type === "bpReward" ? "reward" : "date",
+    sort:
+      selectedSortingMethod.type === "bpReward"
+        ? "reward"
+        : selectedSortingMethod.type,
     order: selectedSortingMethod.order,
     tiers: [...selectedFilters.tiers],
     goals: [...selectedFilters.goals],
@@ -111,7 +121,12 @@ function Bounties() {
 
   function setSelectedSortingMethod(method: BountySortingMethod) {
     updateFilters({
-      sort: method.type === "bpReward" ? "reward" : null,
+      sort:
+        method.type === "hunters"
+          ? null
+          : method.type === "bpReward"
+            ? "reward"
+            : "date",
       order: method.order === "asc" ? "asc" : null,
     });
   }

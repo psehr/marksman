@@ -283,6 +283,38 @@ test("completed date sorting uses completion time with stable ties", async () =>
   }
 });
 
+test("hunter sorting counts only ongoing hunts before pagination with stable ties", async () => {
+  const { listBounties } = require("../src/db/bounties") as typeof import("../src/db/bounties");
+  const { bountyHunts } = require("../src/db/schema") as typeof import("../src/db/schema");
+  const emptyIds: string[] = [];
+  for (let i = 0; i < 22; i++) emptyIds.push((await seed()).id);
+  const popular = await seed();
+  const single = await seed();
+  const startedAt = new Date("2026-01-01T00:00:00Z");
+  await db.insert(bountyHunts).values([
+    { bountyId: popular.id, userId: alice.id, status: "ongoing", startedAt },
+    { bountyId: popular.id, userId: bob.id, status: "ongoing", startedAt },
+    { bountyId: single.id, userId: alice.id, status: "ongoing", startedAt },
+    ...["stopped", "closed"].map(status => ({
+      bountyId: emptyIds[0], userId: alice.id,
+      status: status as "stopped" | "closed", startedAt,
+      endedAt: new Date("2026-01-02T00:00:00Z"),
+    })),
+  ]);
+  for (const order of ["asc", "desc"] as const) {
+    const pages = await Promise.all([1, 2].map(page =>
+      listBounties(bountySearchQuerySchema.parse({ sort: "hunters", order, page })),
+    ));
+    const expected = order === "desc"
+      ? [popular.id, single.id, ...emptyIds.sort()]
+      : [...emptyIds.sort(), single.id, popular.id];
+    assert.deepEqual(pages.flatMap(page => page.items.map(row => row.id)), expected);
+    assert.deepEqual(pages.map(page => page.total), [24, 24]);
+    assert.deepEqual(pages.map(page => page.items.length), [20, 4]);
+  }
+  assert.equal(bountySearchQuerySchema.parse({}).sort, "date");
+});
+
 test("invalid query parameters return structured 400 responses", async () => {
   for (const query of ["winnerId=invalid", "winnerId=42", "winnerId=", "winnerId=" + randomUUID() + "&winnerId=" + randomUUID(), "creatorId=invalid", "creatorId=42", "creatorId=", "creatorId=" + randomUUID() + "&creatorId=" + randomUUID(), "page=0", "page=-1", "page=1.5", "page=abc", "status=draft", "sort=oops", "order=oops", "relationship=oops", "tiers=oops", "goals=oops", "mods=oops", "mods=HD&mods=HR"]) {
     const response = await httpFetch(`${baseUrl}/bounties?${query}`);

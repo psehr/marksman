@@ -156,7 +156,7 @@ export const bountySearchQuerySchema = z.object({
       mods.includes("NM") ? ["NM" as const] : [...new Set(mods)],
     ),
   search: z.string().trim().default(""),
-  sort: z.enum(["date", "reward"]).default("date"),
+  sort: z.enum(["date", "reward", "hunters"]).default("date"),
   order: z.enum(["asc", "desc"]).default("desc"),
   relationship: z.enum(["all", "created", "bookmarked"]).default("all"),
   creatorId: z.uuid().optional(),
