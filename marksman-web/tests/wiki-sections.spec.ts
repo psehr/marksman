@@ -104,3 +104,31 @@ test("old About links redirect to Wiki with query and section intact", async ({ 
     await expect(page.getByRole("link", { name: "Wiki", exact: true })).toHaveAttribute("aria-current", "page");
   }
 });
+
+for (const fragment of ["fc-ruling", "included-mods"]) {
+  test(`external wiki fragment ${fragment} scrolls after delayed access and on reload`, async ({ page }) => {
+    let release!: () => void;
+    const gate = new Promise<void>(resolve => { release = resolve; });
+    let requested = false;
+    await page.route("**/auth/access", async route => {
+      requested = true;
+      await gate;
+      await route.fulfill({ status: 204 });
+    });
+    try {
+      await page.goto(`/wiki/bounties#${fragment}`);
+      await expect.poll(() => requested).toBe(true);
+      await expect(page.locator(`#${fragment}`)).toHaveCount(0);
+    } finally { release(); }
+    const section = page.locator(`#${fragment}`);
+    for (let visit = 0; visit < 2; visit++) {
+      if (visit) await page.reload();
+      await expect(section).toHaveAttribute("data-selected", "true");
+      await page.evaluate(() => document.fonts.ready);
+      await expect.poll(async () => section.evaluate(el => Math.round(el.getBoundingClientRect().top)))
+        .toBeGreaterThanOrEqual(0);
+      await expect.poll(async () => section.evaluate(el => Math.round(el.getBoundingClientRect().top)))
+        .toBeLessThanOrEqual(32);
+    }
+  });
+}
