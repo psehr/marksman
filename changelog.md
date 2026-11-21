@@ -10,6 +10,7 @@ are marked until deployment is confirmed. Deployment names increment as
 
 ### Features
 
+- b9ab20e — feat: add icons to bounty board relationship filters.
 - 23e98f8 — feat: show contextual bounty status and winner sharing.
 - f89a0fb — feat: increase daily reward to 100 BP.
 - ed5e688 — feat: increase hunting slots to three.
