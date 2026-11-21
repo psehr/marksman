@@ -6,6 +6,7 @@ type Action =
   | "bookmark"
   | "bookmarked"
   | "share"
+  | "copy"
   | "osu"
   | "download"
   | "cancel"
@@ -23,6 +24,9 @@ type Action =
 export default function ActionIcon({ action }: { action: Action }) {
   let artwork: ReactNode;
   switch (action) {
+    case "copy":
+      artwork = <><rect x="8" y="8" width="12" height="13" rx="2" /><path d="M16 8V3H3v13h5" /></>;
+      break;
     case "info":
       artwork = <><circle cx="12" cy="12" r="9" /><path d="M12 11v6" /><circle cx="12" cy="7" r="1" fill="currentColor" stroke="none" /></>;
       break;

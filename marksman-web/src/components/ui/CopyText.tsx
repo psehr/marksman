@@ -9,6 +9,7 @@ import type { ButtonSize, ButtonVariant } from "./buttonStyles";
 type Props = {
   text: string | (() => string);
   label?: string;
+  icon?: "copy" | "share";
   copiedMessage?: string;
   errorMessage?: string;
   fallbackLabel?: string;
@@ -19,6 +20,7 @@ type Props = {
 export default function CopyText({
   text,
   label = "Copy text",
+  icon = "share",
   copiedMessage = "Text copied!",
   errorMessage = "Could not copy the text. You can copy it below.",
   fallbackLabel = "Text to copy",
@@ -60,7 +62,7 @@ export default function CopyText({
   return (
     <div className="flex min-w-0 flex-col gap-2">
       <Button size={size} variant={variant} disabled={pending} onClick={() => void share()}>
-        <ActionIcon action={pending ? "refresh" : "share"} />
+        <ActionIcon action={pending ? "refresh" : icon} />
         {pending ? "Copying…" : label}
       </Button>
       {copied ? <p role="status" className="text-sm text-success">{copiedMessage}</p> : null}

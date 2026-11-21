@@ -1,6 +1,7 @@
 import { ExtendedBounty } from "@marksman/contracts";
 import { BeatmapCard } from "@/components/beatmaps/BeatmapCard";
 import { aes_font } from "@/lib/fonts";
+import CopyText from "@/components/ui/CopyText";
 
 export default function BeatmapRequirement({
   bounty,
@@ -16,6 +17,16 @@ export default function BeatmapRequirement({
         played
       </p>
       <BeatmapCard beatmapMetadata={bounty.beatmap} />
+      <CopyText
+        key={bounty.goal.beatmapId}
+        text={String(bounty.goal.beatmapId)}
+        label="Copy Beatmap ID"
+        icon="copy"
+        copiedMessage="Beatmap ID copied!"
+        errorMessage="Could not copy the beatmap ID. You can copy it below."
+        fallbackLabel="Beatmap ID"
+        size="sm"
+      />
     </div>
   ) : null;
 }

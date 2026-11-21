@@ -503,3 +503,31 @@ for (const status of ["open", "completed", "cancelled"] as const) {
     expect(state.hunts).toBe(0);
   });
 }
+
+for (const failure of [false, true]) {
+  test(`copy beatmap ID ${failure ? "offers fallback and retries" : "copies only the ID"}`, async ({ page }) => {
+    await page.addInitScript(({ failure }) => {
+      let calls = 0;
+      Object.defineProperty(navigator, "clipboard", { configurable: true, value: {
+        writeText: async (text: string) => {
+          if (++calls === 1 && failure) throw new Error("Denied");
+          (window as unknown as { copiedId: string }).copiedId = text;
+        },
+      } });
+    }, { failure });
+    await setup(page, { beatmap: linkedBeatmap });
+    await page.goto(`/bounties/${id}`);
+    const section = page.getByRole("heading", { name: "Beatmap", exact: true }).locator("..");
+    const copy = section.getByRole("button", { name: "Copy Beatmap ID", exact: true });
+    await expect(copy.locator("svg")).toHaveAttribute("aria-hidden", "true");
+    await copy.click();
+    if (failure) {
+      const fallback = section.getByRole("textbox", { name: "Beatmap ID", exact: true });
+      await expect(fallback).toHaveValue("42");
+      await copy.click();
+      await expect(fallback).toHaveCount(0);
+    }
+    await expect(section.getByText("Beatmap ID copied!", { exact: true })).toBeVisible();
+    expect(await page.evaluate(() => (window as unknown as { copiedId: string }).copiedId)).toBe("42");
+  });
+}
