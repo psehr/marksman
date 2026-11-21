@@ -6,6 +6,8 @@ are marked until deployment is confirmed. Deployment names increment as
 
 ## Alpha - Update 1 — Pending deployment
 
+- a36b100 — fix: wrap profile hunting slots in a responsive grid.
+- 190f1f9 — docs: add deployment changelog.
 - ed5e688 — feat: increase hunting slots to three.
 - 7c54066 — feat: shorten settlement window to ten seconds.
 - 9863f45 — fix: use readable source permissions during deployment.
