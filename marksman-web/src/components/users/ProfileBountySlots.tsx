@@ -13,7 +13,7 @@ export default function ProfileBountySlots({
     const slotIdx = index + 1;
     slots.push(
       <div
-        className="relative flex min-h-56 min-w-0 w-full items-stretch justify-center rounded border border-border bg-card p-2"
+        className={`relative flex min-h-56 min-w-0 w-full items-stretch justify-center rounded border border-border bg-card p-2 ${slotIdx === 1 ? "col-span-full" : ""}`}
         key={slotIdx}
       >
         <span className="absolute -top-3 left-1/2 z-20 -translate-x-1/2 rounded border border-border bg-card px-3 py-1 text-sm font-bold whitespace-nowrap text-foreground-muted">

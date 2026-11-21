@@ -185,9 +185,11 @@ function UserProfile({ id }: { id: string }) {
         break;
       case "hunting":
         content = (
-          <div className="grid lg:grid-cols-2 col-span-full gap-4">
+          <div className="col-span-full">
             {huntsQueryStatus === "complete" ? (
-              <ProfileBountySlots hunts={hunts} />
+              <div className="grid lg:grid-cols-2 col-span-full gap-4">
+                <ProfileBountySlots hunts={hunts} />
+              </div>
             ) : null}
             {huntsQueryStatus === "loading" ? <p>Loading hunts...</p> : null}
             {huntsQueryStatus === "errored" ? (
