@@ -318,7 +318,7 @@ function UserProfile() {
                 claimDailyReward={claimDailyReward}
               />
             ) : null}
-            {user ? <AuthButton /> : null}
+            {userIsPageOwner ? <AuthButton /> : null}
           </div>
           <span className="w-full border-b border-border" />
           <div className="flex w-full flex-col sm:flex-row place-content-center items-center">

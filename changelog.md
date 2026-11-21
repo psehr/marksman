@@ -11,6 +11,7 @@ are marked until deployment is confirmed. Deployment names increment as
 
 ### Fixes
 
+- fix: show profile logout button only to the profile owner.
 - f69c6d2 — fix: suppress Discord embeds in achievement sharing.
 
 ## Alpha - Update 1 — 2026-11-21
