@@ -170,13 +170,13 @@ export async function listBounties(
     winnerFilter,
   );
 
+  const dateColumn =
+    query.status === "completed" ? bounties.completedAt : bounties.createdAt;
+
   let sortMethod;
   switch (query.sort) {
     case "date":
-      sortMethod =
-        query.order === "asc"
-          ? asc(bounties.createdAt)
-          : desc(bounties.createdAt);
+      sortMethod = query.order === "asc" ? asc(dateColumn) : desc(dateColumn);
       break;
 
     case "reward":

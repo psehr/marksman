@@ -253,6 +253,36 @@ test("date and reward sorting support both directions", async () => {
   ] as const) assert.deepEqual((await list({ sort, order })).items.map(row => row.id), expected);
 });
 
+test("completed date sorting uses completion time with stable ties", async () => {
+  const { listBounties } = require("../src/db/bounties") as typeof import("../src/db/bounties");
+  const laterCompleted = await seed({
+    status: "completed",
+    createdAt: new Date("2026-01-01T00:00:00Z"),
+    completedAt: new Date("2026-03-01T00:00:00Z"),
+  });
+  const earlierCompleted = await seed({
+    status: "completed",
+    createdAt: new Date("2026-02-01T00:00:00Z"),
+    completedAt: new Date("2026-02-02T00:00:00Z"),
+  });
+  const tied = await seed({
+    status: "completed",
+    createdAt: new Date("2026-01-15T00:00:00Z"),
+    completedAt: earlierCompleted.completedAt,
+  });
+  const tiedIds = [earlierCompleted.id, tied.id].sort();
+
+  for (const [order, expected] of [
+    ["asc", [...tiedIds, laterCompleted.id]],
+    ["desc", [laterCompleted.id, ...tiedIds]],
+  ] as const) {
+    const result = await listBounties(bountySearchQuerySchema.parse({
+      status: "completed", sort: "date", order,
+    }));
+    assert.deepEqual(result.items.map(row => row.id), expected);
+  }
+});
+
 test("invalid query parameters return structured 400 responses", async () => {
   for (const query of ["winnerId=invalid", "winnerId=42", "winnerId=", "winnerId=" + randomUUID() + "&winnerId=" + randomUUID(), "creatorId=invalid", "creatorId=42", "creatorId=", "creatorId=" + randomUUID() + "&creatorId=" + randomUUID(), "page=0", "page=-1", "page=1.5", "page=abc", "status=draft", "sort=oops", "order=oops", "relationship=oops", "tiers=oops", "goals=oops", "mods=oops", "mods=HD&mods=HR"]) {
     const response = await httpFetch(`${baseUrl}/bounties?${query}`);

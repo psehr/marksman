@@ -180,8 +180,12 @@ export default function BountyFilters(props: {
                 });
               }}
             >
-              <option value="date">Date</option>
-              <option value="bpReward">Reward</option>
+              <option value="date">
+                {props.bountyType === "completed"
+                  ? "Completion date"
+                  : "Creation date"}
+              </option>
+              <option value="bpReward">BP Reward</option>
             </select>
             <FilterButton
               onClick={() => {
