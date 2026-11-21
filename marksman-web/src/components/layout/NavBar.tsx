@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from "react";
 import Button from "../ui/Button";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
+import Image from "next/image";
 import { useAuth } from "../auth/AuthProvider";
 import { AuthButton } from "../auth/AuthButton";
 import MarksmanLogo from "../ui/MarksmanLogo";
@@ -131,18 +132,27 @@ export default function NavBar() {
               aria-label="Profile"
               aria-current={path.startsWith(`/users/${user.identity.id}`) ? "page" : undefined}
               onClick={closeMenu}
-              className={`flex min-w-36 max-w-full flex-col items-end gap-0.5 rounded border border-border bg-card px-3 py-1 text-right hover:border-accent focus-visible:outline-2 focus-visible:outline-accent ${aes_font.className} font-bold`}
+              className={`flex min-w-36 max-w-full items-center justify-between gap-3 rounded border border-border bg-card px-3 py-1 text-right hover:border-accent focus-visible:outline-2 focus-visible:outline-accent ${aes_font.className} font-bold`}
             >
-              <span className="max-w-40 truncate text-sm text-accent" title={user.identity.username}>
-                {user.identity.username}
-              </span>
-              <output
-                aria-label="Your BP balance"
-                className="inline-flex items-center gap-1 whitespace-nowrap text-xs text-foreground-muted tabular-nums"
-              >
-                {user.stats.bpBalance.toLocaleString()}
-                <BPIcon size="sm" />
-              </output>
+              <Image
+                src={`https://a.ppy.sh/${user.identity.osuUserId}`}
+                alt=""
+                width={36}
+                height={36}
+                className="size-9 shrink-0 rounded-full object-cover"
+              />
+              <div className="flex min-w-0 flex-col items-end gap-0.5">
+                <span className="max-w-40 truncate text-sm text-accent" title={user.identity.username}>
+                  {user.identity.username}
+                </span>
+                <output
+                  aria-label="Your BP balance"
+                  className="inline-flex items-center gap-1 whitespace-nowrap text-xs text-foreground-muted tabular-nums"
+                >
+                  {user.stats.bpBalance.toLocaleString()}
+                  <BPIcon size="sm" />
+                </output>
+              </div>
             </Link>
           ) : (
             <AuthButton />

@@ -1,4 +1,7 @@
+import { mockAvatars } from "./fixtures/avatars";
 import { expect, test } from "@playwright/test";
+
+test.beforeEach(async ({ page }) => mockAvatars(page));
 
 test("mobile navigation opens, closes with Escape and follows links", async ({ page }) => {
   await page.setViewportSize({ width: 375, height: 812 });
@@ -67,10 +70,19 @@ for (const width of [320, 390, 768, 1280]) {
       await expect(amount.getByRole("img", { name: "Bounty Points" })).toBeVisible();
       const profile = nav.getByRole("link", { name: "Profile", exact: true });
       await expect(profile).toBeVisible();
+      const avatar = profile.locator('img[alt=""]');
+      await expect(avatar).toBeVisible();
+      expect(new URL((await avatar.getAttribute("src"))!, "http://127.0.0.1:3100").searchParams.get("url")).toBe("https://a.ppy.sh/123");
+      await expect.poll(() => avatar.evaluate(el => (el as HTMLImageElement).naturalWidth)).toBeGreaterThan(0);
+      const avatarBox = (await avatar.boundingBox())!;
+      expect(avatarBox.width).toBe(36);
+      expect(avatarBox.height).toBe(36);
+      expect(await avatar.evaluate(el => parseFloat(getComputedStyle(el).borderRadius))).toBeGreaterThanOrEqual(18);
       const amountBox = (await amount.boundingBox())!;
       const profileBox = (await profile.boundingBox())!;
       const username = profile.getByText("fixture", { exact: true });
       const usernameBox = (await username.boundingBox())!;
+      expect(avatarBox.x + avatarBox.width).toBeLessThan(usernameBox.x);
       expect(amountBox.y).toBeGreaterThanOrEqual(usernameBox.y + usernameBox.height);
       expect(amountBox.x).toBeGreaterThan(profileBox.x);
       expect(amountBox.x + amountBox.width).toBeLessThan(profileBox.x + profileBox.width);
@@ -80,7 +92,7 @@ for (const width of [320, 390, 768, 1280]) {
       expect(await nav.evaluate(el => el.scrollWidth <= el.clientWidth)).toBe(true);
       if (width >= 768) {
         const wikiBox = (await nav.getByRole("link", { name: "Wiki", exact: true }).boundingBox())!;
-        expect(wikiBox.x + wikiBox.width).toBeLessThan(amountBox.x);
+        expect(wikiBox.x + wikiBox.width).toBeLessThan(profileBox.x);
       }
     });
   }

@@ -1,4 +1,7 @@
+import { mockAvatars } from "./fixtures/avatars";
 import { expect, test, type Page, type Route } from "@playwright/test";
+
+test.beforeEach(async ({ page }) => mockAvatars(page));
 import { MAX_BOUNTY_REWARD_BP, type ExtendedBounty, type User } from "@marksman/contracts";
 
 const user: User = {

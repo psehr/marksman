@@ -12,6 +12,13 @@ const nextConfig: NextConfig = {
     remotePatterns: [
       {
         protocol: "https",
+        hostname: "a.ppy.sh",
+        port: "",
+        pathname: "/**",
+        search: "",
+      },
+      {
+        protocol: "https",
         hostname: "assets.ppy.sh",
         port: "",
         pathname: "/beatmaps/**",
