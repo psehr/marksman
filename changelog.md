@@ -7,6 +7,12 @@ commits are excluded from these public release notes. Pending sections
 are marked until deployment is confirmed. Deployment names increment as
 **Alpha - Update 1**, **Alpha - Update 2**, and so on.
 
+## Alpha - Update 2 — Pending
+
+### Fixes
+
+- f69c6d2 — fix: suppress Discord embeds in achievement sharing.
+
 ## Alpha - Update 1 — 2026-11-21
 
 ### Features
