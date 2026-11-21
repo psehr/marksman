@@ -6,6 +6,7 @@ import {
 } from "../db/bounty-bookmarks";
 import { findBeatmapById } from "../db/bounty-beatmaps";
 import { db } from "../db";
+import { countOngoingHuntsByBountyIds } from "../db/bounty-hunts";
 
 async function buildExtendedBounty(
   bounty: Bounty,
@@ -70,10 +71,14 @@ export async function enrichBounty(
   bounty: Bounty,
   userId?: string,
 ): Promise<ExtendedBounty> {
-  const [row] = await countBookmarksByBountyIds([bounty.id]);
+  const [bookmarkRows, huntRows] = await Promise.all([
+    countBookmarksByBountyIds([bounty.id]),
+    countOngoingHuntsByBountyIds([bounty.id]),
+  ]);
 
   const engagement: BountyEngagement = {
-    bookmarkCount: row?.bookmarkCount ?? 0,
+    hunterCount: huntRows[0]?.hunterCount ?? 0,
+    bookmarkCount: bookmarkRows[0]?.bookmarkCount ?? 0,
     isBookmarkedByCurrentUser: userId
       ? await isBountyBookmarkedByUser(bounty.id, userId)
       : null,
@@ -91,18 +96,26 @@ export async function enrichBounties(
     return bounty.id;
   });
 
-  const rows = await countBookmarksByBountyIds(bountyIds);
+  const [rows, huntRows] = await Promise.all([
+    countBookmarksByBountyIds(bountyIds),
+    countOngoingHuntsByBountyIds(bountyIds),
+  ]);
 
   let enrichedBounties = [];
 
-  const countsByBountyId = new Map(
+  const bookmarkCountsByBountyId = new Map(
     rows.map((row) => [row.bountyId, row.bookmarkCount]),
+  );
+
+  const hunterCountsByBountyId = new Map(
+    huntRows.map((row) => [row.bountyId, row.hunterCount]),
   );
 
   for (let index = 0; index < bounties.length; index++) {
     const selectedBounty = bounties[index];
     const engagement: BountyEngagement = {
-      bookmarkCount: countsByBountyId.get(selectedBounty.id) ?? 0,
+      hunterCount: hunterCountsByBountyId.get(selectedBounty.id) ?? 0,
+      bookmarkCount: bookmarkCountsByBountyId.get(selectedBounty.id) ?? 0,
       isBookmarkedByCurrentUser: null,
     };
 

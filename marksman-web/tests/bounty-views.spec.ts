@@ -9,7 +9,7 @@ const bounty: ExtendedBounty = {
   completedByOsuUserId: null, completionScoreId: null,
   goal: { type: "pass", beatmapId: 42, beatmapChecksum: null, modRequirement: { rule: "any" } },
   beatmap: null, owner: null, winner: null,
-  engagement: { bookmarkCount: 3, isBookmarkedByCurrentUser: false },
+  engagement: { hunterCount: 0, bookmarkCount: 3, isBookmarkedByCurrentUser: false },
 };
 async function setup(page: Page, overrides: Partial<ExtendedBounty> = {}) {
   const state = { hunts: 0, reads: 0, posts: 0, ongoing: [] as Hunt[], huntFailure: false, bounty: { ...bounty, ...overrides } };
@@ -54,7 +54,7 @@ for (const view of ["engagement", "activity", "funding", "comments"] as const) {
       await expect(page.getByText(message)).toBeVisible();
       await expect(page.getByText("Ongoing Hunts", { exact: true })).toHaveCount(0);
     } else {
-      await expect(page.getByText("Ongoing Hunts", { exact: true }).locator("..")).toHaveText(/-\s*Ongoing Hunts/);
+      await expect(page.getByText("Ongoing Hunt", { exact: true }).locator("..")).toHaveText(/0\s*Ongoing Hunt/);
       await expect(page.getByText("Bookmarks", { exact: true }).locator("..")).toHaveText(/3\s*Bookmarks/);
       await expect(page.getByText("Comments coming soon.")).toHaveCount(0);
     }
@@ -62,7 +62,7 @@ for (const view of ["engagement", "activity", "funding", "comments"] as const) {
     await expect(page.getByRole("heading", { name: "Goal", exact: true })).toHaveCount(0);
     await page.reload();
     await selected(page, view[0].toUpperCase() + view.slice(1));
-    await expect(page.getByText(view === "comments" ? "Comments coming soon." : view === "activity" ? "Activity feed coming soon." : view === "funding" ? "Funding details coming soon." : "Ongoing Hunts", { exact: true })).toBeVisible();
+    await expect(page.getByText(view === "comments" ? "Comments coming soon." : view === "activity" ? "Activity feed coming soon." : view === "funding" ? "Funding details coming soon." : "Ongoing Hunt", { exact: true })).toBeVisible();
   });
 }
 
@@ -130,24 +130,28 @@ for (const status of ["open", "completed", "cancelled"] as const) {
 }
 
 for (const count of [0, 1, 12345]) {
-  test(`engagement displays ${count} real bookmarks and unavailable hunt count`, async ({ page }) => {
-    await setup(page, { engagement: { bookmarkCount: count, isBookmarkedByCurrentUser: false } });
+  test(`engagement displays ${count} real bookmarks and hunters`, async ({ page }) => {
+    await setup(page, { engagement: { hunterCount: count, bookmarkCount: count, isBookmarkedByCurrentUser: false } });
     await page.goto(`/bounties/${id}?view=engagement`);
     const bookmarks = page.getByText(/^Bookmarks?$/).locator("..");
     await expect(bookmarks.locator("span")).toHaveText(count.toLocaleString("en-US"));
-    await expect(page.getByText("Ongoing Hunts", { exact: true }).locator("..").locator("span")).toHaveText("-");
+    await expect(page.getByText(/^Ongoing Hunts?$/).locator("..").locator("span")).toHaveText(count.toLocaleString("en-US"));
   });
 }
 
-test("bookmark stats update from polling without switching views", async ({ page }) => {
+test("bookmark and hunter stats update from polling without switching views", async ({ page }) => {
   await page.clock.install();
   const state = await setup(page);
   await page.goto(`/bounties/${id}?view=engagement`);
   const count = page.getByText("Bookmarks", { exact: true }).locator("..").locator("span");
   await expect(count).toHaveText("3");
-  state.bounty.engagement = { bookmarkCount: 12, isBookmarkedByCurrentUser: false };
+  state.bounty.engagement = { hunterCount: 2, bookmarkCount: 12, isBookmarkedByCurrentUser: false };
   await page.clock.fastForward(5100);
   await expect(count).toHaveText("12");
+  await expect(page.getByText("Ongoing Hunts", { exact: true }).locator("..").locator("span")).toHaveText("2");
+  state.bounty.engagement.hunterCount = 0;
+  await page.clock.fastForward(5100);
+  await expect(page.getByText("Ongoing Hunt", { exact: true }).locator("..").locator("span")).toHaveText("0");
   await selected(page, "Engagement");
 });
 
@@ -357,7 +361,7 @@ for (const status of ["completed", "cancelled"] as const) {
 }
 
 test("share follows funding for a saved bounty", async ({ page }) => {
-  await setup(page, { engagement: { bookmarkCount: 3, isBookmarkedByCurrentUser: true } });
+  await setup(page, { engagement: { hunterCount: 0, bookmarkCount: 3, isBookmarkedByCurrentUser: true } });
   await page.goto(`/bounties/${id}`);
   const share = page.getByRole("button", { name: "Share bounty", exact: true });
   await expect(share).toBeVisible();
@@ -400,7 +404,7 @@ for (const width of [320, 640, 1280]) {
 }
 
 test("owner cancellation and restored Stop/Unbookmark controls have icons", async ({ page }) => {
-  const state = await setup(page, { engagement: { bookmarkCount: 3, isBookmarkedByCurrentUser: true } });
+  const state = await setup(page, { engagement: { hunterCount: 0, bookmarkCount: 3, isBookmarkedByCurrentUser: true } });
   state.ongoing = [hunt];
   await page.goto(`/bounties/${id}`);
   await expect(page.getByRole("button", { name: "Stop Hunting", exact: true }).locator("svg")).toHaveCount(1);

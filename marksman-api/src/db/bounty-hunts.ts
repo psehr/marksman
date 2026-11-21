@@ -1,4 +1,4 @@
-import { and, eq, inArray, sql } from "drizzle-orm";
+import { and, count, eq, inArray, sql } from "drizzle-orm";
 import { db, Transaction } from ".";
 import { bounties, bountyHunts, users } from "./schema";
 import { Bounty, Hunt } from "@marksman/contracts";
@@ -30,6 +30,26 @@ export async function countUserOngoingHunts(
     );
 
   return rows.length;
+}
+
+export async function countOngoingHuntsByBountyIds(
+  bountyIds: string[],
+): Promise<{ bountyId: string; hunterCount: number }[]> {
+  if (bountyIds.length === 0) return [];
+
+  return db
+    .select({
+      bountyId: bountyHunts.bountyId,
+      hunterCount: count(),
+    })
+    .from(bountyHunts)
+    .where(
+      and(
+        inArray(bountyHunts.bountyId, bountyIds),
+        eq(bountyHunts.status, "ongoing"),
+      ),
+    )
+    .groupBy(bountyHunts.bountyId);
 }
 
 export async function isUserHuntingBounty(

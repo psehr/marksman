@@ -33,7 +33,7 @@ const bounty: ExtendedBounty = {
     username: "mapmaker",
   },
   winner: null,
-  engagement: {
+  engagement: { hunterCount: 0,
     bookmarkCount: 0,
     isBookmarkedByCurrentUser: null,
   },

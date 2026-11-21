@@ -9,7 +9,7 @@ const bounty: ExtendedBounty = {
   goal: { type: "minimum_grade", beatmapId: 42, beatmapChecksum: null,
     minimumGradeRequirement: "A", modRequirement: { rule: "any" } },
   beatmap: null, owner: null, winner: null,
-  engagement: { bookmarkCount: 0, isBookmarkedByCurrentUser: null },
+  engagement: { hunterCount: 0, bookmarkCount: 0, isBookmarkedByCurrentUser: null },
 };
 
 async function setup(page: Page, respond: (route: Route, count: number) => Promise<void>) {

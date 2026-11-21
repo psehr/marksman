@@ -28,7 +28,7 @@ for (const width of [320, 640, 1280]) {
         completedByOsuUserId: null, completionScoreId: null,
         goal: { type: "pass", beatmapId: 42, beatmapChecksum: null, modRequirement: { rule: "any" } },
         beatmap: null, owner: null, winner: null,
-        engagement: { bookmarkCount: 0, isBookmarkedByCurrentUser: false },
+        engagement: { hunterCount: 0, bookmarkCount: 0, isBookmarkedByCurrentUser: false },
       } });
       return route.abort();
     });

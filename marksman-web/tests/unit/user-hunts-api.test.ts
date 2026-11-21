@@ -18,7 +18,7 @@ const pair = {
     goal: { type: "full_combo", beatmapId: 123, beatmapChecksum: null, minimumComboRatio: 0.99,
       modRequirement: { rule: "any" } },
     beatmap: null, owner: null, winner: null,
-    engagement: { bookmarkCount: 0, isBookmarkedByCurrentUser: null },
+    engagement: { hunterCount: 0, bookmarkCount: 0, isBookmarkedByCurrentUser: null },
   },
 };
 

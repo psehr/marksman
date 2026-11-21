@@ -121,10 +121,13 @@ export default function BountyDetailsPage() {
                 <div className="grid grid-cols-2 w-full gap-4">
                   <UserStatsCardContainer cols={1} size="lg">
                     <StatContainer
-                      stat={0}
-                      title="Ongoing Hunts"
+                      stat={bounty.engagement.hunterCount}
+                      title={
+                        bounty.engagement.hunterCount > 1
+                          ? "Ongoing Hunts"
+                          : "Ongoing Hunt"
+                      }
                       unit="count"
-                      disabled
                     />
                   </UserStatsCardContainer>
                   <UserStatsCardContainer cols={1} size="lg">

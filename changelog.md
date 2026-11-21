@@ -11,11 +11,12 @@ are marked until deployment is confirmed. Deployment names increment as
 
 ### Features
 
+- feat: show ongoing hunt counts on bounties.
 - 41f0211 — feat: accept username aliases in profile URLs.
 
 ### Fixes
 
-- fix: sort completed bounties by completion date.
+- 0127b74 — fix: sort completed bounties by completion date.
 - 927bf91 — fix: show profile logout button only to the profile owner.
 - f69c6d2 — fix: suppress Discord embeds in achievement sharing.
 

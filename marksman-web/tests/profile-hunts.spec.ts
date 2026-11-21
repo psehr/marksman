@@ -19,7 +19,7 @@ function pair(index: number): UserHuntedBounties[number] {
       beatmapChecksum: null, minimumAccuracy: 99.5,
       modRequirement: { rule: "exact", mods: ["HD", "HR", "DT"] } },
     owner: other.identity, winner: null,
-    engagement: { bookmarkCount: 0, isBookmarkedByCurrentUser: null },
+    engagement: { hunterCount: 0, bookmarkCount: 0, isBookmarkedByCurrentUser: null },
     beatmap: {
       url: `https://osu.ppy.sh/beatmaps/${index}`, version: { id: index, name: "Long difficulty title for sizing" },
       song: { title: `Hunted song ${index}`, artist: "Fixture artist" },

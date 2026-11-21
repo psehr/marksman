@@ -15,7 +15,7 @@ function bounty(index: number, username: string, status: ExtendedBounty["status"
     goal: { type: "minimum_grade", beatmapId: 42, beatmapChecksum: null,
       minimumGradeRequirement: "A", modRequirement: { rule: "any" } },
     beatmap: null, owner: { id: user.identity.id, osuUserId: index === 1 ? 123 : 456, username }, winner: null,
-    engagement: { bookmarkCount: 0, isBookmarkedByCurrentUser: null },
+    engagement: { hunterCount: 0, bookmarkCount: 0, isBookmarkedByCurrentUser: null },
   };
 }
 const rows = [bounty(1, "Alpha", "open", 300), bounty(2, "Beta", "open", 100), bounty(3, "Gamma", "completed", 200)];

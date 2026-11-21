@@ -81,15 +81,18 @@ export const bountySchema = z.object({
   cancelledAt: z.iso.datetime().nullable(),
 });
 
-export const createBountySchema = bountySchema.pick({
-  // the user only has to supply the following fields when creating a bounty, the rest will be implied serverside
-  rewardBp: true,
-  goal: true,
-}).extend({
-  rewardBp: z.number().int().positive().max(MAX_BOUNTY_REWARD_BP),
-});
+export const createBountySchema = bountySchema
+  .pick({
+    // the user only has to supply the following fields when creating a bounty, the rest will be implied serverside
+    rewardBp: true,
+    goal: true,
+  })
+  .extend({
+    rewardBp: z.number().int().positive().max(MAX_BOUNTY_REWARD_BP),
+  });
 
 export const bountyEngagementSchema = z.object({
+  hunterCount: z.number().int().nonnegative(),
   bookmarkCount: z.number().int().nonnegative(),
   isBookmarkedByCurrentUser: z.boolean().nullable(),
 });
@@ -193,4 +196,6 @@ export type BountyEngagement = z.infer<typeof bountyEngagementSchema>;
 export type BountySearchQuery = z.infer<typeof bountySearchQuerySchema>;
 export type BountyListResponse = z.infer<typeof bountyListResponseSchema>;
 export type BountyContribution = z.infer<typeof bountyContributionSchema>;
-export type BountyContributionRequest = z.infer<typeof bountyContributionRequestSchema>;
+export type BountyContributionRequest = z.infer<
+  typeof bountyContributionRequestSchema
+>;

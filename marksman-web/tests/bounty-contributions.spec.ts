@@ -14,7 +14,7 @@ const bounty: ExtendedBounty = {
   completedAt: null, cancelledAt: null, completedByOsuUserId: null, completionScoreId: null,
   goal: { type: "pass", beatmapId: 42, beatmapChecksum: null, modRequirement: { rule: "any" } },
   owner: null, winner: null, beatmap: null,
-  engagement: { bookmarkCount: 0, isBookmarkedByCurrentUser: false },
+  engagement: { hunterCount: 0, bookmarkCount: 0, isBookmarkedByCurrentUser: false },
 };
 type Input = { amountBp: number; idempotencyKey: string };
 

@@ -33,7 +33,7 @@ const bounty: ExtendedBounty = {
     username: "mapmaker",
   },
   winner: null,
-  engagement: {
+  engagement: { hunterCount: 0,
     bookmarkCount: 0,
     isBookmarkedByCurrentUser: null,
   },
@@ -61,7 +61,7 @@ const bounty: ExtendedBounty = {
 };
 
 async function setupDetail(page: Page, owner = false, signedIn = true, closed = false) {
-  const state = { reads: 0, accounts: 0, bounty: { ...bounty, status: closed ? "cancelled" : "open", engagement: { bookmarkCount: 1, isBookmarkedByCurrentUser: closed } } };
+  const state = { reads: 0, accounts: 0, bounty: { ...bounty, status: closed ? "cancelled" : "open", engagement: { hunterCount: 0, bookmarkCount: 1, isBookmarkedByCurrentUser: closed } } };
   await page.route('**/auth/me', route => {
     state.accounts++;
     return route.fulfill({ status: signedIn ? 200 : 401, json: signedIn ? { ...user, identity: owner ? bounty.owner : user.identity } : {} });

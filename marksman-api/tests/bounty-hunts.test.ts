@@ -82,6 +82,37 @@ test("starts an indefinite hunt with the exact public shape and no economy chang
   assert.deepEqual(await snapshot(), { ...original, hunts: [{ ...hunt, startedAt: now }] });
 });
 test("rejects a missing bounty without changes", () => unchangedRejection(hunter, randomUUID(), BountyNotFoundError));
+test("hunter counts group ongoing hunts and exclude stopped and closed history", async () => {
+  const { countOngoingHuntsByBountyIds, closeOngoingHuntsForBounty } = require("../src/db/bounty-hunts") as typeof import("../src/db/bounty-hunts");
+  assert.deepEqual(await countOngoingHuntsByBountyIds([]), []);
+  assert.deepEqual(await countOngoingHuntsByBountyIds([bountyId]), []);
+  await seedHunt("stopped");
+  await seedHunt("closed");
+  await seedHunt("ongoing");
+  await seedHunt("ongoing", bountyId, other.id);
+  await seedHunt("ongoing", otherBountyId);
+  const rows = await countOngoingHuntsByBountyIds([bountyId, otherBountyId]);
+  assert.deepEqual(new Map(rows.map(row => [row.bountyId, row.hunterCount])), new Map([[bountyId, 2], [otherBountyId, 1]]));
+  await db.transaction(tx => closeOngoingHuntsForBounty(tx, bountyId, now));
+  assert.deepEqual(await countOngoingHuntsByBountyIds([bountyId]), []);
+});
+
+test("detail and list enrichment expose hunter counts including zero", async () => {
+  const { enrichBounty, enrichBounties } = require("../src/services/bounty-enrichment") as typeof import("../src/services/bounty-enrichment");
+  const { toBounty } = require("../src/db/bounties") as typeof import("../src/db/bounties");
+  // Supply a stored owner so enrichment never needs an upstream request.
+  await db.insert(users).values({ osuUserId: 999, username: "owner" });
+  const stored = (await db.select().from(bounties)).map(toBounty);
+  const target = stored.find(row => row.id === bountyId)!;
+  assert.equal((await enrichBounty(target)).engagement.hunterCount, 0);
+  const hunt = await startHunt(hunter, bountyId);
+  assert.equal((await enrichBounty(target)).engagement.hunterCount, 1);
+  const enriched = await enrichBounties(stored);
+  assert.equal(enriched.find(row => row.id === bountyId)!.engagement.hunterCount, 1);
+  assert.equal(enriched.find(row => row.id === otherBountyId)!.engagement.hunterCount, 0);
+  await stopHunt(hunter, hunt.id);
+  assert.equal((await enrichBounty(target)).engagement.hunterCount, 0);
+});
 for (const status of ["draft", "completed", "cancelled"] as const) {
   test(`rejects a ${status} bounty without changes`, async () => {
     await db.update(bounties).set({ status }).where(eq(bounties.id, bountyId));
