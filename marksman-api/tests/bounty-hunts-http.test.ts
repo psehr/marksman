@@ -11,6 +11,7 @@ import { createTestDatabase } from "./fixtures/test-database";
 
 // Configure the isolated database before loading the application or pool.
 Object.assign(process.env, {
+  ALLOWED_OSU_USER_IDS: "101,102",
   NODE_ENV: "test", PORT: "3001", FRONTEND_URL: "http://localhost:3000/",
   DATABASE_URL: "postgresql://marksman_test:marksman_test@127.0.0.1:5433/marksman_test?application_name=marksman_hunt_http_tests&options=-c%20statement_timeout%3D10000",
   OSU_CLIENT_ID: "123", OSU_CLIENT_SECRET: "fixture-client-secret",
@@ -204,15 +205,16 @@ test("repeated start returns duplicate conflict without another hunt", async () 
   assert.equal((await request()).status, 200);
   await unchangedError({}, 409, "DUPLICATE_HUNTING", "User is already hunting the bounty");
 });
-test("two slots succeed and the third returns HUNT_SLOTS_FULL", async () => {
-  const [second, third] = await db.insert(bounties).values([1, 2].map(() => ({
+test("three slots succeed and the fourth returns HUNT_SLOTS_FULL", async () => {
+  const [second, third, fourth] = await db.insert(bounties).values([1, 2, 3].map(() => ({
     creatorOsuUserId: 999, rewardBp: 25, status: "open" as const,
     goal: { type: "minimum_grade" as const, beatmapId: 123, minimumGradeRequirement: "A" as const, beatmapChecksum: null, modRequirement: { rule: "any" as const } },
   }))).returning();
   assert.equal((await request()).status, 200);
   assert.equal((await request({ id: second.id })).status, 200);
-  await unchangedError({ id: third.id }, 409, "HUNT_SLOTS_FULL", "User has no available hunting slot");
-  assert.equal((await request({ id: third.id, userId: other.id })).status, 200);
+  assert.equal((await request({ id: third.id })).status, 200);
+  await unchangedError({ id: fourth.id }, 409, "HUNT_SLOTS_FULL", "User has no available hunting slot");
+  assert.equal((await request({ id: fourth.id, userId: other.id })).status, 200);
 });
 test("maps user disappearing after authentication to 404", async () => {
   const blocker = await db.$client.connect();

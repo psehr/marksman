@@ -94,20 +94,23 @@ test("rejects the creator using the numeric osu identity", async () => {
 });
 test("rejects a missing internal user", () => unchangedRejection({ ...hunter, id: randomUUID() }, bountyId, UserNotFoundError));
 
-test("allows two hunts but rejects a third without changes", async () => {
+test("allows three hunts but rejects a fourth without changes", async () => {
   await startHunt(hunter, bountyId);
   await startHunt(hunter, otherBountyId);
+  await startHunt(hunter, await seedBounty());
   await unchangedRejection(hunter, await seedBounty(), HuntSlotsFullError);
 });
-test("duplicate rejection takes precedence even with both slots occupied", async () => {
+test("duplicate rejection takes precedence even with all slots occupied", async () => {
   await startHunt(hunter, bountyId);
   await unchangedRejection(hunter, bountyId, DuplicateHuntingError);
   await startHunt(hunter, otherBountyId);
+  await startHunt(hunter, await seedBounty());
   await unchangedRejection(hunter, bountyId, DuplicateHuntingError);
 });
 test("old ongoing hunts never expire or release slots merely with elapsed time", async () => {
   await seedHunt("ongoing");
   await seedHunt("ongoing", otherBountyId);
+  await seedHunt("ongoing", await seedBounty());
   mock.timers.setTime(now.getTime() + 365 * 86400000);
   await unchangedRejection(hunter, await seedBounty(), HuntSlotsFullError);
 });
@@ -148,6 +151,7 @@ test("stopping immediately is allowed and repeated stops preserve the original e
 });
 test("stopping releases a full slot and repeated restarts have no cooldown", async () => {
   await startHunt(hunter, otherBountyId);
+  await startHunt(hunter, await seedBounty());
   const ids = new Set<string>();
   for (let i = 0; i < 5; i++) {
     const hunt = await startHunt(hunter, bountyId);
@@ -157,7 +161,7 @@ test("stopping releases a full slot and repeated restarts have no cooldown", asy
   }
   await startHunt(hunter, bountyId);
   const state = await snapshot();
-  assert.equal(state.hunts.filter(row => row.status === "ongoing").length, 2);
+  assert.equal(state.hunts.filter(row => row.status === "ongoing").length, 3);
   assert.equal(state.hunts.filter(row => row.status === "stopped").length, 5);
 });
 test("stopping rejects a missing hunt", () => unchangedStop(hunter, randomUUID(), HuntNotFoundError));
@@ -190,22 +194,23 @@ async function waitForHuntLocks(count: number) {
 }
 
 for (const sameBounty of [true, false]) {
-  test(`concurrent starts respect ${sameBounty ? "duplicate exclusion" : "two slots"}`, async () => {
+  test(`concurrent starts respect ${sameBounty ? "duplicate exclusion" : "three slots"}`, async () => {
     const third = await seedBounty();
+    const fourth = await seedBounty();
     const blocker = await db.$client.connect();
     let pending: Promise<PromiseSettledResult<unknown>[]> | undefined;
     try {
       await blocker.query("BEGIN");
       await blocker.query("SELECT id FROM users WHERE id = $1 FOR UPDATE", [hunter.id]);
-      pending = Promise.allSettled([bountyId, sameBounty ? bountyId : otherBountyId, sameBounty ? bountyId : third].map(id => startHunt(hunter, id)));
-      await waitForHuntLocks(3);
+      pending = Promise.allSettled([bountyId, sameBounty ? bountyId : otherBountyId, sameBounty ? bountyId : third, sameBounty ? bountyId : fourth].map(id => startHunt(hunter, id)));
+      await waitForHuntLocks(4);
       mock.timers.setTime(now.getTime() + 60000);
       await blocker.query("COMMIT");
       const results = await pending;
-      assert.equal(results.filter(r => r.status === "fulfilled").length, sameBounty ? 1 : 2);
+      assert.equal(results.filter(r => r.status === "fulfilled").length, sameBounty ? 1 : 3);
       for (const result of results) if (result.status === "rejected") assert.ok(result.reason instanceof (sameBounty ? DuplicateHuntingError : HuntSlotsFullError));
       const state = await snapshot();
-      assert.equal(state.hunts.length, sameBounty ? 1 : 2);
+      assert.equal(state.hunts.length, sameBounty ? 1 : 3);
       for (const hunt of state.hunts) assert.equal(hunt.startedAt.getTime(), now.getTime() + 60000);
     } finally { await blocker.query("ROLLBACK"); blocker.release(); await pending; }
   });
@@ -251,9 +256,10 @@ for (const change of ["bounty", "hunt", "owner", "missing"] as const) {
     } finally { await blocker.query("ROLLBACK"); blocker.release(); await pending; }
   });
 }
-test("concurrent stop and start preserve the two-slot limit without deadlock", async () => {
+test("concurrent stop and start preserve the three-slot limit without deadlock", async () => {
   const hunt = await startHunt(hunter, bountyId);
   await startHunt(hunter, otherBountyId);
+  await startHunt(hunter, await seedBounty());
   const third = await seedBounty();
   const blocker = await db.$client.connect();
   let pending: Promise<PromiseSettledResult<unknown>[]> | undefined;
@@ -266,7 +272,7 @@ test("concurrent stop and start preserve the two-slot limit without deadlock", a
     const [stop, start] = await pending;
     assert.equal(stop.status, "fulfilled");
     if (start.status === "rejected") { assert.ok(start.reason instanceof HuntSlotsFullError); await startHunt(hunter, third); }
-    assert.equal((await snapshot()).hunts.filter(row => row.status === "ongoing").length, 2);
+    assert.equal((await snapshot()).hunts.filter(row => row.status === "ongoing").length, 3);
   } finally { await blocker.query("ROLLBACK"); blocker.release(); await pending; }
 });
 for (const operation of ["start", "stop"] as const) {

@@ -1,5 +1,6 @@
 import {
   Hunt,
+  MAXIMUM_HUNTING_SLOTS,
   UserHuntedBounties,
   userHuntedBountiesSchema,
   UserIdentity,
@@ -35,8 +36,6 @@ export async function startHunt(
   bountyId: string,
 ): Promise<Hunt> {
   return await db.transaction(async (tx) => {
-    const MAXIMUM_HUNTING_SLOTS = 2;
-
     const bounty = await findBountyByIdForUpdate(tx, bountyId);
 
     if (!bounty) throw new BountyNotFoundError();

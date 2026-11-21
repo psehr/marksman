@@ -24,9 +24,9 @@ export default function WikiHuntingPage() {
           that difficulty.
         </p>
         <p>
-          Each player has <AccentText>two hunting slots</AccentText>, this means
+          Each player has <AccentText>three hunting slots</AccentText>, this means
           that you can only hunt{" "}
-          <AccentText>two different bounties at the same time</AccentText>.
+          <AccentText>three different bounties at the same time</AccentText>.
         </p>
         <p>
           From the bounty details page, you can click on the{" "}

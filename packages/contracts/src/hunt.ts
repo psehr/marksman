@@ -1,6 +1,8 @@
 import { z } from "zod";
 import { extendedBountySchema } from "./bounty";
 
+export const MAXIMUM_HUNTING_SLOTS = 3;
+
 export const huntStatusEnum = z.enum(["ongoing", "stopped", "closed"]);
 
 export const huntSchema = z.object({

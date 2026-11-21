@@ -1,4 +1,4 @@
-import { UserHuntedBounties } from "@marksman/contracts";
+import { MAXIMUM_HUNTING_SLOTS, UserHuntedBounties } from "@marksman/contracts";
 import BountyCard from "../bounties/BountyCard";
 import { aes_font } from "@/lib/fonts";
 
@@ -9,7 +9,7 @@ export default function ProfileBountySlots({
 }) {
   const slots = [];
 
-  for (let index = 0; index < 2; index++) {
+  for (let index = 0; index < MAXIMUM_HUNTING_SLOTS; index++) {
     const slotIdx = index + 1;
     slots.push(
       <div
