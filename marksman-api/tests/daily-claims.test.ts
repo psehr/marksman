@@ -73,9 +73,9 @@ async function assertAwards(expected: { userId: string; claimDate: string }[]) {
   assert.equal(awards.length, expected.length);
   for (const user of state.users) {
     const count = expected.filter(claim => claim.userId === user.id).length;
-    assert.equal(user.bpBalance, 330 + 25 * count);
+    assert.equal(user.bpBalance, 330 + 100 * count);
     assert.deepEqual(awards.filter(entry => entry.userId === user.id).map(({ amount, bountyId }) => ({ amount, bountyId })),
-      Array.from({ length: count }, () => ({ amount: 25, bountyId: null })));
+      Array.from({ length: count }, () => ({ amount: 100, bountyId: null })));
     assert.equal(state.ledger.filter(entry => entry.userId === user.id).reduce((sum, entry) => sum + entry.amount, 0), user.bpBalance);
   }
 }
@@ -97,7 +97,7 @@ async function request(cookie?: string, origin: string | null = "http://localhos
     body: body === undefined ? undefined : JSON.stringify(body), signal: AbortSignal.timeout(5000) });
 }
 
-test("first claim awards 25 BP; same-day repeat changes nothing", async t => {
+test("first claim awards 100 BP; same-day repeat changes nothing", async t => {
   t.mock.timers.enable({ apis: ["Date"], now: new Date("2026-10-05T12:00:00Z") });
   assert.equal(await attemptDailyClaim(player), true);
   await assertAwards([{ userId: player.id, claimDate: "2026-10-05" }]);

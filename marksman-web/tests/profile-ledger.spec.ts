@@ -32,6 +32,7 @@ async function setup(page: Page, account: User | null = owner, authGate?: Promis
     if (new URL(route.request().url()).origin === new URL(test.info().project.use.baseURL!).origin) return route.continue();
     return route.abort("blockedbyclient");
   });
+  await page.route("**/auth/access", route => route.fulfill({ status: 204 }));
   await page.route("**/auth/me", async route => {
     state.accountReads++;
     if (authGate) await authGate;
@@ -169,24 +170,27 @@ test("daily claim from page two refreshes balance and account and returns histor
     const p = Number(new URL(route.request().url()).searchParams.get("page"));
     state.ledgerPages.push(p);
     return route.fulfill({ json: p === 1
-      ? (claimed ? [entry(99)] : Array.from({ length: 10 }, (_, i) => entry(i + 1, "bounty_fee")))
+      ? (claimed ? [{ ...entry(99), amount: 100 }] : Array.from({ length: 10 }, (_, i) => entry(i + 1, "bounty_fee")))
       : [entry(11, "bounty_fee")] });
   });
   await page.route("**/economy/daily-claim", route => {
+    if (route.request().method() === "GET") return route.fulfill({ json: claimed
+      ? { claimedToday: true, nextClaimAt: "2099-01-01T00:00:00.000Z" }
+      : { claimedToday: false } });
     expect(route.request().method()).toBe("POST");
     claimed = true;
-    state.balance = 125;
+    state.balance = 200;
     return route.fulfill({ json: { message: "Daily reward claimed." } });
   });
   await visit(page);
   await next(page).click();
   await expect(page.getByText("Page 2", { exact: true })).toBeVisible();
   const reads = state.accountReads;
-  await page.getByRole("button", { name: "Claim daily 25 BP", exact: true }).click();
-  await expect(page.getByText("Claimed 25 BP.", { exact: true })).toBeVisible();
-  await expect(page.getByText("Your Balance", { exact: true }).locator("..")).toContainText("125");
+  await page.getByRole("button", { name: "Claim daily 100 BP", exact: true }).click();
+  await expect(page.getByRole("button", { name: "Daily BP claimed", exact: true })).toBeDisabled();
+  await expect(page.getByText("Your Balance", { exact: true }).locator("..")).toContainText("200");
   await expect(history(page).locator("..").getByText("Page 1", { exact: true })).toBeVisible();
-  await expect(page.getByRole("cell", { name: "+25 BP", exact: true })).toBeVisible();
+  await expect(page.getByRole("cell", { name: "+100 BP", exact: true })).toBeVisible();
   expect(state.accountReads).toBeGreaterThan(reads);
 });
 
@@ -249,16 +253,23 @@ for (const failure of ["network", "http", "already-claimed"] as const) {
   test(`daily claim handles ${failure} and releases pending state`, async ({ page }) => {
     await setup(page);
     let attempts = 0;
+    let claimed = false;
     const pending = gate();
     await page.route("**/economy/daily-claim", async route => {
+      if (route.request().method() === "GET") return route.fulfill({ json: claimed
+        ? { claimedToday: true, nextClaimAt: "2099-01-01T00:00:00.000Z" }
+        : { claimedToday: false } });
       attempts++;
       await pending.promise;
-      if (attempts > 1) return route.fulfill({ json: { message: "Daily reward claimed." } });
+      if (attempts > 1) {
+        claimed = true;
+        return route.fulfill({ json: { message: "Daily reward claimed." } });
+      }
       if (failure === "network") return route.abort("failed");
       return route.fulfill({ status: failure === "http" ? 500 : 409, json: { error: "Fixture claim failure" } });
     });
     await visit(page);
-    await page.getByRole("button", { name: "Claim daily 25 BP", exact: true }).click();
+    await page.getByRole("button", { name: "Claim daily 100 BP", exact: true }).click();
     try {
       await expect.poll(() => attempts).toBe(1);
       await expect(page.getByRole("button", { name: "Claiming…", exact: true })).toBeDisabled();
@@ -269,8 +280,8 @@ for (const failure of ["network", "http", "already-claimed"] as const) {
     } else {
       await expect(page.getByRole("alert").filter({ hasText: /Fixture claim failure|Could not claim/ })).toHaveText(failure === "http"
         ? "Fixture claim failure" : "Could not claim the daily reward. Please try again.");
-      await page.getByRole("button", { name: "Claim daily 25 BP", exact: true }).click();
-      await expect(page.getByText("Claimed 25 BP.", { exact: true })).toBeVisible();
+      await page.getByRole("button", { name: "Claim daily 100 BP", exact: true }).click();
+      await expect(page.getByRole("button", { name: "Daily BP claimed", exact: true })).toBeDisabled();
       expect(attempts).toBe(2);
     }
   });

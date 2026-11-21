@@ -1,3 +1,4 @@
+import { DAILY_REWARD_BP } from "@marksman/contracts";
 import Button from "../ui/Button";
 
 export function DailyClaim({
@@ -24,16 +25,18 @@ export function DailyClaim({
       <Button
         type="button"
         variant="accent"
-        disabled={claimPending || claimed || claimStatusLoading || claimStatusError}
+        disabled={
+          claimPending || claimed || claimStatusLoading || claimStatusError
+        }
         onClick={() => void claimDailyReward()}
       >
         {claimStatusLoading
           ? "Checking daily BP…"
           : claimPending
-          ? "Claiming…"
-          : claimed
-            ? "Daily BP claimed"
-            : "Claim daily 25 BP"}
+            ? "Claiming…"
+            : claimed
+              ? "Daily BP claimed"
+              : `Claim daily ${DAILY_REWARD_BP} BP`}
       </Button>
       {claimStatusError ? (
         <div>

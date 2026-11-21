@@ -2,11 +2,12 @@ import { useAuth } from "@/components/auth/AuthProvider";
 import { getUser, getUserLedger, getUserBountyEvents } from "@/lib/api/users";
 import { claimDailyBp, getDailyClaimStatus } from "@/lib/api/economy";
 import { ApiError } from "@/lib/api/client";
-import type {
-  BountyEvent,
-  BountySearchQuery,
-  DetailedUser,
-  LedgerEntry,
+import {
+  DAILY_REWARD_BP,
+  type BountyEvent,
+  type BountySearchQuery,
+  type DetailedUser,
+  type LedgerEntry,
 } from "@marksman/contracts";
 import { useEffect, useRef, useState } from "react";
 import { useUserHunts } from "./useUserHunts";
@@ -108,11 +109,13 @@ export function useUserProfile(id: string) {
   }>();
   const [claimStatusRefresh, setClaimStatusRefresh] = useState(0);
   const claimStatusRevision = useRef(0);
-  const currentClaimStatus = claimStatus?.key === claimKey ? claimStatus : undefined;
+  const currentClaimStatus =
+    claimStatus?.key === claimKey ? claimStatus : undefined;
   const claimed = currentClaimStatus?.claimed ?? false;
-  const claimStatusLoading = !currentClaimStatus || currentClaimStatus.state === "loading";
+  const claimStatusLoading =
+    !currentClaimStatus || currentClaimStatus.state === "loading";
   const claimStatusError = currentClaimStatus?.state === "error";
-  const refreshClaimStatus = () => setClaimStatusRefresh(value => value + 1);
+  const refreshClaimStatus = () => setClaimStatusRefresh((value) => value + 1);
   const [claimMessage, setClaimMessage] = useState<string | null>(null);
   const [claimError, setClaimError] = useState<string | null>(null);
   const claimRequest = useRef({ active: true, pending: false });
@@ -144,25 +147,38 @@ export function useUserProfile(id: string) {
       return;
     }
     setClaimStatus({ key: claimKey, state: "loading", claimed: false });
-    void getDailyClaimStatus().then(status => {
-      if (!active || revision !== claimStatusRevision.current) return;
-      setClaimStatus({
-        key: claimKey, state: "ready", claimed: status.claimedToday,
-        nextClaimAt: status.claimedToday ? status.nextClaimAt : undefined,
+    void getDailyClaimStatus()
+      .then((status) => {
+        if (!active || revision !== claimStatusRevision.current) return;
+        setClaimStatus({
+          key: claimKey,
+          state: "ready",
+          claimed: status.claimedToday,
+          nextClaimAt: status.claimedToday ? status.nextClaimAt : undefined,
+        });
+      })
+      .catch(() => {
+        if (active && revision === claimStatusRevision.current) {
+          setClaimStatus({ key: claimKey, state: "error", claimed: false });
+        }
       });
-    }).catch(() => {
-      if (active && revision === claimStatusRevision.current) {
-        setClaimStatus({ key: claimKey, state: "error", claimed: false });
-      }
-    });
-    return () => { active = false; };
+    return () => {
+      active = false;
+    };
   }, [claimKey, claimStatusRefresh]);
 
   useEffect(() => {
-    if (!currentClaimStatus?.nextClaimAt || currentClaimStatus.state !== "ready") return;
-    const timeout = setTimeout(() => {
-      setClaimStatusRefresh(value => value + 1);
-    }, Math.max(1000, Date.parse(currentClaimStatus.nextClaimAt) - Date.now()));
+    if (
+      !currentClaimStatus?.nextClaimAt ||
+      currentClaimStatus.state !== "ready"
+    )
+      return;
+    const timeout = setTimeout(
+      () => {
+        setClaimStatusRefresh((value) => value + 1);
+      },
+      Math.max(1000, Date.parse(currentClaimStatus.nextClaimAt) - Date.now()),
+    );
     return () => clearTimeout(timeout);
   }, [currentClaimStatus]);
 
@@ -172,7 +188,12 @@ export function useUserProfile(id: string) {
     claimStatusRevision.current++;
     const next = new Date();
     next.setUTCHours(24, 0, 0, 0);
-    setClaimStatus({ key: claimKey, state: "ready", claimed: true, nextClaimAt: next.toISOString() });
+    setClaimStatus({
+      key: claimKey,
+      state: "ready",
+      claimed: true,
+      nextClaimAt: next.toISOString(),
+    });
   }
 
   useEffect(() => {
@@ -194,7 +215,14 @@ export function useUserProfile(id: string) {
 
   async function claimDailyReward() {
     const request = claimRequest.current;
-    if (!userIsPageOwner || request.pending || claimed || claimStatusLoading || claimStatusError) return;
+    if (
+      !userIsPageOwner ||
+      request.pending ||
+      claimed ||
+      claimStatusLoading ||
+      claimStatusError
+    )
+      return;
 
     request.pending = true;
     setClaimPending(true);
@@ -205,7 +233,7 @@ export function useUserProfile(id: string) {
       await claimDailyBp();
       if (!request.active) return;
       markDailyClaimed();
-      setClaimMessage("Claimed 25 BP.");
+      setClaimMessage(`Claimed ${DAILY_REWARD_BP} BP.`);
       refreshUser();
       refreshLedger();
       setLedgerPage(1);

@@ -1,5 +1,7 @@
 import z from "zod";
 
+export const DAILY_REWARD_BP = 100;
+
 export const dailyClaimStatusSchema = z.discriminatedUnion("claimedToday", [
   z.object({
     claimedToday: z.literal(false),

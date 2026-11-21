@@ -28,7 +28,7 @@ async function setup(page: Page, options: { claimed?: boolean; failure?: boolean
         : { claimedToday: false } });
     }
     if (/\/users\/[^/]+$/.test(url.pathname)) {
-      return route.fulfill({ json: { ...user, identity: { ...user.identity, id: url.pathname.split("/").pop() }, stats: { bpBalance: state.claimed ? 125 : 100, bountiesWon: 0, bountyEarningsBp: 0 } } });
+      return route.fulfill({ json: { ...user, identity: { ...user.identity, id: url.pathname.split("/").pop() }, stats: { bpBalance: state.claimed ? 200 : 100, bountiesWon: 0, bountyEarningsBp: 0 } } });
     }
     if (/\/(hunts|ledger|bounty-events)$/.test(url.pathname)) return route.fulfill({ json: [] });
     return route.abort();
@@ -53,13 +53,13 @@ test("claim status loading blocks submission", async ({ page }) => {
   await expect.poll(() => !!state.pending).toBe(true);
   expect(state.posts).toBe(0);
   await state.pending!.fulfill({ json: { claimedToday: false } });
-  await expect(page.getByRole("button", { name: "Claim daily 25 BP" })).toBeEnabled();
+  await expect(page.getByRole("button", { name: "Claim daily 100 BP" })).toBeEnabled();
 });
 
 for (const conflict of [false, true]) {
   test(`${conflict ? "409" : "success"} disables claim and survives page refresh`, async ({ page }) => {
     const state = await setup(page, { conflict });
-    await page.getByRole("button", { name: "Claim daily 25 BP" }).click();
+    await page.getByRole("button", { name: "Claim daily 100 BP" }).click();
     await expect(page.getByRole("button", { name: "Daily BP claimed" })).toBeDisabled();
     await page.reload();
     await expect(page.getByRole("button", { name: "Daily BP claimed" })).toBeDisabled();
@@ -70,10 +70,10 @@ for (const conflict of [false, true]) {
 test("status failure blocks claim and read-only retry recovers", async ({ page }) => {
   const state = await setup(page, { failure: true });
   await expect(page.getByRole("alert").filter({ hasText: "Could not check your daily reward." })).toHaveText("Could not check your daily reward.");
-  await expect(page.getByRole("button", { name: "Claim daily 25 BP" })).toBeDisabled();
+  await expect(page.getByRole("button", { name: "Claim daily 100 BP" })).toBeDisabled();
   state.failure = false;
   await page.getByRole("button", { name: "Retry daily status" }).click();
-  await expect(page.getByRole("button", { name: "Claim daily 25 BP" })).toBeEnabled();
+  await expect(page.getByRole("button", { name: "Claim daily 100 BP" })).toBeEnabled();
   expect(state.posts).toBe(0);
 });
 
@@ -90,6 +90,6 @@ test("UTC reset rechecks status and enables the next day's claim", async ({ page
   await expect(page.getByRole("button", { name: "Daily BP claimed" })).toBeDisabled();
   state.claimed = false;
   await page.clock.fastForward(11_000);
-  await expect(page.getByRole("button", { name: "Claim daily 25 BP" })).toBeEnabled();
+  await expect(page.getByRole("button", { name: "Claim daily 100 BP" })).toBeEnabled();
   expect(state.reads).toBe(2);
 });
