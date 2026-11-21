@@ -66,6 +66,7 @@ for (const owner of [true, false]) {
     await page.getByRole("button", { name: "Confirm contribution" }).click();
     await expect(page.getByRole("status").filter({ hasText: "Added 11 BP" })).toBeVisible();
     await expect(page.getByText("777", { exact: true })).toBeVisible();
+    await expect(page.getByRole("navigation", { name: "Main navigation" }).getByLabel("Your BP balance")).toHaveText("987");
     expect(state.posts).toHaveLength(1);
     expect(state.posts[0].idempotencyKey).toMatch(/^[0-9a-f-]{36}$/);
     await page.getByRole("button", { name: "Add another contribution" }).click();

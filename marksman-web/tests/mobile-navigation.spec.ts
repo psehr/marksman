@@ -5,12 +5,13 @@ test("mobile navigation opens, closes with Escape and follows links", async ({ p
   await page.route("**/auth/me", route => route.fulfill({ status: 401, json: { error: "Signed out" } }));
   await page.goto("/");
   const nav = page.getByRole("navigation", { name: "Main navigation" });
-  const toggle = nav.getByRole("button");
+  const toggle = nav.getByRole("button", { includeHidden: true });
   await expect(toggle).toHaveAttribute("aria-expanded", "false");
   await expect(nav.getByRole("link", { name: "Rankings", exact: true })).toBeHidden();
   await toggle.click();
   await expect(toggle).toHaveAttribute("aria-expanded", "true");
   await expect(nav.getByRole("link", { name: "Log in with osu!" })).toBeVisible();
+  await expect(nav.getByLabel("Your BP balance")).toHaveCount(0);
   await page.keyboard.press("Tab");
   await expect(nav.getByRole("link", { name: "Bounties", exact: true })).toBeFocused();
   await page.keyboard.press("Escape");
@@ -23,6 +24,7 @@ test("mobile navigation opens, closes with Escape and follows links", async ({ p
   await toggle.click();
   await page.setViewportSize({ width: 1280, height: 800 });
   await expect(toggle).toBeHidden();
+  await expect(toggle).toHaveAttribute("aria-expanded", "false");
   await expect(nav.getByRole("link", { name: "Rankings", exact: true })).toBeVisible();
   await page.setViewportSize({ width: 320, height: 812 });
   await expect(toggle).toHaveAttribute("aria-expanded", "false");
@@ -36,6 +38,7 @@ test("mobile profile link uses signed-in identity and closes the menu", async ({
     identity: { id, osuUserId: 12345, username: "fixture" },
     stats: { bpBalance: 1000 }, createdAt: "2025-01-01T00:00:00.000Z",
   } }));
+  await page.route("**/auth/access", route => route.fulfill({ status: 204 }));
   await page.route(`**/users/${id}`, route => route.fulfill({ status: 404, json: { error: "Fixture" } }));
   await page.goto("/");
   const nav = page.getByRole("navigation", { name: "Main navigation" });
@@ -46,3 +49,39 @@ test("mobile profile link uses signed-in identity and closes the menu", async ({
   await expect(page).toHaveURL(`/users/${id}`);
   await expect(nav.getByRole("button")).toHaveAttribute("aria-expanded", "false");
 });
+
+for (const width of [320, 390, 768, 1280]) {
+  for (const balance of [0, 1_000_000]) {
+    test(`navbar balance ${balance} appears below username at ${width}px`, async ({ page }) => {
+      await page.setViewportSize({ width, height: 900 });
+      await page.route("**/auth/me", route => route.fulfill({ json: {
+        identity: { id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa", osuUserId: 123, username: "fixture" },
+        stats: { bpBalance: balance }, createdAt: "2026-01-01T00:00:00.000Z",
+      } }));
+      await page.route("**/auth/access", route => route.fulfill({ status: 204 }));
+      await page.goto("/");
+      const nav = page.getByRole("navigation", { name: "Main navigation" });
+      if (width < 768) await nav.getByRole("button", { name: "Open navigation" }).click();
+      const amount = nav.getByLabel("Your BP balance");
+      await expect(amount).toHaveText(balance === 0 ? "0" : "1,000,000");
+      await expect(amount.getByRole("img", { name: "Bounty Points" })).toBeVisible();
+      const profile = nav.getByRole("link", { name: "Profile", exact: true });
+      await expect(profile).toBeVisible();
+      const amountBox = (await amount.boundingBox())!;
+      const profileBox = (await profile.boundingBox())!;
+      const username = profile.getByText("fixture", { exact: true });
+      const usernameBox = (await username.boundingBox())!;
+      expect(amountBox.y).toBeGreaterThanOrEqual(usernameBox.y + usernameBox.height);
+      expect(amountBox.x).toBeGreaterThan(profileBox.x);
+      expect(amountBox.x + amountBox.width).toBeLessThan(profileBox.x + profileBox.width);
+      if (balance === 1_000_000 && (width === 320 || width === 1280)) {
+        await page.screenshot({ path: `/tmp/marksman-navbar-card-${width}.png`, fullPage: true });
+      }
+      expect(await nav.evaluate(el => el.scrollWidth <= el.clientWidth)).toBe(true);
+      if (width >= 768) {
+        const wikiBox = (await nav.getByRole("link", { name: "Wiki", exact: true }).boundingBox())!;
+        expect(wikiBox.x + wikiBox.width).toBeLessThan(amountBox.x);
+      }
+    });
+  }
+}
