@@ -72,7 +72,7 @@ export default function WikiPage() {
         </p>
         <p>
           When a <AccentText>valid attempt is found</AccentText> and after a{" "}
-          <AccentText>30-second settlement window</AccentText>, Marksman awards
+          <AccentText>10-second settlement window</AccentText>, Marksman awards
           the player with the earliest valid attempt.
         </p>
       </WikiSection>

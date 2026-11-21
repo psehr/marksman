@@ -7,7 +7,7 @@ export async function ensureBountySettlement(
   bountyId: string,
   openedAt: Date,
 ) {
-  const GRACE_PERIOD = 30_000;
+  const GRACE_PERIOD = 10_000;
 
   await connection
     .insert(bountySettlements)

@@ -55,7 +55,7 @@ export default function WikiHuntingPage() {
         </p>
         <p>
           When a <AccentText>qualifying score</AccentText> is found, a{" "}
-          <AccentText>30-second settlement</AccentText> period is started,
+          <AccentText>10-second settlement</AccentText> period is started,
           giving Marksman time to discover other potential qualifying scores
           that would arrive later.
         </p>

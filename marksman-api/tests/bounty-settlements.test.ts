@@ -14,7 +14,7 @@ const db = drizzle({ client: pool, schema });
 const testDatabase = createTestDatabase(db);
 let bountyId: string;
 const openedAt = new Date("2026-10-21T14:00:00+02:00");
-const settleAfter = new Date("2026-10-21T12:00:30Z");
+const settleAfter = new Date("2026-10-21T12:00:10Z");
 
 before(() => testDatabase.prepare());
 beforeEach(async () => {
@@ -154,7 +154,7 @@ test("due query returns an empty list when no settlements exist", async () => {
   assert.deepEqual(await findDueBountySettlements(db, settleAfter, 10), []);
 });
 
-test("ensure creates a settlement with a 30-second window", async () => {
+test("ensure creates a settlement with a 10-second window", async () => {
   await ensureBountySettlement(db, bountyId, openedAt);
   assert.deepEqual(await db.select().from(schema.bountySettlements), [
     { ...settlement(), attempts: 0, lastError: null, settledAt: null },
@@ -197,7 +197,7 @@ test("concurrent ensure calls preserve one complete window", async () => {
   assert.equal(rows.length, 1);
   const [row] = rows;
   assert.ok([openedAt.getTime(), later.getTime()].includes(row.openedAt.getTime()));
-  assert.equal(row.settleAfter.getTime(), row.openedAt.getTime() + 30_000);
+  assert.equal(row.settleAfter.getTime(), row.openedAt.getTime() + 10_000);
   assert.deepEqual(row.nextAttemptAt, row.settleAfter);
 });
 

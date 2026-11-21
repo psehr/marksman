@@ -152,7 +152,7 @@ async function prepareAutomaticFlow(stable = false) {
   assert.deepEqual(await verifyDueHuntAttempts(20), []);
   assert.equal((await attempts())[0].verificationStatus, "valid");
   const [settlement] = await db.select().from(bountySettlements);
-  assert.equal(settlement.settleAfter.getTime(), Date.now() + 30000);
+  assert.equal(settlement.settleAfter.getTime(), Date.now() + 10000);
   assert.equal(settlement.settledAt, null);
   return settlement;
 }
