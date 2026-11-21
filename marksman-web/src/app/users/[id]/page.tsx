@@ -170,7 +170,7 @@ function UserProfile() {
         break;
       case "hunting":
         content = (
-          <div className="flex flex-col lg:flex-row place-content-center items-stretch col-span-full gap-4">
+          <div className="grid lg:grid-cols-2 col-span-full gap-4">
             {huntsQueryStatus === "complete" ? (
               <ProfileBountySlots hunts={hunts} />
             ) : null}
