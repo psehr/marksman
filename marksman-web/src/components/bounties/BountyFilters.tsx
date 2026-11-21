@@ -35,7 +35,7 @@ function FilterButton({
 }) {
   return (
     <button
-      className={`inline-flex items-center justify-center gap-2 bg-surface text-sm border-border aria-pressed:border-accent aria-pressed:text-accent enabled:hover:bg-surface-hover rounded border text-foreground-muted h-10 px-4 enabled:cursor-pointer disabled:opacity-20 ${className}`}
+      className={`inline-flex items-center justify-center gap-2 bg-surface text-sm border-border aria-pressed:border-accent aria-pressed:text-accent enabled:hover:bg-surface-hover rounded border text-foreground-muted h-10 px-4 enabled:cursor-pointer disabled:cursor-not-allowed disabled:opacity-20 ${className}`}
       aria-pressed={pressed}
       aria-label={ariaLabel}
       disabled={disabled}
