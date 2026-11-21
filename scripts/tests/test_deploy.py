@@ -38,7 +38,10 @@ if name == 'git':
     elif a[:2] == ['rev-parse', '--abbrev-ref']: print('origin/main')
     elif a[:2] == ['rev-parse', '--git-path']: print('.git/marksman-deploy.lock')
     elif a[0] == 'rev-parse': print('abc123')
-    elif a[0] == 'pull': sys.exit(int(os.environ.get('DEPLOY_PULL_EXIT', '0')))
+    elif a[0] == 'pull':
+        os.mkdir('pulled-directory')
+        with open('pulled-directory/package.json', 'w') as source: source.write('{}')
+        sys.exit(int(os.environ.get('DEPLOY_PULL_EXIT', '0')))
 if name == 'docker' and 'up' in a: sys.exit(int(os.environ.get('DEPLOY_UP_EXIT', '0')))
 '''
         for name in ['git', 'sudo', 'docker']:
@@ -76,6 +79,13 @@ if name == 'docker' and 'up' in a: sys.exit(int(os.environ.get('DEPLOY_UP_EXIT',
                 result = self.run_deploy(**env)
                 self.assertNotEqual(result.returncode, 0)
                 self.assertNotIn('BACKUP', self.commands())
+
+    def test_pull_creates_readable_source_and_keeps_deploy_lock_private(self):
+        result = self.run_deploy()
+        self.assertEqual(result.returncode, 0, result.stderr)
+        self.assertEqual((self.root / 'pulled-directory').stat().st_mode & 0o777, 0o755)
+        self.assertEqual((self.root / 'pulled-directory/package.json').stat().st_mode & 0o777, 0o644)
+        self.assertEqual((self.root / '.git/marksman-deploy.lock').stat().st_mode & 0o777, 0o600)
 
     def test_backup_failure_prevents_pull(self):
         result = self.run_deploy(DEPLOY_BACKUP_EXIT='1')

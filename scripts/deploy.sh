@@ -26,7 +26,11 @@ sudo -v
 printf 'Backing up production before deployment…\n'
 sudo bash "$deploy_root/scripts/database.sh" backup
 printf 'Updating checkout…\n'
-git pull --ff-only origin main
+(
+  # Source copied into images must be readable by non-root container users.
+  umask 022
+  git pull --ff-only origin main
+)
 # Reject local-only commits as well as divergence, including reruns after failure.
 [[ $(git rev-parse HEAD) == $(git rev-parse origin/main) ]] || {
   echo 'Checkout contains local-only commits; refusing to deploy.' >&2; exit 1;
