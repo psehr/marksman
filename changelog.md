@@ -17,6 +17,7 @@ are marked until deployment is confirmed. Deployment names increment as
 
 ### Fixes
 
+- dfa4dce — fix: align funding button with bounty actions.
 - a36b100 — fix: wrap profile hunting slots in a responsive grid.
 - 9863f45 — fix: use readable source permissions during deployment.
 
