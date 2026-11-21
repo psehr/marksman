@@ -1,3 +1,4 @@
+import { mockAvatars } from "./fixtures/avatars";
 import { expect, test, type Page } from "@playwright/test";
 import type { ExtendedBounty, User, UserHuntedBounties } from "@marksman/contracts";
 import { detailedUserFixture } from "./fixtures/users";
@@ -41,6 +42,7 @@ async function setup(page: Page, count = 0, signedIn = false) {
     if (new URL(route.request().url()).origin === new URL(test.info().project.use.baseURL!).origin) return route.continue();
     return route.abort("blockedbyclient");
   });
+  await mockAvatars(page);
   await page.route("**/auth/access", route => route.fulfill({ status: 204 }));
   await page.route("**/auth/me", route => route.fulfill(signedIn ? { json: owner } : { status: 401, json: {} }));
   await page.route("**/users/*", route => {
@@ -73,6 +75,19 @@ for (const count of [1, 3]) {
       await setup(page, count, true);
       await page.goto(`/users/${owner.identity.id}?view=hunting`);
       await expect(page.getByText("Empty Hunting Slot", { exact: true })).toHaveCount(3 - count);
+      if (width < 1024) {
+        const header = page.getByText("Your Balance", { exact: true }).locator("../../../..");
+        await expect(header).toBeVisible();
+        const headerBounds = (await header.boundingBox())!;
+        const cardBounds = await header.locator(":scope > div").evaluateAll(elements =>
+          elements.map(el => ({ width: el.getBoundingClientRect().width, x: el.getBoundingClientRect().x })),
+        );
+        expect(cardBounds).toHaveLength(3);
+        for (const card of cardBounds) {
+          expect(Math.abs(card.width - headerBounds.width)).toBeLessThan(2);
+          expect(Math.abs(card.x - headerBounds.x)).toBeLessThan(2);
+        }
+      }
       const boxes = [];
       for (let index = 1; index <= 3; index++) {
         const holder = slot(page, index);

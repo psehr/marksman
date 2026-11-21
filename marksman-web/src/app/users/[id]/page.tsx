@@ -280,7 +280,7 @@ function UserProfile() {
         <PageHeaderBadge>Marksman Profile</PageHeaderBadge>
         <MainSection>
           <div className="w-full">
-            <div className="w-full flex flex-col lg:flex-row justify-between gap-4 pb-8">
+            <div className="w-full flex flex-col lg:flex-row justify-between gap-4 pb-8 max-lg:[&>*]:w-full max-lg:[&>*]:max-w-none">
               <UserCard user={detailedUser} />
               <UserStatsCard cols={2}>
                 <StatContainer
