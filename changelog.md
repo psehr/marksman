@@ -10,6 +10,7 @@ are marked until deployment is confirmed. Deployment names increment as
 
 ### Features
 
+- 15c8285 — feat: add osu avatar to navbar profile card.
 - 8496332 — feat: show username and BP balance in navbar profile card.
 - 89b156a — feat: add copy beatmap ID action to bounty details.
 - b9ab20e — feat: add icons to bounty board relationship filters.
