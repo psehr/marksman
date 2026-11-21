@@ -2,6 +2,15 @@ import CopyText from "@/components/ui/CopyText";
 import { ExtendedBounty } from "@marksman/contracts";
 import { ReactNode } from "react";
 
+type ContextualStatus =
+  | "open"
+  | "hunting"
+  | "completed"
+  | "won_by_user"
+  | "cancelled"
+  | "owned"
+  | "none";
+
 export default function BountyStatusDescriptor({
   bounty,
   osuUserId,
@@ -11,17 +20,23 @@ export default function BountyStatusDescriptor({
   isHunting: boolean;
   osuUserId?: number;
 }) {
-  type ContextualStatus =
-    | "open"
-    | "hunting"
-    | "completed"
-    | "won_by_user"
-    | "cancelled"
-    | "owned"
-    | "none";
-
   let context: ContextualStatus;
   let content: ReactNode;
+
+  const shareAchievementMessage = () => {
+    const owner = bounty.owner?.username;
+    const bountyUrl = new URL(`/bounties/${bounty.id}`, window.location.origin)
+      .href;
+    const profileLink = bounty.winner
+      ? ` - [Profile](<${
+          new URL(`/users/${bounty.winner.id}`, window.location.origin).href
+        }>)`
+      : "";
+
+    return `✅ I completed a bounty from *${owner ?? "another player"}* and won **${bounty.rewardBp} BP**! ✅
+  **[View Bounty](<${bountyUrl}>)${profileLink}**
+  Start hunting bounties now on **[marksman.psehr.dev](<https://marksman.psehr.dev>)**! 🎯`;
+  };
 
   if (bounty.status === "completed") {
     context =
@@ -94,25 +109,7 @@ export default function BountyStatusDescriptor({
             You completed this bounty! 🥳
           </p>
           <CopyText
-            text={() => {
-              const owner = bounty.owner?.username;
-              const bountyUrl = new URL(
-                `/bounties/${bounty.id}`,
-                window.location.origin,
-              ).href;
-              const profileLink = bounty.winner
-                ? ` - [Profile](${
-                    new URL(
-                      `/users/${bounty.winner.id}`,
-                      window.location.origin,
-                    ).href
-                  })`
-                : "";
-
-              return `✅ I completed a bounty from *${owner ?? "another player"}* and won **${bounty.rewardBp} BP**! ✅
-**[View Bounty](${bountyUrl})${profileLink}**
-Start hunting bounties now on **[marksman.psehr.dev](https://marksman.psehr.dev)**! 🎯`;
-            }}
+            text={shareAchievementMessage}
             label="Share achievement"
             size="sm"
             variant="textual"
