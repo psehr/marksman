@@ -18,18 +18,33 @@ import { Suspense } from "react";
 import BountyList from "@/components/bounties/BountyList";
 import UserStatsCard from "@/components/users/UserStatsCard";
 import StatContainer from "@/components/users/StatContainer";
+import { useProfileId } from "@/hooks/useProfileId";
 
 export default function UserPage() {
   return (
     <Suspense fallback={<p>Loading profile...</p>}>
-      <UserProfile />
+      <ResolvedUserProfile />
     </Suspense>
   );
 }
 
-function UserProfile() {
+function ResolvedUserProfile() {
   const { id } = useParams<{ id: string }>();
+  const resolution = useProfileId(id);
 
+  switch (resolution.status) {
+    case "loading":
+      return <p>Loading profile...</p>;
+    case "notFound":
+      return notFound();
+    case "errored":
+      return <p>Could not load profile. Please try again.</p>;
+    case "complete":
+      return <UserProfile key={resolution.id} id={resolution.id} />;
+  }
+}
+
+function UserProfile({ id }: { id: string }) {
   const {
     user,
     detailedUser,

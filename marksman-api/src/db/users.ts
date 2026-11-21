@@ -56,6 +56,18 @@ export async function findUserByOsuId(
   return row ? toUser(row) : undefined;
 }
 
+export async function findUserByUsername(
+  username: string,
+): Promise<User | undefined> {
+  const rows = await db
+    .select()
+    .from(users)
+    .where(sql`lower(${users.username}) = lower(${username})`)
+    .limit(2);
+
+  return rows.length === 1 ? toUser(rows[0]) : undefined;
+}
+
 export async function upsertUserFromOsuProfile(
   tx: Transaction,
   input: CreateUserInput,

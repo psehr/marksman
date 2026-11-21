@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { findUserById, listUsers } from "../db/users";
+import { findUserById, findUserByUsername, listUsers } from "../db/users";
 import { queryPageSchema, uuidSchema } from "../models/common";
 import { requireAuth } from "../middleware/requireAuth";
 import { getBookmarkedBounties } from "../services/bounty-bookmarks";
@@ -28,13 +28,10 @@ usersRouter.get("/", async (_req, res) => {
 usersRouter.get("/:id", async (req, res) => {
   const parsed = uuidSchema.safeParse(req.params.id);
 
-  if (!parsed.success) {
-    return res
-      .status(400)
-      .json({ code: "MALFORMED_USER_ID", error: "Malformed user ID" });
-  }
+  const user = parsed.success
+    ? await findUserById(parsed.data)
+    : await findUserByUsername(req.params.id);
 
-  const user = await findUserById(parsed.data);
   if (!user)
     return res
       .status(404)
