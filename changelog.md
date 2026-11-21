@@ -11,9 +11,10 @@ are marked until deployment is confirmed. Deployment names increment as
 
 ### Features
 
-- feat: default bounty board sorting to ongoing hunts.
+- fa4d1ec — feat: default bounty board sorting to ongoing hunts.
 - 8f84abc — feat: show ongoing hunt counts on bounties.
 - 41f0211 — feat: accept username aliases in profile URLs.
+- feat: show hunter stamps on bounty cards.
 
 ### Fixes
 

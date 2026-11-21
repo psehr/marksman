@@ -10,6 +10,7 @@ import BountyTierBadge from "./BountyTierBadge";
 import GradeIcon from "../osu/GradeIcon";
 import { BeatmapCard } from "../beatmaps/BeatmapCard";
 import { BadgeLabel } from "../ui/BadgeLabel";
+import BountyHuntStamps from "./BountyHuntStamps";
 
 export type BountyCardDisplay = {
   beatmap: ExtendedBounty["beatmap"];
@@ -70,7 +71,11 @@ export default function BountyCard({ bounty }: { bounty: ExtendedBounty }) {
       className="relative isolate bg-card border-border hover:border-focus-ring focus-visible:border-accent flex w-full min-w-0 cursor-pointer flex-col justify-between overflow-hidden rounded border transition-all focus-visible:outline-0"
       href={`/bounties/${bounty.id}`}
     >
-      <BountyCardContent content={content} status={status} />
+      <BountyCardContent
+        content={content}
+        status={status}
+        hunterCount={bounty.engagement.hunterCount}
+      />
     </Link>
   );
 }
@@ -78,9 +83,11 @@ export default function BountyCard({ bounty }: { bounty: ExtendedBounty }) {
 export function BountyCardContent({
   content,
   status,
+  hunterCount = 0,
 }: {
   content: BountyCardDisplay;
   status?: React.ReactNode;
+  hunterCount?: number;
 }) {
   let mod_requirement;
   let acc_requirement;
@@ -195,6 +202,11 @@ export function BountyCardContent({
         </>
       )}
       <BeatmapCard beatmapMetadata={content.beatmap} variant="bounty" />
+      {hunterCount > 0 && (
+        <div className="relative z-10 flex justify-end px-4">
+          <BountyHuntStamps count={hunterCount} />
+        </div>
+      )}
       <div className="relative z-10 flex place-content-between items-end gap-4 p-4">
         <div className="flex min-w-0 flex-1 flex-col gap-2">
           <div className="flex flex-wrap items-center gap-2">
