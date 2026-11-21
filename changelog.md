@@ -21,6 +21,7 @@ are marked until deployment is confirmed. Deployment names increment as
 
 ### Fixes
 
+- ec10657 — fix: center mobile navigation and stretch profile card.
 - 9fd81de — fix: stretch profile summary cards on mobile.
 - 25b85b3 — fix: restore wiki anchor scrolling after access checks.
 - 9746bd0 — fix: open creation help link in a new tab.
