@@ -12,6 +12,7 @@ import HuntControls from "@/components/hunts/HuntControls";
 import type { ReactNode } from "react";
 import BeatmapActions from "./BeatmapActions";
 import ShareBounty from "./ShareBounty";
+import BountyStatusDescriptor from "./BountyStatusDescriptor";
 
 export type AvailableActions = {
   canCancel: boolean;
@@ -34,7 +35,7 @@ function ConnectedActions({
   refreshEngagement,
   availableActions,
 }: Props) {
-  const { refreshUser } = useAuth();
+  const { user, refreshUser } = useAuth();
   const { cancel, bookmark } = useBountyActions(
     bounty.id,
     bounty.engagement.isBookmarkedByCurrentUser === true,
@@ -72,7 +73,15 @@ function ConnectedActions({
               disabled={bookmark.pending}
               onClick={() => void bookmark.run()}
             >
-              <ActionIcon action={bookmark.pending || bookmark.refreshFailed ? "refresh" : canUnbookmark ? "bookmarked" : "bookmark"} />
+              <ActionIcon
+                action={
+                  bookmark.pending || bookmark.refreshFailed
+                    ? "refresh"
+                    : canUnbookmark
+                      ? "bookmarked"
+                      : "bookmark"
+                }
+              />
               {bookmark.pending
                 ? "Saving..."
                 : bookmark.refreshFailed
@@ -93,25 +102,26 @@ function ConnectedActions({
     <BountyHunt bounty={bounty}>
       {(controls) => (
         <>
-          {controls.ready && !controls.loading && controls.isHunting ? (
-            <div className="flex flex-col gap-1">
-              <p role="status" className="text-sm text-accent text-center">
-                You are currently hunting this bounty.
-              </p>
-              <p
-                role="status"
-                className="text-xs text-foreground-muted text-center"
-              >
-                Marksman tracks your submitted scores on this beatmap.
-              </p>
-            </div>
+          {controls.ready && !controls.loading ? (
+            <BountyStatusDescriptor
+              bounty={bounty}
+              osuUserId={user?.identity.osuUserId}
+              isHunting={controls.isHunting}
+            />
           ) : null}
           {renderActions(<HuntControls {...controls} />)}
         </>
       )}
     </BountyHunt>
   ) : (
-    renderActions()
+    <>
+      <BountyStatusDescriptor
+        bounty={bounty}
+        osuUserId={user?.identity.osuUserId}
+        isHunting={false}
+      />
+      {renderActions()}
+    </>
   );
 }
 
@@ -120,18 +130,23 @@ export default function BountyActions(props: Props) {
   if (loading) return <p role="status">Loading actions...</p>;
   if (!props.isAuthenticated || !user) {
     return (
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-        <ButtonLink
-          size="lg"
-          variant="accent"
-          href={`${process.env.NEXT_PUBLIC_API_URL}/auth/osu`}
-        >
-          <ActionIcon action="sign-in" />
-          Log in with osu! to interact
-        </ButtonLink>
-        <ShareBounty key={props.bounty.id} bountyId={props.bounty.id} />
-        <BeatmapActions bounty={props.bounty} />
-      </div>
+      <>
+        {props.bounty.status !== "open" ? (
+          <BountyStatusDescriptor bounty={props.bounty} isHunting={false} />
+        ) : null}
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <ButtonLink
+            size="lg"
+            variant="accent"
+            href={`${process.env.NEXT_PUBLIC_API_URL}/auth/osu`}
+          >
+            <ActionIcon action="sign-in" />
+            Log in with osu! to interact
+          </ButtonLink>
+          <ShareBounty key={props.bounty.id} bountyId={props.bounty.id} />
+          <BeatmapActions bounty={props.bounty} />
+        </div>
+      </>
     );
   }
   return (

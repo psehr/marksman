@@ -409,3 +409,97 @@ test("owner cancellation and restored Stop/Unbookmark controls have icons", asyn
   await page.reload();
   await expect(page.getByRole("button", { name: "Cancel bounty", exact: true }).locator("svg")).toHaveCount(1);
 });
+
+for (const signedIn of [true, false]) {
+  for (const status of ["completed", "cancelled"] as const) {
+    test(`descriptor ${status}: ${signedIn ? "signed-in viewer sees status" : "signed-out viewer remains gated"}`, async ({ page }) => {
+      const state = await setup(page, { status, completedByOsuUserId: status === "completed" ? 42 : null });
+      state.ongoing = [hunt];
+      if (!signedIn) await page.route("**/auth/me", route => route.fulfill({ status: 401, json: {} }));
+      await page.goto(`/bounties/${id}`);
+      if (!signedIn) {
+        // The alpha gate hides the entire detail page from signed-out visitors.
+        await expect(page.locator("section").getByRole("link", { name: "Log in with osu!", exact: true })).toBeVisible();
+        await expect(page.getByRole("button", { name: "Share achievement", exact: true })).toHaveCount(0);
+        return;
+      }
+      await expect(page.getByText(status === "completed"
+        ? "This bounty has been completed by a player."
+        : "This bounty has been cancelled by its creator.", { exact: true })).toBeVisible();
+      await expect(huntingMessage(page)).toHaveCount(0);
+      await expect(page.getByRole("button", { name: "Share achievement", exact: true })).toHaveCount(0);
+      await expect(page.getByRole("button", { name: "Share bounty", exact: true })).toBeVisible();
+      expect(state.hunts).toBe(0);
+    });
+  }
+}
+for (const owner of [null, { id: "dddddddd-dddd-4ddd-8ddd-dddddddddddd", osuUserId: 42, username: "psehr" }]) {
+  for (const winner of [null, { id: hunt.userId, osuUserId: 99, username: "fixture" }]) {
+    test(`descriptor winner shares multiline achievement with ${owner ? "owner name" : "missing owner"} and ${winner ? "profile link" : "missing winner"}`, async ({ page }) => {
+      await page.addInitScript(() => {
+        Object.defineProperty(navigator, "clipboard", { configurable: true, value: {
+          writeText: async (text: string) => { (window as unknown as { copiedText: string }).copiedText = text; },
+        } });
+      });
+      await setup(page, { status: "completed", completedByOsuUserId: 99, owner, winner });
+      await page.goto(`/bounties/${id}?view=funding#rules`);
+      await expect(page.getByText("You completed this bounty! 🥳", { exact: true })).toBeVisible();
+      await page.getByRole("button", { name: "Share achievement", exact: true }).click();
+      await expect(page.getByText("Text copied!", { exact: true })).toBeVisible();
+      const copied = await page.evaluate(() => (window as unknown as { copiedText: string }).copiedText);
+      expect(copied).toBe([
+        `✅ I completed a bounty from *${owner ? "psehr" : "another player"}* and won **300 BP**! ✅`,
+        `**[View Bounty](http://127.0.0.1:3100/bounties/${id})${winner ? ` - [Profile](http://127.0.0.1:3100/users/${hunt.userId})` : ""}**`,
+        "Start hunting bounties now on **[marksman.psehr.dev](https://marksman.psehr.dev)**! 🎯",
+      ].join("\n"));
+      expect(copied).not.toContain("undefined");
+      expect(copied).not.toContain("?view=");
+      expect(copied).not.toContain("#rules");
+    });
+  }
+}
+test("descriptor does not show open instructions until hunt loading succeeds", async ({ page }) => {
+  const state = await setup(page);
+  state.huntFailure = true;
+  await page.goto(`/bounties/${id}`);
+  await expect(page.getByRole("button", { name: "Reload hunts", exact: true })).toBeVisible();
+  await expect(page.getByText("This bounty is open for completion.", { exact: true })).toHaveCount(0);
+  state.huntFailure = false;
+  await page.getByRole("button", { name: "Reload hunts", exact: true }).click();
+  await expect(page.getByText("This bounty is open for completion.", { exact: true })).toBeVisible();
+});
+test("descriptor switches from hunting to won when polling reports completion", async ({ page }) => {
+  await page.clock.install();
+  const state = await setup(page);
+  state.ongoing = [hunt];
+  await page.goto(`/bounties/${id}`);
+  await expect(huntingMessage(page)).toBeVisible();
+  state.bounty = { ...state.bounty, status: "completed", completedByOsuUserId: 99 };
+  await page.clock.fastForward(5100);
+  await expect(page.getByText("You completed this bounty! 🥳", { exact: true })).toBeVisible();
+  await expect(huntingMessage(page)).toHaveCount(0);
+  await expect(page.getByRole("button", { name: "Stop Hunting", exact: true })).toHaveCount(0);
+});
+
+for (const status of ["open", "completed", "cancelled"] as const) {
+  test(`descriptor for creator of ${status} bounty respects final status`, async ({ page }) => {
+    const state = await setup(page, {
+      status, creatorOsuUserId: 99,
+      completedByOsuUserId: status === "completed" ? 42 : null,
+      // Owner enrichment is optional; ownership comes from the numeric osu! ID.
+      owner: null,
+    });
+    await page.goto(`/bounties/${id}`);
+    const expected = status === "open" ? "You own this bounty."
+      : status === "completed" ? "This bounty has been completed by a player."
+      : "This bounty has been cancelled by its creator.";
+    await expect(page.getByText(expected, { exact: true })).toBeVisible();
+    await expect(page.getByText("You own this bounty.", { exact: true })).toHaveCount(status === "open" ? 1 : 0);
+    await expect(page.getByText("This bounty is open for completion.", { exact: true })).toHaveCount(0);
+    await expect(huntingMessage(page)).toHaveCount(0);
+    await expect(page.getByRole("button", { name: "Start Hunting", exact: true })).toHaveCount(0);
+    await expect(page.getByRole("button", { name: "Cancel bounty", exact: true })).toHaveCount(status === "open" ? 1 : 0);
+    if (status === "open") await expect(page.getByText("Other players can hunt it for completion.", { exact: true })).toBeVisible();
+    expect(state.hunts).toBe(0);
+  });
+}
