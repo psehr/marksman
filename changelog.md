@@ -18,6 +18,7 @@ are marked until deployment is confirmed. Deployment names increment as
 
 ### Fixes
 
+- 9746bd0 — fix: open creation help link in a new tab.
 - 416bcfe — fix: skip wizard authentication step for signed-in users.
 - cf4b29e — fix: show blocked cursor on disabled bounty filters.
 - dfa4dce — fix: align funding button with bounty actions.
