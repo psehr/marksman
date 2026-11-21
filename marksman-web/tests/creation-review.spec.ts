@@ -2,6 +2,7 @@ import { expect, test, type Page } from "@playwright/test";
 
 const id = "12345678-1234-4234-8234-123456789abc";
 async function review(page: Page) {
+  await page.route("**/auth/access", route => route.fulfill({ status: 204 }));
   await page.route("**/auth/me", route => route.fulfill({ json: {
     identity: { id, osuUserId: 12345, username: "fixture" },
     stats: { bpBalance: 1000 }, createdAt: "2025-01-01T00:00:00.000Z",
@@ -14,7 +15,6 @@ async function review(page: Page) {
   } }));
   await page.goto("/bounties/creation-tool");
   const next = page.getByRole("button", { name: "Continue", exact: true });
-  await next.click();
   await page.getByRole("textbox", { name: "beatmap input" }).fill("123456");
   await next.click();
   await next.click();

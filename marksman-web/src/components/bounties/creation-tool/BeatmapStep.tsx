@@ -80,10 +80,12 @@ export default function BeatmapStep({ props }: { props: BeatmapStepProps }) {
         </div>
       ) : null}
       <div className="flex gap-2 place-content-end w-full">
-        <Button onClick={props.onBack} variant="outline">
-          <ActionIcon action="back" />
-          Back
-        </Button>
+        {props.onBack ? (
+          <Button onClick={props.onBack} variant="outline">
+            <ActionIcon action="back" />
+            Back
+          </Button>
+        ) : null}
         <Button
           onClick={props.onContinue}
           variant="accent"

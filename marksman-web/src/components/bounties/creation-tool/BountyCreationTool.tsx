@@ -2,7 +2,7 @@
 
 import { useAuth } from "@/components/auth/AuthProvider";
 import { useBeatmapMetadata } from "@/hooks/useBeatmapMetadata";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import LoginStep from "./LoginStep";
 import BeatmapStep from "./BeatmapStep";
 import GoalStep from "./GoalStep";
@@ -37,15 +37,22 @@ import BountyPreview from "./BountyPreview";
 import { aes_font } from "@/lib/fonts";
 
 export default function BountyCreationTool() {
-  const [currentStep, setCurrentStep] =
-    useState<BountyCreationToolStep>("login");
-
   const {
     user,
     loading: accountLoading,
     error: accountError,
     refreshUser,
   } = useAuth();
+
+  const [currentStep, setCurrentStep] = useState<BountyCreationToolStep>(
+    () => user && !accountLoading && !accountError ? "beatmap" : "login",
+  );
+
+  useEffect(() => {
+    if (user && !accountLoading && !accountError) {
+      setCurrentStep((step) => step === "login" ? "beatmap" : step);
+    }
+  }, [user?.identity.id, accountLoading, accountError]);
 
   const loginProps = {
     user,
@@ -74,7 +81,9 @@ export default function BountyCreationTool() {
   const beatmapStepProps: BeatmapStepProps = {
     beatmapInput,
     onBeatmapChange: (input: string) => setBeatmapInput(input),
-    onBack: () => setCurrentStep("login"),
+    onBack: user && !accountLoading && !accountError
+      ? undefined
+      : () => setCurrentStep("login"),
     onContinue: () => {
       if (beatmapValidity.status === "valid") setCurrentStep("goal");
     },

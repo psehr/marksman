@@ -20,6 +20,8 @@ for (const width of [320, 640, 1280]) {
       return route.abort();
     });
     await page.goto("/bounties/creation-tool");
+    await expect(page.getByRole("textbox", { name: "beatmap input" })).toBeVisible();
+    await expect(page.getByRole("button", { name: "Back", exact: true })).toHaveCount(0);
     const next = page.getByRole("button", { name: "Continue", exact: true });
     const back = page.getByRole("button", { name: "Back", exact: true });
     async function checkIcon(control: typeof next, side: "left" | "right") {
@@ -36,23 +38,25 @@ for (const width of [320, 640, 1280]) {
         return element.scrollWidth <= element.clientWidth && (side === "left" ? iconBounds.right <= textBounds.left : iconBounds.left >= textBounds.right);
       }, side)).toBe(true);
     }
-    for (let step = 1; step <= 5; step++) {
+    for (let step = 2; step <= 5; step++) {
       await expect(next).toBeVisible();
       if (step === 2) {
         await page.getByRole("textbox", { name: "beatmap input" }).fill("123456");
       }
       await expect(next).toBeEnabled();
       await checkIcon(next, "right");
-      if (step > 1) await checkIcon(back, "left");
+      if (step > 2) await checkIcon(back, "left");
       await next.focus();
       await page.keyboard.press("Enter");
     }
     await expect(page.getByRole("heading", { name: "Review Bounty (6/6)" })).toBeVisible();
     await checkIcon(back, "left");
-    for (let step = 6; step > 1; step--) {
+    for (let step = 6; step > 2; step--) {
       await back.click();
     }
-    await expect(page.getByText("Logged in as fixture", { exact: true })).toBeVisible();
+    await expect(page.getByRole("textbox", { name: "beatmap input" })).toHaveValue("123456");
+    await expect(back).toHaveCount(0);
+    await expect(page.getByRole("heading", { name: "Authentication Status (1/6)" })).toHaveCount(0);
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   });
 }

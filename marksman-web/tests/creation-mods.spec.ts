@@ -1,6 +1,7 @@
 import { expect, test } from "@playwright/test";
 
 test("wizard mod rules validate selections and reset mods after returning to Goal", async ({ page }) => {
+  await page.route("**/auth/access", route => route.fulfill({ status: 204 }));
   await page.route("**/auth/me", route => route.fulfill({ json: {
     identity: { id: "12345678-1234-4234-8234-123456789abc", osuUserId: 12345, username: "fixture" },
     stats: { bpBalance: 1000 }, createdAt: "2025-01-01T00:00:00.000Z",
@@ -12,7 +13,6 @@ test("wizard mod rules validate selections and reset mods after returning to Goa
     total_length: 120, hit_length: 110, playcount: 100, beatmapset: null,
   } }));
   await page.goto("/bounties/creation-tool");
-  await page.getByRole("button", { name: "Continue", exact: true }).click();
   await page.getByRole("textbox", { name: "beatmap input" }).fill("123456");
   await page.getByRole("button", { name: "Continue", exact: true }).click();
   await page.getByRole("button", { name: "Continue", exact: true }).click();

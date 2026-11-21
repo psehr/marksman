@@ -20,7 +20,7 @@ export type BeatmapValidity =
 export type BeatmapStepProps = {
   beatmapInput: string;
   onBeatmapChange: (value: string) => void;
-  onBack: () => void;
+  onBack?: () => void;
   onContinue: () => void;
   beatmapMetadata: OsuBeatmapMetadata | null;
   beatmapLookupStatus: "idle" | "loading" | "success" | "error";
