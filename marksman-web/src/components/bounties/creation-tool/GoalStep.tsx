@@ -98,6 +98,8 @@ export default function GoalStep({ props }: { props: GoalStepProps }) {
               Customize stable combo threshold{" "}
               <Link
                 href="/wiki/bounties#fc-ruling"
+                target="_blank"
+                rel="noopener noreferrer"
                 className="underline text-sm text-foreground-muted"
               >
                 (what's this?)
