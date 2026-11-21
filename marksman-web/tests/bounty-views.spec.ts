@@ -287,7 +287,7 @@ for (const width of [320, 375, 390, 640, 1280]) {
   });
 }
 
-test("Share bounty follows Bookmark, copies a clean URL and clears feedback", async ({ page }) => {
+test("Share bounty follows Fund bounty, copies a clean URL and clears feedback", async ({ page }) => {
   await page.clock.install();
   await page.addInitScript(() => {
     const links: string[] = [];
@@ -298,7 +298,7 @@ test("Share bounty follows Bookmark, copies a clean URL and clears feedback", as
   await page.goto(`/bounties/${id}?view=funding&keep=1#rules`);
   const share = page.getByRole("button", { name: "Share bounty", exact: true });
   await expect(share).toBeVisible();
-  expect(await share.evaluate(element => element.parentElement!.previousElementSibling?.textContent)).toBe("Bookmark");
+  expect(await share.evaluate(element => element.parentElement!.previousElementSibling?.textContent)).toBe("Fund bounty");
   await share.focus();
   await page.keyboard.press("Enter");
   await expect(page.getByText("Link copied!", { exact: true })).toBeVisible();
@@ -356,12 +356,12 @@ for (const status of ["completed", "cancelled"] as const) {
   });
 }
 
-test("share follows Unbookmark for a saved bounty", async ({ page }) => {
+test("share follows funding for a saved bounty", async ({ page }) => {
   await setup(page, { engagement: { bookmarkCount: 3, isBookmarkedByCurrentUser: true } });
   await page.goto(`/bounties/${id}`);
   const share = page.getByRole("button", { name: "Share bounty", exact: true });
   await expect(share).toBeVisible();
-  expect(await share.evaluate(element => element.parentElement!.previousElementSibling?.textContent)).toBe("Unbookmark");
+  expect(await share.evaluate(element => element.parentElement!.previousElementSibling?.textContent)).toBe("Fund bounty");
 });
 
 test("missing clipboard API offers manual copying", async ({ page }) => {

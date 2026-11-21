@@ -27,6 +27,7 @@ type Props = {
   refreshEngagement: () => Promise<void>;
   availableActions: AvailableActions;
   isAuthenticated: boolean;
+  fundingAction: ReactNode;
 };
 
 function ConnectedActions({
@@ -34,6 +35,7 @@ function ConnectedActions({
   refresh,
   refreshEngagement,
   availableActions,
+  fundingAction,
 }: Props) {
   const { user, refreshUser } = useAuth();
   const { cancel, bookmark } = useBountyActions(
@@ -93,6 +95,7 @@ function ConnectedActions({
             {bookmark.error && <p role="alert">{bookmark.error}</p>}
           </div>
         )}
+        {fundingAction}
         <ShareBounty key={bounty.id} bountyId={bounty.id} />
       </div>
     );

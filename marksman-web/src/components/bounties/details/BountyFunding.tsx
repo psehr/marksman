@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { MAX_BOUNTY_REWARD_BP, type ExtendedBounty } from "@marksman/contracts";
 import { useAuth } from "@/components/auth/AuthProvider";
 import { useBountyContribution } from "@/hooks/useBountyContribution";
@@ -12,9 +12,10 @@ type Props = {
   bounty: ExtendedBounty;
   balance: number;
   refresh: () => Promise<void>;
+  children: (action: ReactNode) => ReactNode;
 };
 
-function ContributionForm({ bounty, balance, refresh }: Props) {
+function ContributionForm({ bounty, balance, refresh, children }: Props) {
   const [expanded, setExpanded] = useState(false);
   const funding = useBountyContribution(bounty.id, refresh);
   const amount = Number(funding.amount);
@@ -33,10 +34,10 @@ function ContributionForm({ bounty, balance, refresh }: Props) {
         : null;
   const isOpen = bounty.status === "open";
 
-  if (!isOpen && !funding.retrying && !funding.saved && !funding.pending)
-    return null;
-  if (!expanded)
-    return isOpen ? (
+  const showForm =
+    expanded && (isOpen || funding.retrying || funding.saved || funding.pending);
+  const action =
+    !expanded && isOpen ? (
       <Button
         size="lg"
         onClick={() => setExpanded(true)}
@@ -52,93 +53,101 @@ function ContributionForm({ bounty, balance, refresh }: Props) {
     ) : null;
 
   return (
-    <InfoSection title="Fund bounty">
-      {funding.complete ? (
-        <div className="flex flex-col gap-3 py-2">
-          <p role="status">Added {amount.toLocaleString()} BP to the bounty.</p>
-          {isOpen && remaining > 0 ? (
-            <Button onClick={funding.reset}>Add another contribution</Button>
-          ) : null}
-        </div>
-      ) : (
-        <form
-          className="flex w-full flex-col gap-3 py-2 text-left"
-          onSubmit={(event) => {
-            event.preventDefault();
-            if (funding.retrying || (!validation && isOpen))
-              void funding.submit();
-          }}
-        >
-          <label htmlFor="contribution-amount">Contribution (BP)</label>
-          <TextInput
-            id="contribution-amount"
-            type="number"
-            min={1}
-            step={1}
-            value={funding.amount}
-            disabled={funding.pending || funding.saved}
-            onChange={(event) => funding.setAmount(event.target.value)}
-            aria-describedby="contribution-cost contribution-terms"
-          />
-          <p id="contribution-cost" className="text-sm" aria-live="polite">
-            Contribution: {validAmount ? amount.toLocaleString() : "—"} BP ·
-            Fee: {validAmount ? fee.toLocaleString() : "—"} BP · Total debit:{" "}
-            {validAmount ? (amount + fee).toLocaleString() : "—"} BP
-          </p>
-          <p className="text-sm">
-            Balance: {balance.toLocaleString()} BP · Reward limit:{" "}
-            {MAX_BOUNTY_REWARD_BP.toLocaleString()} BP
-          </p>
-          <p id="contribution-terms" className="text-sm">
-            Contributions cannot be withdrawn. Cancellation refunds your
-            contribution, excluding fees.
-          </p>
-          {validation &&
-          funding.amount &&
-          !funding.retrying &&
-          !funding.saved ? (
-            <p className="text-sm text-danger">{validation}</p>
-          ) : null}
-          {funding.error ? (
-            <p role="alert" className="text-danger">
-              {funding.error}
-            </p>
-          ) : null}
-          <Button
-            type="submit"
-            variant="accent"
-            disabled={
-              funding.pending ||
-              (!funding.retrying && (!!validation || !isOpen))
-            }
-          >
-            {funding.pending
-              ? "Saving..."
-              : funding.saved
-                ? "Retry refresh"
-                : funding.retrying
-                  ? "Retry contribution"
-                  : "Confirm contribution"}
-          </Button>
-        </form>
-      )}
-    </InfoSection>
+    <>
+      {children(action)}
+      {showForm ? (
+        <InfoSection title="Fund bounty">
+          {funding.complete ? (
+            <div className="flex flex-col gap-3 py-2">
+              <p role="status">Added {amount.toLocaleString()} BP to the bounty.</p>
+              {isOpen && remaining > 0 ? (
+                <Button onClick={funding.reset}>Add another contribution</Button>
+              ) : null}
+            </div>
+          ) : (
+            <form
+              className="flex w-full flex-col gap-3 py-2 text-left"
+              onSubmit={(event) => {
+                event.preventDefault();
+                if (funding.retrying || (!validation && isOpen))
+                  void funding.submit();
+              }}
+            >
+              <label htmlFor="contribution-amount">Contribution (BP)</label>
+              <TextInput
+                id="contribution-amount"
+                type="number"
+                min={1}
+                step={1}
+                value={funding.amount}
+                disabled={funding.pending || funding.saved}
+                onChange={(event) => funding.setAmount(event.target.value)}
+                aria-describedby="contribution-cost contribution-terms"
+              />
+              <p id="contribution-cost" className="text-sm" aria-live="polite">
+                Contribution: {validAmount ? amount.toLocaleString() : "—"} BP ·
+                Fee: {validAmount ? fee.toLocaleString() : "—"} BP · Total debit:{" "}
+                {validAmount ? (amount + fee).toLocaleString() : "—"} BP
+              </p>
+              <p className="text-sm">
+                Balance: {balance.toLocaleString()} BP · Reward limit:{" "}
+                {MAX_BOUNTY_REWARD_BP.toLocaleString()} BP
+              </p>
+              <p id="contribution-terms" className="text-sm">
+                Contributions cannot be withdrawn. Cancellation refunds your
+                contribution, excluding fees.
+              </p>
+              {validation &&
+              funding.amount &&
+              !funding.retrying &&
+              !funding.saved ? (
+                <p className="text-sm text-danger">{validation}</p>
+              ) : null}
+              {funding.error ? (
+                <p role="alert" className="text-danger">
+                  {funding.error}
+                </p>
+              ) : null}
+              <Button
+                type="submit"
+                variant="accent"
+                disabled={
+                  funding.pending ||
+                  (!funding.retrying && (!!validation || !isOpen))
+                }
+              >
+                {funding.pending
+                  ? "Saving..."
+                  : funding.saved
+                    ? "Retry refresh"
+                    : funding.retrying
+                      ? "Retry contribution"
+                      : "Confirm contribution"}
+              </Button>
+            </form>
+          )}
+        </InfoSection>
+      ) : null}
+    </>
   );
 }
 
 export default function BountyFunding({
   bounty,
   refresh,
+  children,
 }: {
   bounty: ExtendedBounty;
   refresh: () => Promise<void>;
+  children: (action: ReactNode) => ReactNode;
 }) {
   const { user, refreshBalance } = useAuth();
-  if (!user) return null;
+  if (!user) return children(null);
   return (
     <ContributionForm
       key={`${user.identity.id}:${bounty.id}`}
       bounty={bounty}
+      children={children}
       balance={user.stats.bpBalance}
       refresh={async () => {
         const results = await Promise.allSettled([refresh(), refreshBalance()]);

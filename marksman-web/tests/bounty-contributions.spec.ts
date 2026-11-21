@@ -186,32 +186,35 @@ test("full reward disables funding", async ({ page }) => {
   await expect(page.getByRole("button", { name: "Reward limit reached" })).toBeDisabled();
 });
 
-test("uncertain contribution can replay after polling observes closure", async ({ page }) => {
-  const state = await setup(page);
-  await page.clock.install();
-  await page.clock.pauseAt(new Date());
-  await page.route(`**/bounties/${bounty.id}/contributions`, async route => {
-    const input = route.request().postDataJSON() as Input;
-    state.posts.push(input);
-    if (state.posts.length === 1) {
-      state.bounty.status = "completed";
-      state.bounty.rewardBp = 110;
-      state.balance = 0;
-      return route.abort("failed"); // Server committed, response was lost.
-    }
-    return respond(route, input);
+for (const owner of [true, false]) {
+  test(`uncertain contribution can replay after polling observes closure for ${owner ? "creator" : "hunter"}`, async ({ page }) => {
+    const state = await setup(page, { owner });
+    await page.clock.install();
+    await page.clock.pauseAt(new Date());
+    await page.route(`**/bounties/${bounty.id}/contributions`, async route => {
+      const input = route.request().postDataJSON() as Input;
+      state.posts.push(input);
+      if (state.posts.length === 1) {
+        state.bounty.status = "completed";
+        state.bounty.rewardBp = 110;
+        state.balance = 0;
+        return route.abort("failed"); // Server committed, response was lost.
+      }
+      return respond(route, input);
+    });
+    await openForm(page);
+    await page.getByLabel("Contribution (BP)").fill("10");
+    await page.getByRole("button", { name: "Confirm contribution" }).click();
+    await expect(page.locator("form [role=alert]")).toBeVisible();
+    await page.clock.runFor(5000);
+    await expect(page.getByText("COMPLETED", { exact: true })).toBeVisible();
+    await page.getByRole("button", { name: "Retry contribution" }).click();
+    await expect(page.getByRole("status").filter({ hasText: "Added 10 BP" })).toBeVisible();
+    expect(state.posts).toHaveLength(2);
+    expect(state.posts[1]).toEqual(state.posts[0]);
   });
-  await openForm(page);
-  await page.getByLabel("Contribution (BP)").fill("10");
-  await page.getByRole("button", { name: "Confirm contribution" }).click();
-  await expect(page.locator("form [role=alert]")).toBeVisible();
-  await page.clock.runFor(5000);
-  await expect(page.getByText("COMPLETED", { exact: true })).toBeVisible();
-  await page.getByRole("button", { name: "Retry contribution" }).click();
-  await expect(page.getByRole("status").filter({ hasText: "Added 10 BP" })).toBeVisible();
-  expect(state.posts).toHaveLength(2);
-  expect(state.posts[1]).toEqual(state.posts[0]);
-});
+
+}
 
 test("an older polling response cannot overwrite the refreshed reward", async ({ page }) => {
   const state = await setup(page);
@@ -254,3 +257,30 @@ test("an older polling response cannot overwrite the refreshed reward", async ({
   }));
   await expect(page.getByText("777", { exact: true })).toBeVisible();
 });
+
+for (const owner of [true, false]) {
+  for (const width of [320, 640, 1280]) {
+    test(`funding action uses grid width before share at ${width}px for ${owner ? "creator" : "hunter"}`, async ({ page }) => {
+      await page.setViewportSize({ width, height: 1000 });
+      await setup(page, { owner });
+      await page.goto(`/bounties/${bounty.id}`);
+      const fund = page.getByRole("button", { name: "Fund bounty", exact: true });
+      const share = page.getByRole("button", { name: "Share bounty", exact: true });
+      await expect(fund).toBeVisible();
+      await expect(share).toBeVisible();
+      expect(await share.evaluate(el => el.parentElement!.previousElementSibling?.textContent)).toBe("Fund bounty");
+      const fundBox = (await fund.boundingBox())!;
+      const shareBox = (await share.boundingBox())!;
+      expect(Math.abs(fundBox.width - shareBox.width)).toBeLessThan(2);
+      expect(Math.abs(fundBox.height - shareBox.height)).toBeLessThan(2);
+      expect(await fund.evaluate(el => getComputedStyle(el.parentElement!).display)).toBe("grid");
+      expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
+      const hunt = owner ? null : await page.getByRole("button", { name: "Start Hunting", exact: true }).elementHandle();
+      await fund.click();
+      await expect(page.getByLabel("Contribution (BP)")).toBeVisible();
+      const formBox = (await page.locator("form").boundingBox())!;
+      if (width >= 640) expect(formBox.width).toBeGreaterThan(shareBox.width);
+      if (hunt) expect(await hunt.evaluate(el => el.isConnected)).toBe(true);
+    });
+  }
+}

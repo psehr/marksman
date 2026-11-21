@@ -57,14 +57,18 @@ export default function BountyDetailsPage() {
             <>
               <BountyStatus status={bounty.status} />
               <BountyCard bounty={bounty} />
-              <BountyActions
-                bounty={bounty}
-                refresh={refreshBounty}
-                refreshEngagement={refreshEngagement}
-                availableActions={availableActions}
-                isAuthenticated={isAuthenticated}
-              />
-              <BountyFunding bounty={bounty} refresh={refreshFunding} />
+              <BountyFunding bounty={bounty} refresh={refreshFunding}>
+                {(fundingAction) => (
+                  <BountyActions
+                    bounty={bounty}
+                    refresh={refreshBounty}
+                    refreshEngagement={refreshEngagement}
+                    availableActions={availableActions}
+                    isAuthenticated={isAuthenticated}
+                    fundingAction={fundingAction}
+                  />
+                )}
+              </BountyFunding>
               <div
                 role="group"
                 aria-label="Bounty views"
