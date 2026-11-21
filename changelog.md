@@ -6,6 +6,8 @@ are marked until deployment is confirmed. Deployment names increment as
 
 ## Alpha - Update 1 — Pending deployment
 
+- f89a0fb — feat: increase daily reward to 100 BP.
+- 4eacaae — docs: record profile layout fix in changelog.
 - a36b100 — fix: wrap profile hunting slots in a responsive grid.
 - 190f1f9 — docs: add deployment changelog.
 - ed5e688 — feat: increase hunting slots to three.
