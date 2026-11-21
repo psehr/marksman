@@ -11,6 +11,7 @@ import {
 } from "@/lib/bounty-filters";
 import ModIcon from "../osu/ModIcon";
 import TextInput from "../ui/TextInput";
+import ActionIcon from "../ui/ActionIcon";
 
 export type BountySortingMethod = {
   type: "date" | "bpReward";
@@ -34,7 +35,7 @@ function FilterButton({
 }) {
   return (
     <button
-      className={`bg-surface text-sm border-border aria-pressed:border-accent aria-pressed:text-accent enabled:hover:bg-surface-hover rounded border text-foreground-muted h-10 px-4 enabled:cursor-pointer disabled:opacity-20 ${className}`}
+      className={`inline-flex items-center justify-center gap-2 bg-surface text-sm border-border aria-pressed:border-accent aria-pressed:text-accent enabled:hover:bg-surface-hover rounded border text-foreground-muted h-10 px-4 enabled:cursor-pointer disabled:opacity-20 ${className}`}
       aria-pressed={pressed}
       aria-label={ariaLabel}
       disabled={disabled}
@@ -132,6 +133,7 @@ export default function BountyFilters(props: {
               pressed={!props.relationship || !isLogged}
               onClick={() => props.setRelationship(null)}
             >
+              <ActionIcon action="browse" />
               All
             </FilterButton>
             <FilterButton
@@ -139,6 +141,7 @@ export default function BountyFilters(props: {
               onClick={() => props.setRelationship("bookmarked")}
               disabled={!isLogged}
             >
+              <ActionIcon action="bookmarked" />
               Bookmarked
             </FilterButton>
             <FilterButton
@@ -146,9 +149,11 @@ export default function BountyFilters(props: {
               onClick={() => props.setRelationship("created")}
               disabled={!isLogged}
             >
+              <ActionIcon action="create" />
               Created
             </FilterButton>
             <FilterButton onClick={() => {}} disabled>
+              <ActionIcon action="hunt" />
               Hunting
             </FilterButton>
           </div>
