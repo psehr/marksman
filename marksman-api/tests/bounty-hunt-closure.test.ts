@@ -51,7 +51,7 @@ beforeEach(async () => {
     { osuUserId: 102, username: "hunter", bpBalance: 5 },
     { osuUserId: 103, username: "other", bpBalance: 10 },
   ]).returning();
-  [creator, hunter, other] = rows.map(({ id, osuUserId, username }) => ({ id, osuUserId, username }));
+  [creator, hunter, other] = rows.map(({ id, osuUserId, username }) => ({ id, osuUserId, username, coverUrl: null, countryCode: null, countryName: null }));
   bountyId = await seedBounty();
   await db.insert(ledgerEntries).values([
     { userId: creator.id, amount: 100, reason: "initial_grant" },

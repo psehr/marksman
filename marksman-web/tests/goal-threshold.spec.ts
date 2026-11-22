@@ -18,7 +18,7 @@ const bounty: ExtendedBounty = {
     minimumGradeRequirement: "A",
     modRequirement: { rule: "any" },
   },
-  owner: {
+  owner: { coverUrl: null, countryCode: null, countryName: null,
     id: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
     osuUserId: 67890,
     username: "mapmaker",

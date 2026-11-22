@@ -18,7 +18,7 @@ const fixtures: ExtendedBounty[] = rules.map((modRequirement, index) => ({
   goal: index % 2 === 0
     ? { type: "minimum_grade", minimumGradeRequirement: "A", beatmapId: 42, beatmapChecksum: null, modRequirement }
     : { type: "full_combo", minimumComboRatio: 0.99, beatmapId: 42, beatmapChecksum: null, modRequirement },
-  beatmap: null, owner: { id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa", osuUserId: 42, username: `Player${index + 1}` },
+  beatmap: null, owner: { coverUrl: null, countryCode: null, countryName: null, id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa", osuUserId: 42, username: `Player${index + 1}` },
   winner: null, engagement: { hunterCount: 0, bookmarkCount: 0, isBookmarkedByCurrentUser: null },
 }));
 const cards = (page: Page) => page.locator('a[href^="/bounties/"]').filter({ hasText: "Created by" });
@@ -38,7 +38,7 @@ test("board defaults to hunters and preserves explicit date and reward sorts", a
     return { items: [fixtures[0]], total: 1, page: 1, pageSize: 20 };
   });
   await page.route("**/auth/me", route => route.fulfill({ json: {
-    identity: { id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa", osuUserId: 42, username: "fixture" },
+    identity: { coverUrl: null, countryCode: null, countryName: null, id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa", osuUserId: 42, username: "fixture" },
     stats: { bpBalance: 100 }, createdAt: "2026-01-01T00:00:00.000Z",
   } }));
   await page.route("**/auth/access", route => route.fulfill({ status: 204 }));
@@ -69,7 +69,7 @@ test("hunting filter resets pagination, preserves filters and follows history an
     return { items: params.get("relationship") === "hunting" ? [fixtures[0]] : fixtures, total: params.get("relationship") === "hunting" ? 1 : 45, page: Number(params.get("page")), pageSize: 20 };
   });
   await page.route("**/auth/me", route => route.fulfill({ json: {
-    identity: { id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa", osuUserId: 42, username: "fixture" },
+    identity: { coverUrl: null, countryCode: null, countryName: null, id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa", osuUserId: 42, username: "fixture" },
     stats: { bpBalance: 100 }, createdAt: "2026-01-01T00:00:00.000Z",
   } }));
   await page.route("**/auth/access", route => route.fulfill({ status: 204 }));

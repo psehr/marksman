@@ -371,11 +371,17 @@ export async function getBountyEventsOfUser(
         id: creator.id,
         osuUserId: creator.osuUserId,
         username: creator.username,
+        coverUrl: creator.coverUrl,
+        countryCode: creator.countryCode,
+        countryName: creator.countryName,
       },
       winner: {
         id: winner.id,
         osuUserId: winner.osuUserId,
         username: winner.username,
+        coverUrl: winner.coverUrl,
+        countryCode: winner.countryCode,
+        countryName: winner.countryName,
       },
     })
     .from(bounties)

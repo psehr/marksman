@@ -15,7 +15,7 @@ for (const failure of ["http", "network"] as const) {
           status: loggedIn ? 200 : 401,
           json: loggedIn
             ? {
-                identity: {
+                identity: { coverUrl: null, countryCode: null, countryName: null,
                   id: "12345678-1234-4234-8234-123456789abc",
                   username: "test_player",
                   osuUserId: 12345,

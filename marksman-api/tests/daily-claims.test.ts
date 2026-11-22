@@ -44,7 +44,7 @@ beforeEach(async () => {
     { osuUserId: 42, username: "player", bpBalance: 330 },
     { osuUserId: 43, username: "other", bpBalance: 330 },
   ]).returning();
-  [player, other] = rows.map(({ id, osuUserId, username }) => ({ id, osuUserId, username }));
+  [player, other] = rows.map(({ id, osuUserId, username }) => ({ id, osuUserId, username, coverUrl: null, countryCode: null, countryName: null }));
   await db.insert(ledgerEntries).values(rows.map(user => ({ userId: user.id, amount: 330, reason: "initial_grant" as const })));
 });
 after(async () => {
@@ -194,7 +194,7 @@ test("GET status rejects anonymous, deleted-user and non-allowlisted sessions", 
     assert.equal((await response.json()).code, "NOT_LOGGED_IN");
   }
   const [denied] = await db.insert(users).values({ osuUserId: 44, username: "denied", bpBalance: 0 }).returning();
-  const response = await statusRequest(await cookieFor({ id: denied.id, osuUserId: 44, username: denied.username }));
+  const response = await statusRequest(await cookieFor({ id: denied.id, osuUserId: 44, username: denied.username, coverUrl: null, countryCode: null, countryName: null }));
   assert.equal(response.status, 403);
   assert.equal((await response.json()).code, "ALPHA_ACCESS_REQUIRED");
   assert.deepEqual((await snapshot()).claims, original.claims);

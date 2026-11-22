@@ -302,11 +302,11 @@ test("hunting relationship includes only the current user's ongoing hunts", asyn
   ]);
   const query = bountySearchQuerySchema.parse({ relationship: "hunting" });
   for (const [user, expected] of [[alice, [active.id]], [bob, [active.id, other.id]], [creator, []]] as const) {
-    const result = await listBounties(query, { id: user.id, osuUserId: user.osuUserId, username: user.username });
+    const result = await listBounties(query, { id: user.id, osuUserId: user.osuUserId, username: user.username, coverUrl: null, countryCode: null, countryName: null });
     assert.deepEqual(result.items.map(item => item.id).sort(), [...expected].sort());
     assert.equal(result.total, expected.length);
   }
-  const nextPage = await listBounties({ ...query, page: 2 }, { id: alice.id, osuUserId: alice.osuUserId, username: alice.username });
+  const nextPage = await listBounties({ ...query, page: 2 }, { id: alice.id, osuUserId: alice.osuUserId, username: alice.username, coverUrl: null, countryCode: null, countryName: null });
   assert.deepEqual(nextPage.items, []);
   assert.equal(nextPage.total, 1);
 });

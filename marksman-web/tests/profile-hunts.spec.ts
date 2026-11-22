@@ -3,10 +3,10 @@ import type { ExtendedBounty, User, UserHuntedBounties } from "@marksman/contrac
 import { detailedUserFixture } from "./fixtures/users";
 
 const owner: User = {
-  identity: { id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa", osuUserId: 42, username: "slot-owner" },
+  identity: { coverUrl: null, countryCode: null, countryName: null, id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa", osuUserId: 42, username: "slot-owner" },
   stats: { bpBalance: 100 }, createdAt: "2026-01-01T00:00:00.000Z",
 };
-const other: User = { ...owner, identity: {
+const other: User = { ...owner, identity: { coverUrl: null, countryCode: null, countryName: null,
   id: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb", osuUserId: 43, username: "other-hunter",
 } };
 function pair(index: number): UserHuntedBounties[number] {

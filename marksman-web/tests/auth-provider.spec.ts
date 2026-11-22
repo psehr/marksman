@@ -3,7 +3,7 @@ import { build } from "esbuild";
 import { resolve } from "node:path";
 
 const user = {
-  identity: { id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa", osuUserId: 123, username: "fixture" },
+  identity: { coverUrl: null, countryCode: null, countryName: null, id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa", osuUserId: 123, username: "fixture" },
   stats: { bpBalance: 250 }, createdAt: "2026-01-01T00:00:00.000Z",
 };
 let script: string;

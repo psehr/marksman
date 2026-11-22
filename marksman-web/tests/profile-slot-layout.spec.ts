@@ -4,10 +4,10 @@ import type { ExtendedBounty, User, UserHuntedBounties } from "@marksman/contrac
 import { detailedUserFixture } from "./fixtures/users";
 
 const owner: User = {
-  identity: { id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa", osuUserId: 42, username: "slot-owner" },
+  identity: { coverUrl: null, countryCode: null, countryName: null, id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa", osuUserId: 42, username: "slot-owner" },
   stats: { bpBalance: 100 }, createdAt: "2026-01-01T00:00:00.000Z",
 };
-const other: User = { ...owner, identity: {
+const other: User = { ...owner, identity: { coverUrl: null, countryCode: null, countryName: null,
   id: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb", osuUserId: 43, username: "other-hunter",
 } };
 function pair(index: number): UserHuntedBounties[number] {
@@ -112,13 +112,16 @@ for (const count of [1, 3]) {
           })).toBe(true);
         }
       }
-      for (const box of boxes) expect(Math.abs(box.width - boxes[0].width)).toBeLessThan(2);
       if (width < 1024) {
+        for (const box of boxes) expect(Math.abs(box.width - boxes[0].width)).toBeLessThan(2);
         for (let i = 1; i < 3; i++) expect(boxes[i].y).toBeGreaterThanOrEqual(boxes[i-1].y + boxes[i-1].height);
       } else {
-        expect(Math.abs(boxes[0].y - boxes[1].y)).toBeLessThan(2);
-        expect(Math.abs(boxes[0].height - boxes[1].height)).toBeLessThan(2);
-        expect(boxes[2].y).toBeGreaterThanOrEqual(boxes[0].y + boxes[0].height);
+        expect(Math.abs(boxes[1].width - boxes[2].width)).toBeLessThan(2);
+        expect(Math.abs(boxes[1].y - boxes[2].y)).toBeLessThan(2);
+        expect(Math.abs(boxes[1].height - boxes[2].height)).toBeLessThan(2);
+        expect(boxes[1].y).toBeGreaterThanOrEqual(boxes[0].y + boxes[0].height);
+        expect(Math.abs(boxes[0].x - boxes[1].x)).toBeLessThan(2);
+        expect(Math.abs(boxes[0].x + boxes[0].width - boxes[2].x - boxes[2].width)).toBeLessThan(2);
       }
       expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
       if (width === 320 || width === 1280) await page.screenshot({ path: `/tmp/marksman-three-slots-${count}-${width}.png`, fullPage: true });

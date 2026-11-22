@@ -23,7 +23,7 @@ export default function UserStatsCardContainer({
 }) {
   return (
     <div
-      className={`w-full min-w-0 ${sizes[size]} sm:h-32 flex bg-card border border-border rounded p-2 gap-4`}
+      className={`w-full min-w-0 ${sizes[size]} sm:h-26 flex bg-card border border-border rounded p-2 gap-4`}
     >
       <div
         className={`grid ${columnStyles[cols]} size-full gap-2 sm:gap-0 p-1 bg-card-darker rounded border border-border/30 shadow-[inset_0_2px_8px_rgb(0_0_0/0.7)]`}

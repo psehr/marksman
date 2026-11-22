@@ -3,7 +3,7 @@ import { expect, test } from "@playwright/test";
 test("wizard mod rules validate selections and reset mods after returning to Goal", async ({ page }) => {
   await page.route("**/auth/access", route => route.fulfill({ status: 204 }));
   await page.route("**/auth/me", route => route.fulfill({ json: {
-    identity: { id: "12345678-1234-4234-8234-123456789abc", osuUserId: 12345, username: "fixture" },
+    identity: { coverUrl: null, countryCode: null, countryName: null, id: "12345678-1234-4234-8234-123456789abc", osuUserId: 12345, username: "fixture" },
     stats: { bpBalance: 1000 }, createdAt: "2025-01-01T00:00:00.000Z",
   } }));
   await page.route("**/beatmaps/123456", route => route.fulfill({ json: {

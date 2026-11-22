@@ -2,7 +2,7 @@ import type { ExtendedBounty, User } from "@marksman/contracts";
 import { expect, test, type Page } from "@playwright/test";
 
 const user: User = {
-  identity: {
+  identity: { coverUrl: null, countryCode: null, countryName: null,
     id: "12345678-1234-4234-8234-123456789abc",
     osuUserId: 12345,
     username: "hunter",
@@ -27,7 +27,7 @@ const bounty: ExtendedBounty = {
     minimumGradeRequirement: "A",
     modRequirement: { rule: "any" },
   },
-  owner: {
+  owner: { coverUrl: null, countryCode: null, countryName: null,
     id: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
     osuUserId: 67890,
     username: "mapmaker",

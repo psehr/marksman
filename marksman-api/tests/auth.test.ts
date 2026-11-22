@@ -29,7 +29,11 @@ const { sessionStore } =
 
 const httpFetch = globalThis.fetch;
 const frontend = "http://localhost:3000/";
-const profile = { id: 12345, username: "test_player" };
+const profile = {
+  id: 12345, username: "test_player",
+  country_code: "FR", country: { name: "France" },
+  cover: { url: "https://assets.ppy.sh/user-profile-covers/12345/fixture.jpeg" },
+};
 let server: Server | undefined;
 let baseUrl: string;
 const testDatabase = createTestDatabase(db, true);
@@ -327,7 +331,7 @@ test("a different authenticated user cannot cancel a bounty or receive a refund"
   const created = await request("/bounties", ownerCookie, { method: "POST", headers: trustedHeaders, body: JSON.stringify(bountyInput) });
   assert.equal(created.status, 201);
   const { bounty } = await created.json();
-  profileReply = () => Response.json({ id: 67890, username: "other_player" });
+  profileReply = () => Response.json({ ...profile, id: 67890, username: "other_player" });
   const otherCookie = await login();
   const originalUsers = await db.select().from(users).orderBy(users.osuUserId);
   const originalBounties = await db.select().from(bounties);

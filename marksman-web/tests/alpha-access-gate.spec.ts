@@ -1,7 +1,7 @@
 import { expect, test, type Page, type Route } from "@playwright/test";
 
 const user = {
-  identity: { id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa", osuUserId: 123, username: "alpha_fixture" },
+  identity: { coverUrl: null, countryCode: null, countryName: null, id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa", osuUserId: 123, username: "alpha_fixture" },
   stats: { bpBalance: 250 }, createdAt: "2026-01-01T00:00:00.000Z",
 };
 async function mockAuth(page: Page, handler: (route: Route, path: string) => Promise<void>) {

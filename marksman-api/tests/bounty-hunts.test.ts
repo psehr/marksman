@@ -62,7 +62,7 @@ beforeEach(async () => {
     { osuUserId: 101, username: "hunter", bpBalance: 100 },
     { osuUserId: 102, username: "other", bpBalance: 100 },
   ]).returning();
-  [hunter, other] = rows.map(({ id, osuUserId, username }) => ({ id, osuUserId, username }));
+  [hunter, other] = rows.map(({ id, osuUserId, username }) => ({ id, osuUserId, username, coverUrl: null, countryCode: null, countryName: null }));
   bountyId = await seedBounty();
   otherBountyId = await seedBounty();
   mock.timers.enable({ apis: ["Date"], now });

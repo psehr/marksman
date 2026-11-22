@@ -40,7 +40,7 @@ stubModule("../src/services/bounty-contributions", {
 const { bountiesRouter } = require("../src/routes/bounties") as typeof import("../src/routes/bounties");
 const { pool } = require("../src/db") as typeof import("../src/db");
 const user: User = {
-  identity: { id: randomUUID(), osuUserId: 101, username: "fixture" },
+  identity: { id: randomUUID(), osuUserId: 101, username: "fixture", coverUrl: null, countryCode: null, countryName: null },
   stats: { bpBalance: 100 }, createdAt: new Date().toISOString(),
 };
 const bountyId = randomUUID();

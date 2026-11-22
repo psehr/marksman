@@ -19,7 +19,7 @@ async function setup(page: Page, overrides: Partial<ExtendedBounty> = {}) {
     if (url.origin === "http://127.0.0.1:3100") return route.continue();
     if (req.method() === "POST") { state.posts++; return route.abort(); }
     if (url.pathname === "/auth/me") return route.fulfill({ json: {
-      identity: { id: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb", osuUserId: 99, username: "fixture" },
+      identity: { coverUrl: null, countryCode: null, countryName: null, id: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb", osuUserId: 99, username: "fixture" },
       stats: { bpBalance: 100 }, createdAt: "2026-01-01T00:00:00.000Z",
     } });
     if (url.pathname === "/auth/access") return route.fulfill({ status: 204 });
@@ -437,8 +437,8 @@ for (const signedIn of [true, false]) {
     });
   }
 }
-for (const owner of [null, { id: "dddddddd-dddd-4ddd-8ddd-dddddddddddd", osuUserId: 42, username: "psehr" }]) {
-  for (const winner of [null, { id: hunt.userId, osuUserId: 99, username: "fixture" }]) {
+for (const owner of [null, { coverUrl: null, countryCode: null, countryName: null, id: "dddddddd-dddd-4ddd-8ddd-dddddddddddd", osuUserId: 42, username: "psehr" }]) {
+  for (const winner of [null, { coverUrl: null, countryCode: null, countryName: null, id: hunt.userId, osuUserId: 99, username: "fixture" }]) {
     test(`descriptor winner shares multiline achievement with ${owner ? "owner name" : "missing owner"} and ${winner ? "profile link" : "missing winner"}`, async ({ page }) => {
       await page.addInitScript(() => {
         Object.defineProperty(navigator, "clipboard", { configurable: true, value: {

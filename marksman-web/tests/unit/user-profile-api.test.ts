@@ -3,7 +3,7 @@ import { afterEach, mock, test } from "node:test";
 import { getCurrentUser, getUser } from "../../src/lib/api/users";
 
 const user = {
-  identity: { id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa", osuUserId: 42, username: "fixture" },
+  identity: { coverUrl: null, countryCode: null, countryName: null, id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa", osuUserId: 42, username: "fixture" },
   stats: { bpBalance: 123 }, createdAt: "2026-01-01T00:00:00.000Z",
 };
 afterEach(() => mock.restoreAll());

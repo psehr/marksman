@@ -11,6 +11,9 @@ function toUser(row: typeof users.$inferSelect): User {
       id: row.id,
       username: row.username,
       osuUserId: row.osuUserId,
+      coverUrl: row.coverUrl,
+      countryCode: row.countryCode,
+      countryName: row.countryName,
     },
     stats: {
       bpBalance: row.bpBalance,
@@ -82,6 +85,9 @@ export async function upsertUserFromOsuProfile(
       osuUserId: input.osuUserId,
       username: input.username,
       bpBalance: INITIAL_GRANT,
+      coverUrl: input.coverUrl,
+      countryCode: input.countryCode,
+      countryName: input.countryName,
     })
     .onConflictDoNothing({ target: users.osuUserId })
     .returning();
@@ -90,7 +96,12 @@ export async function upsertUserFromOsuProfile(
     // this updates the existing user's username in case it changed since the last log-in
     const [existingUser] = await tx
       .update(users)
-      .set({ username: input.username })
+      .set({
+        username: input.username,
+        coverUrl: input.coverUrl,
+        countryCode: input.countryCode,
+        countryName: input.countryName,
+      })
       .where(eq(users.osuUserId, input.osuUserId))
       .returning();
 

@@ -122,6 +122,9 @@ authRouter.get("/osu/callback", async (req, res) => {
   const user = await registerOrUpdateUserFromOsuProfile({
     osuUserId: profile.id,
     username: profile.username,
+    coverUrl: profile.cover.url,
+    countryCode: profile.country_code,
+    countryName: profile.country.name,
   });
 
   // Replace the pre-login session ID to prevent session fixation.

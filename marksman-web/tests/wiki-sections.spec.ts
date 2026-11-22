@@ -2,7 +2,7 @@ import { expect, test } from "@playwright/test";
 
 test.beforeEach(async ({ page }) => {
   await page.route("**/auth/me", route => route.fulfill({ json: {
-    identity: { id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa", osuUserId: 123, username: "wiki_fixture" },
+    identity: { coverUrl: null, countryCode: null, countryName: null, id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa", osuUserId: 123, username: "wiki_fixture" },
     stats: { bpBalance: 250 }, createdAt: "2026-01-01T00:00:00.000Z",
   } }));
   await page.route("**/auth/access", route => route.fulfill({ status: 204 }));

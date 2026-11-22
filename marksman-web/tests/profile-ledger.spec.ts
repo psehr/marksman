@@ -3,13 +3,13 @@ import { expect, test, type Page, type Route } from "@playwright/test";
 import { detailedUserFixture } from "./fixtures/users";
 
 const owner: User = {
-  identity: { id: "12345678-1234-4234-8234-123456789abc", osuUserId: 42, username: "ledger-owner" },
+  identity: { coverUrl: null, countryCode: null, countryName: null, id: "12345678-1234-4234-8234-123456789abc", osuUserId: 42, username: "ledger-owner" },
   stats: { bpBalance: 100 },
   createdAt: "2026-01-01T00:00:00.000Z",
 };
 const other: User = {
   ...owner,
-  identity: { id: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb", osuUserId: 43, username: "other-player" },
+  identity: { coverUrl: null, countryCode: null, countryName: null, id: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb", osuUserId: 43, username: "other-player" },
 };
 const bountyId = "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa";
 function entry(index: number, reason: LedgerEntry["reason"] = "daily_claim"): LedgerEntry {

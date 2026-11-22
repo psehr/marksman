@@ -11,10 +11,11 @@ are marked until deployment is confirmed. Deployment names increment as
 
 ### Features
 
-- feat: filter the bounty board by your ongoing hunts.
+- 769163f — feat: filter the bounty board by your ongoing hunts.
 - fa4d1ec — feat: default bounty board sorting to ongoing hunts.
 - 8f84abc — feat: show ongoing hunt counts on bounties.
 - 41f0211 — feat: accept username aliases in profile URLs.
+- feat: show osu! avatars, profile covers and country flags on player cards.
 - a591fe9 — feat: show hunter stamps on bounty cards.
 
 ### Fixes

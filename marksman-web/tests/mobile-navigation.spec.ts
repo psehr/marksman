@@ -38,7 +38,7 @@ test("mobile profile link uses signed-in identity and closes the menu", async ({
   const id = "12345678-1234-4234-8234-123456789abc";
   await page.setViewportSize({ width: 390, height: 844 });
   await page.route("**/auth/me", route => route.fulfill({ json: {
-    identity: { id, osuUserId: 12345, username: "fixture" },
+    identity: { coverUrl: null, countryCode: null, countryName: null, id, osuUserId: 12345, username: "fixture" },
     stats: { bpBalance: 1000 }, createdAt: "2025-01-01T00:00:00.000Z",
   } }));
   await page.route("**/auth/access", route => route.fulfill({ status: 204 }));
@@ -58,7 +58,7 @@ for (const width of [320, 390, 768, 1280]) {
     test(`navbar balance ${balance} appears below username at ${width}px`, async ({ page }) => {
       await page.setViewportSize({ width, height: 900 });
       await page.route("**/auth/me", route => route.fulfill({ json: {
-        identity: { id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa", osuUserId: 123, username: "fixture" },
+        identity: { coverUrl: null, countryCode: null, countryName: null, id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa", osuUserId: 123, username: "fixture" },
         stats: { bpBalance: balance }, createdAt: "2026-01-01T00:00:00.000Z",
       } }));
       await page.route("**/auth/access", route => route.fulfill({ status: 204 }));

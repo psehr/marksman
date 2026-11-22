@@ -5,7 +5,7 @@ test.beforeEach(async ({ page }) => mockAvatars(page));
 import { MAX_BOUNTY_REWARD_BP, type ExtendedBounty, type User } from "@marksman/contracts";
 
 const user: User = {
-  identity: { id: "12345678-1234-4234-8234-123456789abc", osuUserId: 123, username: "funder" },
+  identity: { coverUrl: null, countryCode: null, countryName: null, id: "12345678-1234-4234-8234-123456789abc", osuUserId: 123, username: "funder" },
   stats: { bpBalance: 1000 }, createdAt: "2026-01-01T00:00:00.000Z",
 };
 const bounty: ExtendedBounty = {

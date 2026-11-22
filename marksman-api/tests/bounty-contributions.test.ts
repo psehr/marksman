@@ -148,7 +148,7 @@ for (const closure of ["cancel", "complete"] as const) {
     if (closure === "cancel") await cancelBounty(bounty.id, creator.osuUserId);
     else {
       const winner = await seedUser(0);
-      await completeBounty(bounty.id, 123, { id: winner.id, osuUserId: winner.osuUserId, username: winner.username });
+      await completeBounty(bounty.id, 123, { id: winner.id, osuUserId: winner.osuUserId, username: winner.username, coverUrl: null, countryCode: null, countryName: null });
     }
     const original = await snapshot();
     assert.deepEqual(await contributeToBounty(bounty.id, user.id, input), first);
@@ -360,7 +360,7 @@ for (const closure of ["cancel", "complete"] as const) {
     const winner = await seedUser(0);
     const input = request();
     const close = () => closure === "cancel" ? cancelBounty(bounty.id, creator.osuUserId)
-      : completeBounty(bounty.id, 123, { id: winner.id, osuUserId: winner.osuUserId, username: winner.username });
+      : completeBounty(bounty.id, 123, { id: winner.id, osuUserId: winner.osuUserId, username: winner.username, coverUrl: null, countryCode: null, countryName: null });
     const results = await raceOnBounty<unknown>(bounty.id, [
       () => contributeToBounty(bounty.id, user.id, input), close,
     ]);

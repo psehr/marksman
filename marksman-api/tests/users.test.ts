@@ -16,7 +16,7 @@ const { registerOrUpdateUserFromOsuProfile, enrichUser } =
 const { getBountyWinStats } =
   require("../src/db/bounties") as typeof import("../src/db/bounties");
 
-const profile = { osuUserId: 12345, username: "original_name" };
+const profile = { osuUserId: 12345, username: "original_name", coverUrl: null, countryCode: null, countryName: null };
 const testDatabase = createTestDatabase(db);
 
 before(async () => {
@@ -63,7 +63,7 @@ test("user enrichment returns numeric zero stats when no bounties have been won"
 
 test("win stats count and sum only the viewed user's completed wins", async () => {
   const user = await registerOrUpdateUserFromOsuProfile(profile);
-  const other = await registerOrUpdateUserFromOsuProfile({ osuUserId: 99999, username: "other" });
+  const other = await registerOrUpdateUserFromOsuProfile({ coverUrl: null, countryCode: null, countryName: null, osuUserId: 99999, username: "other" });
   const base = { creatorOsuUserId: other.identity.osuUserId, goal: qualifyingBounty().goal };
   await db.insert(bounties).values([
     // Repeated rewards must both contribute to SUM and COUNT.
@@ -88,7 +88,7 @@ test("win stats count and sum only the viewed user's completed wins", async () =
 
 test("earnings subtract only the winner's principal across repeated contributions", async () => {
   const user = await registerOrUpdateUserFromOsuProfile(profile);
-  const other = await registerOrUpdateUserFromOsuProfile({ osuUserId: 99999, username: "other" });
+  const other = await registerOrUpdateUserFromOsuProfile({ coverUrl: null, countryCode: null, countryName: null, osuUserId: 99999, username: "other" });
   const base = { creatorOsuUserId: other.identity.osuUserId, goal: qualifyingBounty().goal };
   const [funded, unfunded, open, cancelled, otherWin] = await db.insert(bounties).values([
     { ...base, status: "completed", completedByOsuUserId: profile.osuUserId, rewardBp: 500 },
@@ -117,6 +117,31 @@ test("earnings subtract only the winner's principal across repeated contribution
   assert.deepEqual(await db.select().from(bounties).orderBy(bounties.id), storedBounties);
   assert.deepEqual(await db.select().from(ledgerEntries).orderBy(ledgerEntries.id), storedLedger);
   assert.equal((await db.select().from(users).where(eq(users.id, user.identity.id)))[0].bpBalance, 330);
+});
+
+test("profile cover and country persist on first login and refresh without regranting BP", async () => {
+  const firstProfile = {
+    ...profile,
+    coverUrl: "https://assets.ppy.sh/user-profile-covers/12345/first.jpeg",
+    countryCode: "FR", countryName: "France",
+  };
+  const first = await registerOrUpdateUserFromOsuProfile(firstProfile);
+  assert.deepEqual(first.identity, { id: first.identity.id, ...firstProfile });
+  await assertStoredUser(first);
+  await assertGrant(first);
+  const originalLedger = await db.select().from(ledgerEntries);
+  const nextProfile = {
+    ...firstProfile,
+    coverUrl: "https://assets.ppy.sh/user-profile-covers/12345/next.jpeg",
+    countryCode: "GB", countryName: "United Kingdom",
+  };
+  const updated = await registerOrUpdateUserFromOsuProfile(nextProfile);
+  assert.deepEqual(updated, { ...first, identity: { id: first.identity.id, ...nextProfile } });
+  await assertStoredUser(updated);
+  const cleared = await registerOrUpdateUserFromOsuProfile(profile);
+  assert.deepEqual(cleared.identity, { id: first.identity.id, ...profile });
+  await assertStoredUser(cleared);
+  assert.deepEqual(await db.select().from(ledgerEntries), originalLedger);
 });
 
 test("first login creates a user with the supplied profile and one 330 BP grant", async () => {
@@ -152,6 +177,7 @@ test("repeat login returns and stores the new username while preserving account 
       id: original.id,
       osuUserId: profile.osuUserId,
       username: "renamed_player",
+      coverUrl: null, countryCode: null, countryName: null,
     },
     stats: { bpBalance: 275 },
     createdAt: original.createdAt.toISOString(),
@@ -213,7 +239,7 @@ test("concurrent first logins both return the same single account", async () => 
 
 
 test("returning logins do not regrant BP or modify another account", async () => {
-  const other = await registerOrUpdateUserFromOsuProfile({ osuUserId: 67890, username: "other_player" });
+  const other = await registerOrUpdateUserFromOsuProfile({ coverUrl: null, countryCode: null, countryName: null, osuUserId: 67890, username: "other_player" });
   const first = await registerOrUpdateUserFromOsuProfile(profile);
   const originalLedger = await db.select().from(ledgerEntries).orderBy(ledgerEntries.id);
   for (const username of ["renamed_once", "renamed_twice"]) {

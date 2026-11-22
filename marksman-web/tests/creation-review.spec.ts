@@ -4,7 +4,7 @@ const id = "12345678-1234-4234-8234-123456789abc";
 async function review(page: Page) {
   await page.route("**/auth/access", route => route.fulfill({ status: 204 }));
   await page.route("**/auth/me", route => route.fulfill({ json: {
-    identity: { id, osuUserId: 12345, username: "fixture" },
+    identity: { coverUrl: null, countryCode: null, countryName: null, id, osuUserId: 12345, username: "fixture" },
     stats: { bpBalance: 1000 }, createdAt: "2025-01-01T00:00:00.000Z",
   } }));
   await page.route("**/beatmaps/123456", route => route.fulfill({ json: {
@@ -70,7 +70,7 @@ for (const scenario of ["funding", "session", "network"] as const) {
     }));
     if (scenario !== "network") await page.route("**/auth/me", route => route.fulfill(scenario === "session" ? {
       status: 401, json: { error: "Expired" },
-    } : { json: { identity: { id, osuUserId: 12345, username: "fixture" }, stats: { bpBalance: 0 }, createdAt: "2025-01-01T00:00:00.000Z" } }));
+    } : { json: { identity: { coverUrl: null, countryCode: null, countryName: null, id, osuUserId: 12345, username: "fixture" }, stats: { bpBalance: 0 }, createdAt: "2025-01-01T00:00:00.000Z" } }));
     await page.getByRole("button", { name: "Create bounty · 110 BP" }).click();
     await expect(page.getByRole("alert").filter({ hasText: scenario === "session" ? "session expired" : scenario === "funding" ? "no longer have enough BP" : "Could not confirm creation" })).toBeVisible();
     if (scenario !== "network") await expect(page.getByRole("button", { name: "Create bounty · 110 BP" })).toBeDisabled();

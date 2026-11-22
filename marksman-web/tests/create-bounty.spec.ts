@@ -2,7 +2,7 @@ import type { User, OsuBeatmapMetadata } from "@marksman/contracts";
 import { expect, test, type Page } from "@playwright/test";
 
 const user: User = {
-  identity: {
+  identity: { coverUrl: null, countryCode: null, countryName: null,
     id: "12345678-1234-4234-8234-123456789abc",
     osuUserId: 12345,
     username: "creator",

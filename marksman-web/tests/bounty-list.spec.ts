@@ -3,7 +3,7 @@ import { expect, test, type Page } from "@playwright/test";
 import type { ExtendedBounty, User } from "@marksman/contracts";
 
 const user: User = {
-  identity: { id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa", osuUserId: 123, username: "viewer" },
+  identity: { coverUrl: null, countryCode: null, countryName: null, id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa", osuUserId: 123, username: "viewer" },
   stats: { bpBalance: 250 }, createdAt: "2026-01-01T00:00:00.000Z",
 };
 function bounty(index: number, username: string, status: ExtendedBounty["status"], rewardBp: number): ExtendedBounty {
@@ -14,7 +14,7 @@ function bounty(index: number, username: string, status: ExtendedBounty["status"
     cancelledAt: null, completedByOsuUserId: null, completionScoreId: null,
     goal: { type: "minimum_grade", beatmapId: 42, beatmapChecksum: null,
       minimumGradeRequirement: "A", modRequirement: { rule: "any" } },
-    beatmap: null, owner: { id: user.identity.id, osuUserId: index === 1 ? 123 : 456, username }, winner: null,
+    beatmap: null, owner: { coverUrl: null, countryCode: null, countryName: null, id: user.identity.id, osuUserId: index === 1 ? 123 : 456, username }, winner: null,
     engagement: { hunterCount: 0, bookmarkCount: 0, isBookmarkedByCurrentUser: null },
   };
 }

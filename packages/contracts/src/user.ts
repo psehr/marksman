@@ -4,6 +4,9 @@ export const userIdentitySchema = z.object({
   id: z.uuid(),
   osuUserId: z.number().int().positive(),
   username: z.string().min(1),
+  coverUrl: z.url().nullable(),
+  countryCode: z.string().length(2).nullable(),
+  countryName: z.string().min(1).nullable(),
 });
 
 export const userStatsSchema = z.object({

@@ -60,6 +60,9 @@ export const users = pgTable(
   {
     id: uuid("id").defaultRandom().primaryKey(),
     username: text("username").notNull(),
+    coverUrl: text("cover_url"),
+    countryCode: text("country_code"),
+    countryName: text("country_name"),
     osuUserId: integer("osu_user_id").notNull().unique(),
     createdAt: timestamp("created_at", { withTimezone: true })
       .defaultNow()

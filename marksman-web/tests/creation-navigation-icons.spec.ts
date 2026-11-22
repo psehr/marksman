@@ -7,7 +7,7 @@ for (const width of [320, 640, 1280]) {
       const url = new URL(route.request().url());
       if (url.origin === "http://127.0.0.1:3100") return route.continue();
       if (url.pathname === "/auth/me") return route.fulfill({ json: {
-        identity: { id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa", osuUserId: 123, username: "fixture" },
+        identity: { coverUrl: null, countryCode: null, countryName: null, id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa", osuUserId: 123, username: "fixture" },
         stats: { bpBalance: 1000 }, createdAt: "2026-01-01T00:00:00.000Z",
       } });
       if (url.pathname === "/auth/access") return route.fulfill({ status: 204 });

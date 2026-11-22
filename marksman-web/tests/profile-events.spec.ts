@@ -3,12 +3,12 @@ import { expect, test, type Page } from "@playwright/test";
 import { detailedUserFixture } from "./fixtures/users";
 
 const creator: User = {
-  identity: { id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa", osuUserId: 42, username: "mapmaker" },
+  identity: { coverUrl: null, countryCode: null, countryName: null, id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa", osuUserId: 42, username: "mapmaker" },
   stats: { bpBalance: 100 }, createdAt: "2026-01-01T00:00:00.000Z",
 };
 const winner: User = {
   ...creator,
-  identity: { id: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb", osuUserId: 43, username: "scorehunter" },
+  identity: { coverUrl: null, countryCode: null, countryName: null, id: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb", osuUserId: 43, username: "scorehunter" },
 };
 function event(index: number, type: BountyEvent["type"] = "created"): BountyEvent {
   return {

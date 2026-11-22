@@ -3,6 +3,13 @@ import { z } from "zod";
 const osuProfileResponseSchema = z.object({
   id: z.number().int().positive(),
   username: z.string().min(1),
+  country_code: z.string().length(2),
+  country: z.object({
+    name: z.string().min(1),
+  }),
+  cover: z.object({
+    url: z.url(),
+  }),
 });
 
 export type OsuProfileResponse = z.infer<typeof osuProfileResponseSchema>;

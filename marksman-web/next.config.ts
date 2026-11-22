@@ -6,7 +6,9 @@ const nextConfig: NextConfig = {
     agentUpgrade: "security",
   },
   async redirects() {
-    return [{ source: "/about/:path*", destination: "/wiki/:path*", permanent: true }];
+    return [
+      { source: "/about/:path*", destination: "/wiki/:path*", permanent: true },
+    ];
   },
   images: {
     remotePatterns: [
@@ -22,6 +24,19 @@ const nextConfig: NextConfig = {
         hostname: "assets.ppy.sh",
         port: "",
         pathname: "/beatmaps/**",
+      },
+      {
+        protocol: "https",
+        hostname: "assets.ppy.sh",
+        port: "",
+        pathname: "/user-profile-covers/**",
+      },
+      {
+        protocol: "https",
+        hostname: "flagcdn.com",
+        port: "",
+        pathname: "/w40/*.png",
+        search: "",
       },
     ],
   },

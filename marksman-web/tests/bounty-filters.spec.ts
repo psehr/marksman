@@ -19,7 +19,7 @@ const fixtures: ExtendedBounty[] = rules.map((modRequirement, index) => ({
   goal: index % 2 === 0
     ? { type: "minimum_grade", minimumGradeRequirement: "A", beatmapId: 42, beatmapChecksum: null, modRequirement }
     : { type: "full_combo", minimumComboRatio: 0.99, beatmapId: 42, beatmapChecksum: null, modRequirement },
-  beatmap: null, owner: { id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa", osuUserId: 42, username: `Player${index + 1}` },
+  beatmap: null, owner: { coverUrl: null, countryCode: null, countryName: null, id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa", osuUserId: 42, username: `Player${index + 1}` },
   winner: null, engagement: { hunterCount: 0, bookmarkCount: 0, isBookmarkedByCurrentUser: null },
 }));
 const cards = (page: Page) => page.locator('a[href^="/bounties/"]').filter({ hasText: "Created by" });
