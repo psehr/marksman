@@ -1,15 +1,18 @@
 import {
   bountyContributionRequestSchema,
+  BountyFundingBreakdown,
   MAX_BOUNTY_REWARD_BP,
   type BountyContribution,
   type BountyContributionRequest,
 } from "@marksman/contracts";
 import { db } from "../db";
 import {
+  findBountyById,
   findBountyByIdForUpdate,
   increaseOpenBountyReward,
 } from "../db/bounties";
 import {
+  fetchBountyFundingBreakdown,
   findContributionByIdempotencyKey,
   insertBountyContribution,
   lockContributionRequest,
@@ -90,4 +93,13 @@ export async function contributeToBounty(
       throw new Error("Could not update bounty reward, contribution aborted");
     return contribution;
   });
+}
+
+export async function getBountyFundingBreakdown(
+  bountyId: string,
+): Promise<BountyFundingBreakdown> {
+  const bounty = await findBountyById(db, bountyId);
+  if (!bounty) throw new BountyNotFoundError();
+
+  return fetchBountyFundingBreakdown(bountyId);
 }

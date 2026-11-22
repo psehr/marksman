@@ -3,7 +3,7 @@ import { randomUUID } from "node:crypto";
 import { after, before, beforeEach, mock, test } from "node:test";
 import { setTimeout as delay } from "node:timers/promises";
 import { eq, sql } from "drizzle-orm";
-import { MAX_BOUNTY_REWARD_BP } from "@marksman/contracts";
+import { MAX_BOUNTY_REWARD_BP, bountyFundingBreakdownSchema } from "@marksman/contracts";
 import { bounties, bountyContributions, ledgerEntries, users } from "../src/db/schema";
 import { createTestDatabase } from "./fixtures/test-database";
 import {
@@ -70,6 +70,34 @@ async function assertAccounting() {
     assert.equal(bounty.rewardBp, state.contributions.filter(row => row.bountyId === bounty.id).reduce((sum, row) => sum + row.amountBp, 0));
   }
 }
+
+test("funding breakdown groups principal, includes creator funding and orders ties by user ID", async () => {
+  const { fetchBountyFundingBreakdown } = require("../src/db/bounty-contributions") as typeof import("../src/db/bounty-contributions");
+  const { getBountyFundingBreakdown } = require("../src/services/bounty-contributions") as typeof import("../src/services/bounty-contributions");
+  const { bounty, creator } = await seedBounty(25);
+  const repeated = await seedUser();
+  const largest = await seedUser();
+  await db.update(users).set({ username: "named-funder", countryCode: "FR", countryName: "France", coverUrl: "https://assets.ppy.sh/user-profile-covers/1/fixture.jpeg" }).where(eq(users.id, largest.id));
+  await contributeToBounty(bounty.id, creator.id, request(5));
+  await contributeToBounty(bounty.id, repeated.id, request(10));
+  await contributeToBounty(bounty.id, repeated.id, request(20));
+  await contributeToBounty(bounty.id, largest.id, request(40));
+  const unrelated = await seedBounty();
+  await contributeToBounty(unrelated.bounty.id, repeated.id, request(500));
+  const beforeRead = await snapshot();
+  const result = bountyFundingBreakdownSchema.parse(await fetchBountyFundingBreakdown(bounty.id));
+  assert.deepEqual(result.map(row => [row.user.id, row.amountBp]), [
+    [largest.id, 40], ...[creator.id, repeated.id].sort().map(id => [id, 30]),
+  ]);
+  assert.deepEqual(result[0].user, { id: largest.id, osuUserId: largest.osuUserId, username: "named-funder", countryCode: "FR", countryName: "France", coverUrl: "https://assets.ppy.sh/user-profile-covers/1/fixture.jpeg" });
+  assert.equal(result.reduce((sum, row) => sum + row.amountBp, 0), 100);
+  assert.deepEqual(await snapshot(), beforeRead);
+  assert.deepEqual(await fetchBountyFundingBreakdown(randomUUID()), []);
+  assert.deepEqual(await getBountyFundingBreakdown(bounty.id), result);
+  await assert.rejects(getBountyFundingBreakdown(randomUUID()), BountyNotFoundError);
+  await cancelBounty(bounty.id, creator.osuUserId);
+  assert.deepEqual(await fetchBountyFundingBreakdown(bounty.id), result);
+});
 
 for (const [amountBp, feeBp] of [[1, 1], [11, 2], [25, 3]] as const) {
   test(`contributing ${amountBp} records principal, fee ${feeBp}, balance and aggregate`, async () => {

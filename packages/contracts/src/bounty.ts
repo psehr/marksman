@@ -187,6 +187,13 @@ export const bountyContributionRequestSchema = z.object({
   idempotencyKey: z.uuid(),
 });
 
+export const bountyFunderSchema = z.object({
+  user: userIdentitySchema,
+  amountBp: z.number().int().positive(),
+});
+
+export const bountyFundingBreakdownSchema = z.array(bountyFunderSchema);
+
 export type Bounty = z.infer<typeof bountySchema>;
 export type CreateBountyInput = z.infer<typeof createBountySchema>;
 export type ExtendedBounty = z.infer<typeof extendedBountySchema>;
@@ -200,4 +207,8 @@ export type BountyListResponse = z.infer<typeof bountyListResponseSchema>;
 export type BountyContribution = z.infer<typeof bountyContributionSchema>;
 export type BountyContributionRequest = z.infer<
   typeof bountyContributionRequestSchema
+>;
+export type BountyFunder = z.infer<typeof bountyFunderSchema>;
+export type BountyFundingBreakdown = z.infer<
+  typeof bountyFundingBreakdownSchema
 >;

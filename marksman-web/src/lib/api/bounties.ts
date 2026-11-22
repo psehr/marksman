@@ -9,11 +9,15 @@ import {
   extendedBountySchema,
   type BountyListResponse,
   type BountySearchQuery,
+  bountyFundingBreakdownSchema,
 } from "@marksman/contracts";
 import { apiFetch } from "./client";
 import { z } from "zod";
 
-export async function contributeToBounty(bountyId: string, input: BountyContributionRequest) {
+export async function contributeToBounty(
+  bountyId: string,
+  input: BountyContributionRequest,
+) {
   return bountyContributionSchema.parse(
     await apiFetch(`/bounties/${encodeURIComponent(bountyId)}/contributions`, {
       method: "POST",
@@ -24,13 +28,11 @@ export async function contributeToBounty(bountyId: string, input: BountyContribu
 }
 
 export async function cancelBounty(bountyId: string) {
-  return z
-    .object({ bounty: bountySchema })
-    .parse(
-      await apiFetch(`/bounties/${encodeURIComponent(bountyId)}/cancel`, {
-        method: "POST",
-      }),
-    ).bounty;
+  return z.object({ bounty: bountySchema }).parse(
+    await apiFetch(`/bounties/${encodeURIComponent(bountyId)}/cancel`, {
+      method: "POST",
+    }),
+  ).bounty;
 }
 
 export async function setBountyBookmark(bountyId: string, bookmarked: boolean) {
@@ -80,4 +82,12 @@ export async function createBounty(input: CreateBountyInput) {
       body: JSON.stringify(createBountySchema.parse(input)),
     }),
   ).bounty;
+}
+
+export async function getBountyFundingBreakdown(bountyId: string) {
+  return bountyFundingBreakdownSchema.parse(
+    await apiFetch(`/bounties/${encodeURIComponent(bountyId)}/contributions`, {
+      method: "GET",
+    }),
+  );
 }

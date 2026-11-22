@@ -19,6 +19,7 @@ import { useBountyView } from "@/hooks/useBountyView";
 import UserStatsCardContainer from "@/components/users/UserStatsCard";
 import StatContainer from "@/components/users/StatContainer";
 import BountyFunding from "@/components/bounties/details/BountyFunding";
+import BountyFundingBreakdown from "@/components/bounties/details/BountyFundingBreakdown";
 
 export default function BountyDetailsPage() {
   const { id } = useParams<{ id: string }>();
@@ -147,9 +148,10 @@ export default function BountyDetailsPage() {
                   <p>Activity feed coming soon.</p>
                 </InfoSection>
               ) : view === "funding" ? (
-                <InfoSection title="Funding">
-                  <p>Funding details coming soon.</p>
-                </InfoSection>
+                <BountyFundingBreakdown
+                  bountyId={bounty.id}
+                  rewardBp={bounty.rewardBp}
+                />
               ) : (
                 <InfoSection title="Comments">
                   <p>Comments coming soon.</p>

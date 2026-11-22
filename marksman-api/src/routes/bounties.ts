@@ -41,7 +41,10 @@ import { getBountyRecentScores } from "../services/bounty-recent-scores";
 import { getBountyScorePreview } from "../services/bounty-score-preview";
 import { startHunt } from "../services/bounty-hunts";
 import { findUserById } from "../db/users";
-import { contributeToBounty } from "../services/bounty-contributions";
+import {
+  contributeToBounty,
+  getBountyFundingBreakdown,
+} from "../services/bounty-contributions";
 
 export const bountiesRouter = Router();
 
@@ -199,6 +202,30 @@ bountiesRouter.get(
     }
   },
 );
+
+bountiesRouter.get("/:id/contributions", async (req, res) => {
+  const parsed = uuidSchema.safeParse(req.params.id);
+
+  if (!parsed.success) {
+    return res.status(400).json({
+      code: "MALFORMED_BOUNTY_ID",
+      error: "Malformed bounty ID",
+    });
+  }
+
+  try {
+    const breakdown = await getBountyFundingBreakdown(parsed.data);
+    return res.json(breakdown);
+  } catch (error) {
+    if (error instanceof BountyNotFoundError) {
+      return res.status(404).json({
+        code: "BOUNTY_NOT_FOUND",
+        error: error.message,
+      });
+    }
+    throw error;
+  }
+});
 
 bountiesRouter.post(
   "/",
@@ -554,22 +581,37 @@ bountiesRouter.post(
       return res.json(contribution);
     } catch (error) {
       if (error instanceof BountyNotFoundError) {
-        return res.status(404).json({ code: "BOUNTY_NOT_FOUND", error: error.message });
+        return res
+          .status(404)
+          .json({ code: "BOUNTY_NOT_FOUND", error: error.message });
       }
       if (error instanceof UserNotFoundError) {
-        return res.status(404).json({ code: "USER_NOT_FOUND", error: error.message });
+        return res
+          .status(404)
+          .json({ code: "USER_NOT_FOUND", error: error.message });
       }
       if (error instanceof BountyNotOpenError) {
-        return res.status(409).json({ code: "BOUNTY_NOT_OPEN", error: error.message });
+        return res
+          .status(409)
+          .json({ code: "BOUNTY_NOT_OPEN", error: error.message });
       }
       if (error instanceof BountyRewardLimitError) {
-        return res.status(409).json({ code: "BOUNTY_REWARD_LIMIT", error: error.message });
+        return res
+          .status(409)
+          .json({ code: "BOUNTY_REWARD_LIMIT", error: error.message });
       }
       if (error instanceof ContributionIdempotencyConflictError) {
-        return res.status(409).json({ code: "CONTRIBUTION_IDEMPOTENCY_CONFLICT", error: error.message });
+        return res
+          .status(409)
+          .json({
+            code: "CONTRIBUTION_IDEMPOTENCY_CONFLICT",
+            error: error.message,
+          });
       }
       if (error instanceof InsufficientBpError) {
-        return res.status(409).json({ code: "INSUFFICIENT_BP", error: error.message });
+        return res
+          .status(409)
+          .json({ code: "INSUFFICIENT_BP", error: error.message });
       }
       throw error;
     }

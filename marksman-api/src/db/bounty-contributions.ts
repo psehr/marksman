@@ -1,7 +1,10 @@
-import { BountyContribution } from "@marksman/contracts";
+import {
+  BountyContribution,
+  BountyFundingBreakdown,
+} from "@marksman/contracts";
 import { db, Transaction } from ".";
-import { bountyContributions } from "./schema";
-import { and, eq, sql } from "drizzle-orm";
+import { bountyContributions, users } from "./schema";
+import { and, asc, desc, eq, sql } from "drizzle-orm";
 
 // Serialize retries before locking a bounty. Different bounties can share a key,
 // so the bounty lock alone cannot protect the per-user idempotency lookup.
@@ -78,4 +81,30 @@ export async function fetchBountyContributions(
     .where(eq(bountyContributions.bountyId, bountyId));
 
   return rows.map(toBountyContribution);
+}
+
+export async function fetchBountyFundingBreakdown(
+  bountyId: string,
+): Promise<BountyFundingBreakdown> {
+  const totalPrincipal = sql<number>`
+    sum(${bountyContributions.amountBp})
+  `.mapWith(Number);
+
+  return db
+    .select({
+      user: {
+        id: users.id,
+        osuUserId: users.osuUserId,
+        username: users.username,
+        coverUrl: users.coverUrl,
+        countryCode: users.countryCode,
+        countryName: users.countryName,
+      },
+      amountBp: totalPrincipal,
+    })
+    .from(bountyContributions)
+    .innerJoin(users, eq(bountyContributions.userId, users.id))
+    .where(eq(bountyContributions.bountyId, bountyId))
+    .groupBy(users.id)
+    .orderBy(desc(totalPrincipal), asc(users.id));
 }

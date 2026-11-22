@@ -31,6 +31,11 @@ function stubModule(path: string, overrides: Record<string, unknown>) {
 }
 stubModule("../src/db/users", { findUserById: async () => user });
 stubModule("../src/services/bounty-contributions", {
+  getBountyFundingBreakdown: async (...args: unknown[]) => {
+    calls.push(args);
+    if (failure) throw failure;
+    return [{ user: user.identity, amountBp: 25 }];
+  },
   contributeToBounty: async (...args: unknown[]) => {
     calls.push(args);
     if (failure) throw failure;
@@ -102,6 +107,35 @@ async function request({ id = bountyId as string, body = input as unknown, auth 
     method: "POST", headers, body: JSON.stringify(body),
   });
 }
+
+test("GET contributions returns grouped funding without mutation Origin requirements", async () => {
+  const response = await fetch(`${baseUrl}/bounties/${bountyId}/contributions`);
+  assert.equal(response.status, 200);
+  assert.deepEqual(await response.json(), [{ user: user.identity, amountBp: 25 }]);
+  assert.deepEqual(calls, [[bountyId]]);
+});
+
+test("GET contributions rejects malformed IDs before the service", async () => {
+  const response = await fetch(`${baseUrl}/bounties/not-a-uuid/contributions`);
+  assert.equal(response.status, 400);
+  assert.equal((await response.json()).code, "MALFORMED_BOUNTY_ID");
+  assert.deepEqual(calls, []);
+});
+
+test("GET contributions maps missing bounty to 404", async () => {
+  failure = new BountyNotFoundError();
+  const response = await fetch(`${baseUrl}/bounties/${bountyId}/contributions`);
+  assert.equal(response.status, 404);
+  assert.deepEqual(await response.json(), { code: "BOUNTY_NOT_FOUND", error: failure.message });
+  assert.equal(forwardedError, undefined);
+});
+
+test("GET contributions forwards unexpected read errors", async () => {
+  failure = new Error("fixture read failure");
+  const response = await fetch(`${baseUrl}/bounties/${bountyId}/contributions`);
+  assert.equal(response.status, 500);
+  assert.equal(forwardedError, failure);
+});
 
 test("returns contribution and replays with 200 using session identity", async () => {
   for (let i = 0; i < 2; i++) {
