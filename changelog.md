@@ -15,7 +15,7 @@ are marked until deployment is confirmed. Deployment names increment as
 - fa4d1ec — feat: default bounty board sorting to ongoing hunts.
 - 8f84abc — feat: show ongoing hunt counts on bounties.
 - 41f0211 — feat: accept username aliases in profile URLs.
-- feat: show osu! avatars, profile covers and country flags on player cards.
+- 491bc78 — feat: show osu! avatars, profile covers and country flags on player cards.
 - a591fe9 — feat: show hunter stamps on bounty cards.
 
 ### Fixes
@@ -24,6 +24,7 @@ are marked until deployment is confirmed. Deployment names increment as
 - 927bf91 — fix: show profile logout button only to the profile owner.
 - f69c6d2 — fix: suppress Discord embeds in achievement sharing.
 - 71addd3 — fix: make the first profile hunting slot span the full row.
+- fix: stretch the profile player card and group separate stats on the right.
 
 ## Alpha - Update 1 — 2026-11-21
 

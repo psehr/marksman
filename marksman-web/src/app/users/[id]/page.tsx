@@ -299,27 +299,31 @@ function UserProfile({ id }: { id: string }) {
           <div className="w-full">
             <div className="w-full flex flex-col lg:flex-row justify-between gap-4 pb-8 max-lg:[&>*]:w-full max-lg:[&>*]:max-w-none">
               <UserCard user={detailedUser} />
-              <UserStatsCard cols={2}>
-                <StatContainer
-                  stat={detailedUser.stats.bountiesWon}
-                  title={`Completed ${detailedUser.stats.bountiesWon > 1 ? "Bounties" : "Bounty"}`}
-                  unit="count"
-                />
-                <StatContainer
-                  stat={detailedUser.stats.bountyEarningsBp}
-                  title={`Total Earnings`}
-                  unit="bp"
-                />
-              </UserStatsCard>
-              {userIsPageOwner ? (
-                <UserStatsCard cols={1} size="sm">
+              <div className="grid w-full min-w-0 grid-cols-1 gap-4 lg:w-auto lg:flex-[2] lg:grid-flow-col lg:auto-cols-fr [&>*]:max-w-none">
+                <UserStatsCard cols={1}>
                   <StatContainer
-                    stat={detailedUser.stats.bpBalance}
-                    title={`Your Balance`}
+                    stat={detailedUser.stats.bountiesWon}
+                    title={`Completed ${detailedUser.stats.bountiesWon > 1 ? "Bounties" : "Bounty"}`}
+                    unit="count"
+                  />
+                </UserStatsCard>
+                <UserStatsCard cols={1}>
+                  <StatContainer
+                    stat={detailedUser.stats.bountyEarningsBp}
+                    title={`Total Earnings`}
                     unit="bp"
                   />
                 </UserStatsCard>
-              ) : null}
+                {userIsPageOwner ? (
+                  <UserStatsCard cols={1}>
+                    <StatContainer
+                      stat={detailedUser.stats.bpBalance}
+                      title={`Balance`}
+                      unit="bp"
+                    />
+                  </UserStatsCard>
+                ) : null}
+              </div>
             </div>
           </div>
           <div className="flex w-full place-content-end gap-4">

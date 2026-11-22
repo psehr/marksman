@@ -9,7 +9,7 @@ export function UserCard({ user }: { user: User }) {
       target="_blank"
       rel="noopener noreferrer"
       aria-label={`${user.identity.username}'s osu! profile (opens in a new tab)`}
-      className="flex w-3xs max-w-sm min-w-0 h-26 wrap-anywhere border border-border rounded text-xl p-2 bg-card hover:border-accent focus-visible:outline-2 focus-visible:outline-accent transition-all"
+      className="flex w-full lg:flex-1 min-w-0 h-26 wrap-anywhere border border-border rounded text-xl p-2 bg-card hover:border-accent focus-visible:outline-2 focus-visible:outline-accent transition-all"
     >
       <div className="relative isolate overflow-hidden flex size-full place-content-between bg-card-darker rounded border border-border/30 shadow-[inset_0_2px_8px_rgb(0_0_0/0.7)]">
         {user.identity.coverUrl && (

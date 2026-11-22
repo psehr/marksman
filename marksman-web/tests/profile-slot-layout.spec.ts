@@ -76,13 +76,13 @@ for (const count of [1, 3]) {
       await page.goto(`/users/${owner.identity.id}?view=hunting`);
       await expect(page.getByText("Empty Hunting Slot", { exact: true })).toHaveCount(3 - count);
       if (width < 1024) {
-        const header = page.getByText("Your Balance", { exact: true }).locator("../../../..");
+        const header = page.getByRole("link", { name: /slot-owner.s osu! profile/ }).locator("..");
         await expect(header).toBeVisible();
         const headerBounds = (await header.boundingBox())!;
-        const cardBounds = await header.locator(":scope > div").evaluateAll(elements =>
+        const cardBounds = await header.locator(":scope > a, :scope > div > div").evaluateAll(elements =>
           elements.map(el => ({ width: el.getBoundingClientRect().width, x: el.getBoundingClientRect().x })),
         );
-        expect(cardBounds).toHaveLength(3);
+        expect(cardBounds).toHaveLength(4);
         for (const card of cardBounds) {
           expect(Math.abs(card.width - headerBounds.width)).toBeLessThan(2);
           expect(Math.abs(card.x - headerBounds.x)).toBeLessThan(2);
