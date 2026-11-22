@@ -158,7 +158,9 @@ export const bountySearchQuerySchema = z.object({
   search: z.string().trim().default(""),
   sort: z.enum(["date", "reward", "hunters"]).default("date"),
   order: z.enum(["asc", "desc"]).default("desc"),
-  relationship: z.enum(["all", "created", "bookmarked"]).default("all"),
+  relationship: z
+    .enum(["all", "created", "bookmarked", "hunting"])
+    .default("all"),
   creatorId: z.uuid().optional(),
   winnerId: z.uuid().optional(),
   page: z.coerce.number().int().positive().default(1),

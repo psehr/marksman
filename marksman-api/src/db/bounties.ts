@@ -156,6 +156,20 @@ export async function listBounties(
       case "created":
         relationshipFilter = eq(bounties.creatorOsuUserId, identity.osuUserId);
         break;
+      case "hunting":
+        relationshipFilter = exists(
+          db
+            .select()
+            .from(bountyHunts)
+            .where(
+              and(
+                eq(bountyHunts.bountyId, bounties.id),
+                eq(bountyHunts.userId, identity.id),
+                eq(bountyHunts.status, "ongoing"),
+              ),
+            ),
+        );
+        break;
     }
   }
 

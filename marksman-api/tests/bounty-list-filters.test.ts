@@ -283,6 +283,34 @@ test("completed date sorting uses completion time with stable ties", async () =>
   }
 });
 
+test("hunting relationship includes only the current user's ongoing hunts", async () => {
+  const { listBounties } = require("../src/db/bounties") as typeof import("../src/db/bounties");
+  const { bountyHunts } = require("../src/db/schema") as typeof import("../src/db/schema");
+  const active = await seed();
+  const other = await seed();
+  const stopped = await seed();
+  const closed = await seed();
+  await seed();
+  const startedAt = new Date("2026-01-01T00:00:00Z");
+  const endedAt = new Date("2026-01-02T00:00:00Z");
+  await db.insert(bountyHunts).values([
+    { bountyId: active.id, userId: alice.id, status: "ongoing", startedAt },
+    { bountyId: active.id, userId: bob.id, status: "ongoing", startedAt },
+    { bountyId: other.id, userId: bob.id, status: "ongoing", startedAt },
+    { bountyId: stopped.id, userId: alice.id, status: "stopped", startedAt, endedAt },
+    { bountyId: closed.id, userId: alice.id, status: "closed", startedAt, endedAt },
+  ]);
+  const query = bountySearchQuerySchema.parse({ relationship: "hunting" });
+  for (const [user, expected] of [[alice, [active.id]], [bob, [active.id, other.id]], [creator, []]] as const) {
+    const result = await listBounties(query, { id: user.id, osuUserId: user.osuUserId, username: user.username });
+    assert.deepEqual(result.items.map(item => item.id).sort(), [...expected].sort());
+    assert.equal(result.total, expected.length);
+  }
+  const nextPage = await listBounties({ ...query, page: 2 }, { id: alice.id, osuUserId: alice.osuUserId, username: alice.username });
+  assert.deepEqual(nextPage.items, []);
+  assert.equal(nextPage.total, 1);
+});
+
 test("hunter sorting counts only ongoing hunts before pagination with stable ties", async () => {
   const { listBounties } = require("../src/db/bounties") as typeof import("../src/db/bounties");
   const { bountyHunts } = require("../src/db/schema") as typeof import("../src/db/schema");

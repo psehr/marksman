@@ -62,6 +62,45 @@ test("board defaults to hunters and preserves explicit date and reward sorts", a
   await expect.poll(() => requests.at(-1)?.get("order")).toBe("desc");
 });
 
+test("hunting filter resets pagination, preserves filters and follows history and reload", async ({ page }) => {
+  const requests: URLSearchParams[] = [];
+  await setup(page, params => {
+    requests.push(params);
+    return { items: params.get("relationship") === "hunting" ? [fixtures[0]] : fixtures, total: params.get("relationship") === "hunting" ? 1 : 45, page: Number(params.get("page")), pageSize: 20 };
+  });
+  await page.route("**/auth/me", route => route.fulfill({ json: {
+    identity: { id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa", osuUserId: 42, username: "fixture" },
+    stats: { bpBalance: 100 }, createdAt: "2026-01-01T00:00:00.000Z",
+  } }));
+  await page.route("**/auth/access", route => route.fulfill({ status: 204 }));
+  await page.goto("/bounties?page=2&tiers=Hard&keep=yes");
+  const hunting = page.getByRole("button", { name: "Hunting", exact: true });
+  await expect(hunting).toBeEnabled();
+  await hunting.click();
+  await expect(hunting).toHaveAttribute("aria-pressed", "true");
+  await expect(cards(page)).toHaveCount(1);
+  await expect.poll(() => Object.fromEntries(requests.at(-1) ?? [])).toMatchObject({ relationship: "hunting", page: "1", tiers: "Hard" });
+  expect(new URL(page.url()).searchParams.has("page")).toBe(false);
+  expect(new URL(page.url()).searchParams.get("keep")).toBe("yes");
+  await page.reload();
+  await expect(hunting).toHaveAttribute("aria-pressed", "true");
+  await page.getByRole("button", { name: "All", exact: true }).click();
+  await expect.poll(() => requests.at(-1)?.get("relationship")).toBe("all");
+  await page.goBack();
+  await expect(hunting).toHaveAttribute("aria-pressed", "true");
+  await expect.poll(() => requests.at(-1)?.get("relationship")).toBe("hunting");
+});
+
+test("signed-out hunting URL remains behind the alpha login gate", async ({ page }) => {
+  const requests: URLSearchParams[] = [];
+  await setup(page, params => { requests.push(params); return { items: [], total: 0, page: 1, pageSize: 20 }; });
+  await page.route("**/auth/access", route => route.fulfill({ status: 204 }));
+  await page.goto("/bounties?relationship=hunting&tiers=Hard");
+  await expect(page.getByRole("heading", { name: "Authentication", exact: true })).toBeVisible();
+  await expect(page.getByRole("button", { name: "Hunting", exact: true })).toHaveCount(0);
+  expect(requests).toHaveLength(0);
+});
+
 test("sends all URL filters, uses server results and totals, and falls back anonymously", async ({ page }) => {
   const requests: URLSearchParams[] = [];
   await setup(page, params => { requests.push(params); return { items: [fixtures[0]], total: 45, page: 2, pageSize: 20 }; });

@@ -82,8 +82,10 @@ export default function BountyFilters(props: {
   setSearchInput: (input: string) => void;
   setSelectedSortingMethod: (input: BountySortingMethod) => void;
   selectedSortingMethod: BountySortingMethod;
-  relationship: "created" | "bookmarked" | null;
-  setRelationship: (relationship: "created" | "bookmarked" | null) => void;
+  relationship: "created" | "bookmarked" | "hunting" | null;
+  setRelationship: (
+    relationship: "created" | "bookmarked" | "hunting" | null,
+  ) => void;
   foundBountiesCount: number;
   selectedFilters: AdditionalBountyFilters;
   onToggleTier: (tier: BountyTier) => void;
@@ -137,6 +139,14 @@ export default function BountyFilters(props: {
               All
             </FilterButton>
             <FilterButton
+              onClick={() => props.setRelationship("hunting")}
+              pressed={props.relationship === "hunting" && isLogged}
+              disabled={!isLogged}
+            >
+              <ActionIcon action="hunt" />
+              Hunting
+            </FilterButton>
+            <FilterButton
               pressed={props.relationship === "bookmarked" && isLogged}
               onClick={() => props.setRelationship("bookmarked")}
               disabled={!isLogged}
@@ -151,10 +161,6 @@ export default function BountyFilters(props: {
             >
               <ActionIcon action="create" />
               Created
-            </FilterButton>
-            <FilterButton onClick={() => {}} disabled>
-              <ActionIcon action="hunt" />
-              Hunting
             </FilterButton>
           </div>
         </fieldset>

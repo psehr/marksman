@@ -34,7 +34,7 @@ export default function BountiesPage() {
 function Bounties() {
   const searchParams = useSearchParams();
 
-  type BountyRelationship = "created" | "bookmarked" | null;
+  type BountyRelationship = "created" | "bookmarked" | "hunting" | null;
 
   const { user } = useAuth();
 
@@ -43,7 +43,9 @@ function Bounties() {
 
   const rawRelationship = searchParams.get("relationship");
   const relationship: BountyRelationship =
-    rawRelationship === "created" || rawRelationship === "bookmarked"
+    rawRelationship === "created" ||
+    rawRelationship === "bookmarked" ||
+    rawRelationship === "hunting"
       ? rawRelationship
       : null;
 
