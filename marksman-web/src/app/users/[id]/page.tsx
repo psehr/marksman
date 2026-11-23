@@ -298,7 +298,9 @@ function UserProfile({ id }: { id: string }) {
         <MainSection>
           <div className="w-full">
             <div className="w-full flex flex-col lg:flex-row justify-between gap-4 pb-8 max-lg:[&>*]:w-full max-lg:[&>*]:max-w-none">
-              <UserCard user={detailedUser.identity} linkTo="osu" />
+              <div className="flex w-full min-w-0 h-26 lg:h-auto lg:flex-1">
+                <UserCard user={detailedUser.identity} linkTo="osu" />
+              </div>
               <div className="grid w-full min-w-0 grid-cols-1 gap-4 lg:w-auto lg:flex-[2] lg:grid-flow-col lg:auto-cols-fr [&>*]:max-w-none">
                 <UserStatsCard cols={1}>
                   <StatContainer

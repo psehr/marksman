@@ -11,7 +11,7 @@ are marked until deployment is confirmed. Deployment names increment as
 
 ### Features
 
-- feat: show each player's total contribution in the bounty Funding tab.
+- 5226f9d — feat: show each player's total contribution in the bounty Funding tab.
 - 769163f — feat: filter the bounty board by your ongoing hunts.
 - fa4d1ec — feat: default bounty board sorting to ongoing hunts.
 - 8f84abc — feat: show ongoing hunt counts on bounties.
@@ -26,6 +26,7 @@ are marked until deployment is confirmed. Deployment names increment as
 - f69c6d2 — fix: suppress Discord embeds in achievement sharing.
 - 71addd3 — fix: make the first profile hunting slot span the full row.
 - 1c357c2 — fix: stretch the profile player card and group separate stats on the right.
+- fix: refine user card styling and image clarity.
 
 ## Alpha - Update 1 — 2026-11-21
 

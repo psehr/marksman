@@ -35,7 +35,7 @@ const nextConfig: NextConfig = {
         protocol: "https",
         hostname: "flagcdn.com",
         port: "",
-        pathname: "/w40/*.png",
+        pathname: "/w160/*.png",
         search: "",
       },
     ],

@@ -31,22 +31,24 @@ export default function BountyFundingBreakdown({
   if (!funders.length) return <p>No funding recorded.</p>;
 
   return (
-    <div className="flex flex-col w-full min-w-0">
-      <p className="text-xs w-full text-center text-foreground-muted">
+    <div className="flex flex-col w-full min-w-0 gap-2">
+      <p className="text-xs italic w-full text-center text-foreground-muted">
         List of the players that funded this bounty, with their cumulated
         contributions
       </p>
-      <ul className="divide-y divide-border">
+      <ul>
         {funders.map(({ user, amountBp }) => (
           <li
             key={user.id}
-            className="relative flex flex-col gap-2 py-3 sm:flex-row sm:items-center"
+            className="relative flex flex-col gap-2 py-2 sm:flex-row sm:items-center"
           >
-            <UserCard user={user} />
-            <div className="flex w-full items-center justify-center pointer-events-none sm:absolute sm:inset-0">
-              <span className="inline-flex shrink-0 items-center gap-1 tabular-nums text-accent text-3xl font-bold">
+            <div className="flex w-full h-20">
+              <UserCard user={user} />
+            </div>
+            <div className="flex flex-col w-full items-center justify-center pointer-events-none sm:absolute sm:inset-0">
+              <span className="inline-flex shrink-0 items-center place-content-center gap-1 tabular-nums text-accent text-2xl font-bold">
                 {amountBp.toLocaleString()}
-                <BPIcon size="md" />
+                <BPIcon size="sm" />
               </span>
             </div>
           </li>
