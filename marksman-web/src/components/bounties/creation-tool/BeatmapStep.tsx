@@ -1,4 +1,3 @@
-import ActionIcon from "@/components/ui/ActionIcon";
 import Button from "@/components/ui/Button";
 import type { BeatmapStepProps } from "./creation-tool.types";
 import TextInput from "@/components/ui/TextInput";
@@ -79,22 +78,6 @@ export default function BeatmapStep({ props }: { props: BeatmapStepProps }) {
           </p>
         </div>
       ) : null}
-      <div className="flex gap-2 place-content-end w-full">
-        {props.onBack ? (
-          <Button onClick={props.onBack} variant="outline">
-            <ActionIcon action="back" />
-            Back
-          </Button>
-        ) : null}
-        <Button
-          onClick={props.onContinue}
-          variant="accent"
-          disabled={props.beatmapValidity.status === "invalid"}
-        >
-          Continue
-          <ActionIcon action="continue" />
-        </Button>
-      </div>
     </div>
   );
 }

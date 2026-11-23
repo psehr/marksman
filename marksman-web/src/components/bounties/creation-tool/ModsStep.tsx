@@ -1,5 +1,3 @@
-import ActionIcon from "@/components/ui/ActionIcon";
-import Button from "@/components/ui/Button";
 import ModIcon from "@/components/osu/ModIcon";
 import type {
   ModRule,
@@ -96,20 +94,6 @@ export default function ModsStep({ props }: { props: ModsStepProps }) {
           ))}
         </div>
       ) : null}
-      <div className="flex gap-2 w-full place-content-end">
-        <Button onClick={props.onBack} variant="outline">
-          <ActionIcon action="back" />
-          Back
-        </Button>
-        <Button
-          onClick={props.onContinue}
-          variant="accent"
-          disabled={props.validationErrors.length > 0}
-        >
-          Continue
-          <ActionIcon action="continue" />
-        </Button>
-      </div>
     </div>
   );
 }

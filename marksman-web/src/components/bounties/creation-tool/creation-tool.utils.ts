@@ -1,7 +1,7 @@
+import { MAX_BOUNTY_REWARD_BP } from "@marksman/contracts";
 import type {
   BeatmapValidationInput,
   BeatmapValidity,
-  BountyCreationToolStep,
 } from "./creation-tool.types";
 
 export function beatmapIdFromInput(input: string): number | undefined {
@@ -23,25 +23,6 @@ export function beatmapIdFromInput(input: string): number | undefined {
   }
   const id = Number(digits);
   return Number.isSafeInteger(id) && id > 0 ? id : undefined;
-}
-
-export function formatStepTitle(step: BountyCreationToolStep): string {
-  switch (step) {
-    case "login":
-      return "Authentication Status (1/6)";
-    case "beatmap":
-      return "Beatmap Selection (2/6)";
-    case "goal":
-      return "Completion Goal (3/6)";
-    case "mods":
-      return "Mod Requirements (4/6)";
-    case "reward":
-      return "Reward Selection (5/6)";
-    case "review":
-      return "Review Bounty (6/6)";
-    default:
-      return "Info Section";
-  }
 }
 
 export function isSelectedBeatmapValid(
@@ -99,6 +80,10 @@ export function evaluateRewardValidity(
 
   if (reward <= 0) {
     reasons.push("Reward must be positive.");
+  }
+
+  if (reward > MAX_BOUNTY_REWARD_BP) {
+    reasons.push(`Reward cannot exceed ${MAX_BOUNTY_REWARD_BP.toLocaleString()} BP.`);
   }
 
   if (!Number.isInteger(reward)) {

@@ -2,7 +2,7 @@
 
 import { useAuth } from "@/components/auth/AuthProvider";
 import { useBeatmapMetadata } from "@/hooks/useBeatmapMetadata";
-import { useEffect, useState } from "react";
+import { useState } from "react";
 import LoginStep from "./LoginStep";
 import BeatmapStep from "./BeatmapStep";
 import GoalStep from "./GoalStep";
@@ -15,7 +15,6 @@ import {
 } from "@marksman/contracts";
 import type {
   BeatmapStepProps,
-  BountyCreationToolStep,
   BountyType,
   GoalStepProps,
   ModRule,
@@ -26,11 +25,10 @@ import type {
 import {
   beatmapIdFromInput,
   evaluateRewardValidity,
-  formatStepTitle,
   isSelectedBeatmapValid,
 } from "./creation-tool.utils";
 import RewardStep from "./RewardStep";
-import ReviewStep from "./ReviewStep";
+import CreationSubmit from "./CreationSubmit";
 import { useBountyCreation } from "@/hooks/useBountyCreation";
 import { BountyCardDisplay } from "../BountyCard";
 import BountyPreview from "./BountyPreview";
@@ -44,22 +42,11 @@ export default function BountyCreationTool() {
     refreshUser,
   } = useAuth();
 
-  const [currentStep, setCurrentStep] = useState<BountyCreationToolStep>(
-    () => user && !accountLoading && !accountError ? "beatmap" : "login",
-  );
-
-  useEffect(() => {
-    if (user && !accountLoading && !accountError) {
-      setCurrentStep((step) => step === "login" ? "beatmap" : step);
-    }
-  }, [user?.identity.id, accountLoading, accountError]);
-
   const loginProps = {
     user,
     accountLoading,
     accountError,
     refreshUser,
-    onContinue: () => setCurrentStep("beatmap"),
   };
 
   const [beatmapInput, setBeatmapInput] = useState<string>("");
@@ -81,12 +68,6 @@ export default function BountyCreationTool() {
   const beatmapStepProps: BeatmapStepProps = {
     beatmapInput,
     onBeatmapChange: (input: string) => setBeatmapInput(input),
-    onBack: user && !accountLoading && !accountError
-      ? undefined
-      : () => setCurrentStep("login"),
-    onContinue: () => {
-      if (beatmapValidity.status === "valid") setCurrentStep("goal");
-    },
     beatmapMetadata,
     beatmapLookupStatus,
     beatmapLookupError,
@@ -117,15 +98,15 @@ export default function BountyCreationTool() {
     selectedMinimumAccuracy,
     setRequireMinimumAccuracy,
     setSelectedMinimumAccuracy,
-    setSelectedBountyType,
+    setSelectedBountyType: (type) => {
+      if (type === "pass") {
+        setSelectedMods((mods) => mods.filter((mod) => mod !== "NF"));
+      }
+      setSelectedBountyType(type);
+    },
     setSelectedMinimumGrade,
     setSelectedMinimumComboPercentage,
     beatmapMaxCombo: beatmapMetadata?.max_combo ?? null,
-    onBack: () => setCurrentStep("beatmap"),
-    onContinue: () => {
-      clearSelectedMods();
-      setCurrentStep("mods");
-    },
     customizeStableComboThreshold,
     setCustomizeStableComboThreshold,
   };
@@ -137,8 +118,6 @@ export default function BountyCreationTool() {
       ? { rule: "any" }
       : { rule: selectedModRule, mods: selectedMods },
   );
-
-  const clearSelectedMods = () => setSelectedMods([]);
 
   const modsStepProps: ModsStepProps = {
     bountyType: selectedBountyType,
@@ -156,16 +135,11 @@ export default function BountyCreationTool() {
     validationErrors: modValidation.success
       ? []
       : modValidation.error.issues.map((issue) => issue.message),
-    onBack: () => setCurrentStep("goal"),
-    onContinue: () => {
-      if (modValidation.success) setCurrentStep("reward");
-    },
   };
 
   const [reward, setReward] = useState(100);
   const balance = user?.stats.bpBalance ?? null;
   const rewardValidity = evaluateRewardValidity(balance, reward);
-  const isRewardValid = rewardValidity.status === "valid";
   const validationErrors =
     rewardValidity.status === "invalid" ? rewardValidity.reasons : [];
 
@@ -173,12 +147,7 @@ export default function BountyCreationTool() {
     balance,
     reward,
     setReward,
-    isRewardValid,
     validationErrors,
-    onBack: () => setCurrentStep("mods"),
-    onContinue: () => {
-      if (isRewardValid && !accountLoading && user) setCurrentStep("review");
-    },
   };
 
   let previewCardContent: BountyCardDisplay | null = null;
@@ -229,70 +198,82 @@ export default function BountyCreationTool() {
     rewardBp: reward,
     goal: previewCardContent?.goal,
   });
-  const reviewErrors = [
-    ...(finalInput.success
+  const submissionErrors = [
+    ...(finalInput.success || !previewCardContent
       ? []
-      : finalInput.error.issues.map((issue) => issue.message)),
-    ...(beatmapValidity.status === "valid" ? [] : beatmapValidity.reasons),
-    ...validationErrors,
+      : finalInput.error.issues
+          .filter((issue) =>
+            issue.path[0] !== "rewardBp" &&
+            !(issue.path[0] === "goal" && issue.path[1] === "modRequirement"),
+          )
+          .map((issue) => issue.message)),
+    ...(beatmapValidity.status === "valid"
+      ? []
+      : ["Choose an eligible beatmap above before creating the bounty."]),
   ];
   const canSubmit =
     finalInput.success &&
-    reviewErrors.length === 0 &&
+    rewardValidity.status === "valid" &&
+    submissionErrors.length === 0 &&
     !accountLoading &&
+    !accountError &&
     user !== null;
 
-  const reviewStepProps = {
+  const submissionProps = {
     input: finalInput.success ? finalInput.data : null,
-    balance,
-    errors: [...new Set(reviewErrors)],
+    errors: [...new Set(submissionErrors)],
     pending: creation.pending,
     error: creation.error,
     canSubmit,
-    login: {
-      ...loginProps,
-      onContinue: () => setCurrentStep("review"),
-    },
-    customizeStableComboThreshold,
-    onBack: () => setCurrentStep("reward"),
     onSubmit: () => {
       if (canSubmit && finalInput.success)
         void creation.submit(finalInput.data);
     },
   };
 
+  if (!user || accountLoading || accountError) {
+    return (
+      <section className="w-full max-w-2xl bg-surface border border-border rounded p-4">
+        <h2 className="text-lg font-bold mb-4">Authentication Status</h2>
+        <LoginStep props={loginProps} />
+      </section>
+    );
+  }
+
+  const sections = [
+    { title: "Beatmap Selection", content: <BeatmapStep props={beatmapStepProps} /> },
+    { title: "Mod Requirements", content: <ModsStep props={modsStepProps} /> },
+    { title: "Completion Goal", content: <GoalStep props={goalStepProps} /> },
+    { title: "Reward Selection", content: (
+      <div className="flex flex-col gap-4">
+        <RewardStep props={rewardStepProps} />
+        <CreationSubmit props={submissionProps} />
+      </div>
+    ) },
+  ];
+
   return (
     <>
       {previewCardContent ? (
         <div className="w-full max-w-2xl text-end">
-          <h2
-            className={`text-lg sm:text-2xl font-bold text-foreground-muted ${aes_font.className}`}
-          >
+          <h2 className={`text-lg sm:text-2xl font-bold text-foreground-muted ${aes_font.className}`}>
             Bounty Preview
           </h2>
           <BountyPreview content={previewCardContent} />
         </div>
       ) : null}
-      <div className="w-full max-w-2xl text-end">
-        <h2
-          className={`text-lg sm:text-2xl font-bold text-foreground-muted ${aes_font.className}`}
-        >
-          {formatStepTitle(currentStep)}
-        </h2>
-        <div className="bg-surface border border-border rounded p-4">
-          {currentStep === "login" ? <LoginStep props={loginProps} /> : null}
-          {currentStep === "beatmap" ? (
-            <BeatmapStep props={beatmapStepProps} />
-          ) : null}
-          {currentStep === "goal" ? <GoalStep props={goalStepProps} /> : null}
-          {currentStep === "mods" ? <ModsStep props={modsStepProps} /> : null}
-          {currentStep === "reward" ? (
-            <RewardStep props={rewardStepProps} />
-          ) : null}
-          {currentStep === "review" ? (
-            <ReviewStep props={reviewStepProps} />
-          ) : null}
-        </div>
+      <div className="flex w-full max-w-2xl flex-col gap-6">
+        {sections.map(({ title, content }) => (
+          <section key={title} aria-label={title} className="w-full min-w-0 text-end">
+            <h2 className={`text-lg sm:text-2xl font-bold text-foreground-muted ${aes_font.className}`}>
+              {title}
+            </h2>
+            <fieldset disabled={creation.pending} className="min-w-0 bg-surface border border-border rounded p-4">
+              <legend className="sr-only">{title}</legend>
+              {content}
+            </fieldset>
+          </section>
+        ))}
       </div>
     </>
   );

@@ -1,8 +1,6 @@
-import ActionIcon from "@/components/ui/ActionIcon";
 import BPIcon from "@/components/economy/BPIcon";
 import { RewardStepProps } from "./creation-tool.types";
 import TextInput from "@/components/ui/TextInput";
-import Button from "@/components/ui/Button";
 import { rewardFee } from "./creation-tool.utils";
 import BountyTierBadge from "../BountyTierBadge";
 import {
@@ -10,6 +8,7 @@ import {
   getBountyTier,
   getNextBountyTier,
 } from "@marksman/contracts";
+import { aes_font } from "@/lib/fonts";
 
 export default function RewardStep({ props }: { props: RewardStepProps }) {
   const balance = props.balance !== null ? props.balance : null;
@@ -69,15 +68,28 @@ export default function RewardStep({ props }: { props: RewardStepProps }) {
   }
 
   const allTiers = [...bountyTiers].reverse();
+  const insufficientBalance =
+    balance !== null && totalCost !== null && balance < totalCost;
 
   return (
     <div className="flex flex-col items-start gap-4">
+      <div
+        aria-label="Available balance"
+        className={`flex w-full flex-wrap items-center justify-end gap-2 ${insufficientBalance ? "text-danger" : "text-foreground"}`}
+      >
+        <span className="text-sm">Available balance:</span>
+        <span
+          className={`${aes_font.className} inline-flex items-center gap-1 text-lg font-bold tabular-nums`}
+        >
+          {balance?.toLocaleString() ?? "—"}
+          <BPIcon />
+        </span>
+      </div>
       <p
         aria-label="Reward cost summary"
         className="w-full text-right text-xs text-foreground-muted wrap-anywhere"
       >
-        Balance: {balance?.toLocaleString() ?? "—"} BP · Reward:{" "}
-        {reward?.toLocaleString() ?? "—"} BP · Fee:{" "}
+        Reward: {reward?.toLocaleString() ?? "—"} BP · Fee:{" "}
         {fee?.toLocaleString() ?? "—"} BP · Total:{" "}
         {totalCost?.toLocaleString() ?? "—"} BP
       </p>
@@ -106,22 +118,6 @@ export default function RewardStep({ props }: { props: RewardStepProps }) {
           </p>
         ))}
       </section>
-
-      <div className="flex gap-2 place-content-end w-full">
-        <Button onClick={props.onBack} variant="outline">
-          <ActionIcon action="back" />
-          Back
-        </Button>
-
-        <Button
-          onClick={props.onContinue}
-          variant="accent"
-          disabled={!props.isRewardValid}
-        >
-          Continue
-          <ActionIcon action="continue" />
-        </Button>
-      </div>
     </div>
   );
 }

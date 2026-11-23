@@ -9,7 +9,6 @@ export type LoginStepProps = {
   accountLoading: boolean;
   accountError: string | null;
   refreshUser: () => Promise<void>;
-  onContinue: () => void;
   user: User | null;
 };
 
@@ -20,8 +19,6 @@ export type BeatmapValidity =
 export type BeatmapStepProps = {
   beatmapInput: string;
   onBeatmapChange: (value: string) => void;
-  onBack?: () => void;
-  onContinue: () => void;
   beatmapMetadata: OsuBeatmapMetadata | null;
   beatmapLookupStatus: "idle" | "loading" | "success" | "error";
   beatmapLookupError: string | null;
@@ -44,8 +41,6 @@ export type GoalStepProps = {
   ) => void;
   setSelectedMinimumComboPercentage: (ratio: number) => void;
   beatmapMaxCombo: number | null;
-  onBack: () => void;
-  onContinue: () => void;
 
   customizeStableComboThreshold: boolean;
   setCustomizeStableComboThreshold: (enabled: boolean) => void;
@@ -65,29 +60,16 @@ export type ModsStepProps = {
   setSelectedModRule: (rule: ModRule) => void;
   onModToggle: (mod: SelectedMod, checked: boolean) => void;
   validationErrors: string[];
-  onBack: () => void;
-  onContinue: () => void;
 };
 
 export type RewardStepProps = {
   balance: number | null;
   reward: number;
   setReward: (reward: number) => void;
-  isRewardValid: boolean;
   validationErrors: string[];
-  onBack: () => void;
-  onContinue: () => void;
 };
 
 export type BountyType = "minimum_grade" | "full_combo" | "pass";
-
-export type BountyCreationToolStep =
-  | "login"
-  | "beatmap"
-  | "goal"
-  | "mods"
-  | "reward"
-  | "review";
 
 export type BeatmapValidationInput = Pick<
   BeatmapStepProps,
