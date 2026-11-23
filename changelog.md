@@ -7,11 +7,11 @@ commits are excluded from these public release notes. Pending sections
 are marked until deployment is confirmed. Deployment names increment as
 **Alpha - Update 1**, **Alpha - Update 2**, and so on.
 
-## Alpha - Update 2 — Pending
+## Alpha - Update 2 — 2026-11-23
 
 ### Features
 
-- feat: combine bounty creation into a single page.
+- 2190b6c — feat: combine bounty creation into a single page.
 - 5226f9d — feat: show each player's total contribution in the bounty Funding tab.
 - 769163f — feat: filter the bounty board by your ongoing hunts.
 - fa4d1ec — feat: default bounty board sorting to ongoing hunts.
