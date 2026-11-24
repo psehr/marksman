@@ -189,7 +189,9 @@ export function BountyCardContent({
       {content.beatmap?.covers?.cover && (
         <>
           <Image
-            src={content.beatmap?.covers?.cover}
+            src={
+              content.beatmap.covers["cover@2x"] ?? content.beatmap.covers.cover
+            }
             alt=""
             fill
             className="pointer-events-none object-cover"

@@ -22,7 +22,8 @@ export function BeatmapCard({
   beatmapMetadata: BountyBeatmapMetadata | null;
   variant?: "bounty" | "beatmap" | "beatmapset";
 }) {
-  const coverUrl = beatmapMetadata?.covers?.cover;
+  const covers = beatmapMetadata?.covers;
+  const coverUrl = covers ? (covers["cover@2x"] ?? covers.cover) : null;
   const title = `${beatmapMetadata?.song?.title ?? "title"}`;
   const artist = `${beatmapMetadata?.song?.artist ?? "artist"}`;
   const version = `${beatmapMetadata?.version.name ?? "version"}`;

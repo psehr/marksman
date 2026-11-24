@@ -7,6 +7,12 @@ commits are excluded from these public release notes. Pending sections
 are marked until deployment is confirmed. Deployment names increment as
 **Alpha - Update 1**, **Alpha - Update 2**, and so on.
 
+## Alpha - Update 3 — Pending
+
+### Fixes
+
+- fix: use higher-resolution beatmap covers when available.
+
 ## Alpha - Update 2 — 2026-11-23
 
 ### Features

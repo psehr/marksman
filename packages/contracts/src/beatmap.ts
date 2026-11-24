@@ -28,6 +28,7 @@ export const bountyBeatmapMetadataSchema = z.object({
   covers: z
     .object({
       cover: z.url(),
+      "cover@2x": z.url().optional(),
       card: z.url(),
     })
     .nullable(),
@@ -81,6 +82,7 @@ export const osuBeatmapMetadataSchema = z.object({
       user_id: z.number().int(),
       covers: z.object({
         cover: z.url(),
+        "cover@2x": z.url().optional(),
         card: z.url(),
       }),
     })
@@ -134,6 +136,7 @@ export function osuBeatmapMetadatatoBountyBeatmapMetadata(
     covers: osuBeatmapMetadata.beatmapset
       ? {
           cover: osuBeatmapMetadata.beatmapset.covers.cover,
+          "cover@2x": osuBeatmapMetadata.beatmapset.covers["cover@2x"],
           card: osuBeatmapMetadata.beatmapset.covers.card,
         }
       : null,
