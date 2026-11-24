@@ -93,7 +93,7 @@ test("previews a grade bounty, submits once, and refreshes the balance", async (
         beatmapId: 123456,
         beatmapChecksum: null,
         minimumGradeRequirement: "A",
-        modRequirement: { rule: "exact", mods: ["HD"] },
+        modRequirement: { required: ["HD"], forbidden: [], allowOtherMods: false },
       },
     },
   ]);
@@ -175,7 +175,7 @@ test("preserves a combo bounty after a network failure and allows an explicit re
         beatmapChecksum: null,
         minimumComboRatio: 0.995,
         minimumAccuracy: 98,
-        modRequirement: { rule: "exact", mods: [] },
+        modRequirement: { required: [], forbidden: [], allowOtherMods: false },
       },
     }),
   );

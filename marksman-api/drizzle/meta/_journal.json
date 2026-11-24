@@ -162,6 +162,13 @@
       "when": 1795369037582,
       "tag": "0022_cute_butterfly",
       "breakpoints": true
+    },
+    {
+      "idx": 23,
+      "version": "7",
+      "when": 1795555418314,
+      "tag": "0023_mod_settings",
+      "breakpoints": true
     }
   ]
 }

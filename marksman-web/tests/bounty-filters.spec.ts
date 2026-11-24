@@ -3,12 +3,12 @@ import { expect, test, type Page } from "@playwright/test";
 import type { ExtendedBounty } from "@marksman/contracts";
 
 const rules: ExtendedBounty["goal"]["modRequirement"][] = [
-  { rule: "exact", mods: ["HD", "HR"] },
-  { rule: "includes", mods: ["HD", "HR"] },
-  { rule: "exact", mods: ["HD"] },
-  { rule: "excludes", mods: ["HD", "HR"] },
-  { rule: "any" },
-  { rule: "exact", mods: [] },
+  { required: ["HD", "HR"], forbidden: [], allowOtherMods: false },
+  { required: ["HD", "HR"], forbidden: [], allowOtherMods: true },
+  { required: ["HD"], forbidden: [], allowOtherMods: false },
+  { required: [], forbidden: ["HD", "HR"], allowOtherMods: true },
+  { required: [], forbidden: [], allowOtherMods: true },
+  { required: [], forbidden: [], allowOtherMods: false },
 ];
 const rewards = [300, 1000, 100, 300, 10000, 1];
 const fixtures: ExtendedBounty[] = rules.map((modRequirement, index) => ({
@@ -31,7 +31,11 @@ async function setup(page: Page) {
   let reads = 0;
   await page.route("**/*", route => new URL(route.request().url()).origin === "http://127.0.0.1:3100"
     ? route.continue() : route.abort());
-  await page.route("**/auth/me", route => route.fulfill({ status: 401, json: {} }));
+  await page.route("**/auth/me", route => route.fulfill({ json: {
+    identity: { coverUrl: null, countryCode: null, countryName: null, id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa", osuUserId: 42, username: "fixture" },
+    stats: { bpBalance: 1000 }, createdAt: "2026-01-01T00:00:00.000Z",
+  } }));
+  await page.route("**/auth/access", route => route.fulfill({ status: 204 }));
   await page.route(listUrl, route => {
     if (route.request().isNavigationRequest() || route.request().headers()["rsc"]) return route.fallback();
     reads++;

@@ -17,7 +17,7 @@ function pair(index: number): UserHuntedBounties[number] {
     completedByOsuUserId: null, completionScoreId: null,
     goal: { type: "minimum_grade", minimumGradeRequirement: "A", beatmapId: index,
       beatmapChecksum: null, minimumAccuracy: 99.5,
-      modRequirement: { rule: "exact", mods: ["HD", "HR", "DT"] } },
+      modRequirement: { required: ["HD", "HR", "DT"], forbidden: [], allowOtherMods: false } },
     owner: other.identity, winner: null,
     engagement: { hunterCount: 0, bookmarkCount: 0, isBookmarkedByCurrentUser: null },
     beatmap: {

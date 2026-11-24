@@ -1,9 +1,6 @@
 import type { ExtendedBounty } from "@marksman/contracts";
 
-type RequiredMod = Extract<
-  ExtendedBounty["goal"]["modRequirement"],
-  { mods: unknown }
->["mods"][number];
+type RequiredMod = ExtendedBounty["goal"]["modRequirement"]["required"][number];
 
 export type ModAcronym = RequiredMod | "NM" | "ANY";
 
@@ -15,7 +12,6 @@ const modNames = {
   HT: "Half Time",
   FL: "Flashlight",
   NF: "No Fail",
-  SO: "Spun Out",
   NM: "No mods",
   ANY: "Any mods",
 } satisfies Record<ModAcronym, string>;
@@ -36,7 +32,6 @@ const icons = {
   HR: { file: "hard-rock", color: "#ed8d83" },
   DT: { file: "double-time", color: "#ed8d83" },
   FL: { file: "flashlight", color: "#ed8d83" },
-  SO: { file: "spun-out", color: "#83bfcf" },
   NM: { file: "no-mod", color: "#bebc99" },
 } satisfies Record<Exclude<ModAcronym, "ANY">, { file: string; color: string }>;
 
@@ -75,15 +70,21 @@ export default function ModIcon({
       {icon ? (
         <span
           aria-hidden="true"
-          className="absolute inset-y-px inset-x-[1.4286px]"
+          className={`absolute inset-y-px inset-x-[1.4286px] ${crossed ? "opacity-75" : ""}`}
         >
           <span
             className="absolute inset-0"
-            style={{ ...mask("mod-icon"), backgroundColor: icon.color }}
+            style={{
+              ...mask("mod-icon"),
+              backgroundColor: icon.color,
+            }}
           />
           <span
-            className="absolute inset-0 bg-surface"
-            style={mask(`mod-${icon.file}`)}
+            className="absolute inset-0"
+            style={{
+              ...mask(`mod-${icon.file}`),
+              backgroundColor: "var(--color-surface)",
+            }}
           />
         </span>
       ) : (
@@ -95,7 +96,7 @@ export default function ModIcon({
           focusable="false"
           viewBox="0 0 100 100"
           preserveAspectRatio="none"
-          className="pointer-events-none absolute inset-0 size-full text-danger"
+          className="pointer-events-none absolute inset-0 size-full text-[color-mix(in_srgb,var(--color-danger)_50%,#ff2020)]"
         >
           <line
             x1="12"
@@ -103,7 +104,7 @@ export default function ModIcon({
             x2="88"
             y2="12"
             stroke="var(--color-surface)"
-            strokeWidth="3"
+            strokeWidth="4"
             strokeLinecap="round"
             vectorEffect="non-scaling-stroke"
           />
@@ -113,7 +114,7 @@ export default function ModIcon({
             x2="88"
             y2="12"
             stroke="currentColor"
-            strokeWidth="1"
+            strokeWidth="3"
             strokeLinecap="round"
             vectorEffect="non-scaling-stroke"
           />

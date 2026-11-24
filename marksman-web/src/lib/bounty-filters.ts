@@ -14,10 +14,7 @@ export const goalOptions: readonly BountyGoal[] = [
   "pass",
   "minimum_grade",
 ];
-type RequiredMod = Extract<
-  ExtendedBounty["goal"]["modRequirement"],
-  { mods: unknown }
->["mods"][number];
+type RequiredMod = ExtendedBounty["goal"]["modRequirement"]["required"][number];
 export type BountyModFilter = RequiredMod | "NM";
 export const modOptions: readonly BountyModFilter[] = [
   "EZ",
@@ -27,7 +24,6 @@ export const modOptions: readonly BountyModFilter[] = [
   "FL",
   "HD",
   "HR",
-  "SO",
   "NM",
 ];
 

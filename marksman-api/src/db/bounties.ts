@@ -98,17 +98,15 @@ export async function listBounties(
   });
   const tierFilter = tierRanges.length ? or(...tierRanges) : undefined;
 
-  const modRule = sql<string>`${bounties.goal}->'modRequirement'->>'rule'`;
-  const requiredMods = sql`${bounties.goal}->'modRequirement'->'mods'`;
+  const requiredMods = sql`${bounties.goal}->'modRequirement'->'required'`;
+
+  const allowOtherMods = sql<boolean>`(${bounties.goal}->'modRequirement'->>'allowOtherMods')::boolean`;
 
   const modsFilter = !query.mods.length
     ? undefined
     : query.mods.includes("NM")
-      ? and(eq(modRule, "exact"), sql`${requiredMods} = '[]'::jsonb`)
-      : and(
-          inArray(modRule, ["exact", "includes"]),
-          sql`${requiredMods} @> ${JSON.stringify(query.mods)}::jsonb`,
-        );
+      ? and(eq(allowOtherMods, false), sql`${requiredMods} = '[]'::jsonb`)
+      : sql`${requiredMods} @> ${JSON.stringify(query.mods)}::jsonb`;
 
   const escapedSearch = query.search.replace(/[\\%_]/g, "\\$&");
   const searchPattern = `%${escapedSearch}%`;

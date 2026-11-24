@@ -1,65 +1,63 @@
-import { ExtendedBounty } from "@marksman/contracts";
-import { aes_font } from "@/lib/fonts";
+import type { ExtendedBounty } from "@marksman/contracts";
+import { aes_font, base_font } from "@/lib/fonts";
 import ModIcon from "@/components/osu/ModIcon";
 
-function ModRequirementIcons({ bounty }: { bounty: ExtendedBounty }) {
-  const rule = bounty.goal.modRequirement.rule;
-  if (rule === "any") return <ModIcon mod="ANY" size="md" />;
-  const mods = bounty.goal.modRequirement.mods;
+export default function ModsRequirement({ bounty }: { bounty: ExtendedBounty }) {
+  const { required, forbidden, allowOtherMods } = bounty.goal.modRequirement;
 
-  if (rule === "exact" && mods.length === 0)
-    return <ModIcon mod={"NM"} size="md" />;
+  if (allowOtherMods && required.length === 0 && forbidden.length === 0) {
+    return (
+      <p className={`${aes_font.className} font-bold text-center`}>
+        Any supported mods are allowed
+      </p>
+    );
+  }
 
-  return mods.map((mod) => {
-    if (rule === "excludes") {
-      return <ModIcon mod={mod} crossed key={mod} size="md" />;
-    }
-    return <ModIcon mod={mod} key={mod} size="md" />;
-  });
-}
-
-export default function ModsRequirement({
-  bounty,
-}: {
-  bounty: ExtendedBounty;
-}) {
   return (
-    <div className={`${aes_font.className} font-bold`}>
-      {bounty.goal.modRequirement.rule === "any" ? (
-        <p>Any mod combination can be used for completion</p>
-      ) : null}
-      {bounty.goal.modRequirement.rule === "exact" ? (
-        <div className="flex flex-col items-center gap-2">
-          <p>
-            Used mods must be <span className="text-accent">exactly</span>
-          </p>
-          <div className="flex gap-1">
-            <ModRequirementIcons bounty={bounty} />
+    <div className={`flex flex-col gap-3 text-center ${aes_font.className} font-bold`}>
+      {!allowOtherMods ? (
+        <div className="flex min-w-0 flex-col items-center gap-2">
+          <h3 className="text-accent">Exact mods</h3>
+          <div className="flex max-w-full flex-wrap justify-center gap-1">
+            {required.length ? (
+              required.map((mod) => <ModIcon mod={mod} key={mod} size="md" />)
+            ) : (
+              <ModIcon mod="NM" size="md" />
+            )}
           </div>
-        </div>
-      ) : null}
-      {bounty.goal.modRequirement.rule === "includes" ? (
-        <div className="flex flex-col items-center gap-2">
-          <p>
-            Mods must <span className="text-accent">include</span> the
-            following:
+          <p className={`text-xs text-foreground-muted font-normal ${base_font.className}`}>
+            Additional mods are forbidden.
           </p>
-          <div className="flex gap-1">
-            <ModRequirementIcons bounty={bounty} />
-          </div>
         </div>
-      ) : null}
-      {bounty.goal.modRequirement.rule === "excludes" ? (
-        <div className="flex flex-col items-center gap-2">
-          <p>
-            Some mods must be <span className="text-accent">excluded</span> to
-            qualify
+      ) : (
+        <>
+          <div className="grid grid-cols-2 gap-4">
+            <div className="flex min-w-0 flex-col items-center gap-2">
+              <h3 className="text-accent">Required</h3>
+              <div className="flex max-w-full flex-wrap justify-center gap-1">
+                {required.length ? (
+                  required.map((mod) => <ModIcon mod={mod} key={mod} size="md" />)
+                ) : (
+                  <p className="text-sm text-foreground-muted">None</p>
+                )}
+              </div>
+            </div>
+            <div className="flex min-w-0 flex-col items-center gap-2">
+              <h3 className="text-accent">Forbidden</h3>
+              <div className="flex max-w-full flex-wrap justify-center gap-1">
+                {forbidden.length ? (
+                  forbidden.map((mod) => <ModIcon mod={mod} key={mod} size="md" crossed />)
+                ) : (
+                  <p className="text-sm text-foreground-muted">None</p>
+                )}
+              </div>
+            </div>
+          </div>
+          <p className={`text-xs text-foreground-muted font-normal ${base_font.className}`}>
+            Additional supported mods are allowed.
           </p>
-          <div className="flex gap-1">
-            <ModRequirementIcons bounty={bounty} />
-          </div>
-        </div>
-      ) : null}
+        </>
+      )}
     </div>
   );
 }

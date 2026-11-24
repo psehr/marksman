@@ -208,7 +208,7 @@ test("wrong-map preview retains score display metadata and evaluates with the bo
 
 test("ineligible score returns all applicable failure reasons with HTTP 200", async () => {
   const bounty = await seedBounty({ goal: { ...qualifyingBounty().goal, beatmapId,
-    minimumAccuracy: 99, modRequirement: { rule: "includes", mods: ["HD"] } } });
+    minimumAccuracy: 99, modRequirement: { required: ["HD"], forbidden: [], allowOtherMods: true } } });
   score = { ...score, user_id: bob.osuUserId, ruleset_id: 1, passed: false,
     ended_at: qualifyingBounty().createdAt, accuracy: 0.8, statistics: { miss: 1 } };
   const { validity } = await readCandidate(await request(bounty.id));
@@ -229,7 +229,7 @@ test("closed and owned bounties still return eligibility previews", async () => 
 
 test("minimum-grade preview keeps explicit zero accuracy and omits FC", async () => {
   const bounty = await seedBounty({ goal: { type: "minimum_grade", beatmapId, beatmapChecksum: null,
-    minimumGradeRequirement: "S", minimumAccuracy: 0, modRequirement: { rule: "any" } } });
+    minimumGradeRequirement: "S", minimumAccuracy: 0, modRequirement: { required: [], forbidden: [], allowOtherMods: true } } });
   score.rank = "A";
   score.accuracy = 0;
   delete score.beatmap.max_combo;

@@ -123,61 +123,42 @@ export default function WikiBountiesPage() {
         </WikiSubSection>
         <WikiSubSection id="mod-rules" index="V.">
           <p>
-            The goal <AccentText>mod requirement rules</AccentText> are of four
-            different categories, one must be chosen by the bounty creator, they
-            are as follows:
+            A bounty's mod requirements determine which mods a qualifying score
+            must use or avoid. Mods can be <AccentText>required</AccentText>,{" "}
+            <AccentText>forbidden</AccentText> or <AccentText>optional</AccentText>.
+            A bounty can require some mods while forbidding others.
           </p>
           <WikiSubSection id="any-mods" index="1.">
             <p>
-              The <AccentText>any mods</AccentText> rule allows any valid osu!
-              mod combination to be used for the{" "}
-              <WikiLink url="/wiki/hunting#what-is-valid-score">
-                valid score
-              </WikiLink>{" "}
-              to qualify.
-            </p>
-            <p>
-              However it excludes scores set using unsupported mods, see{" "}
-              <WikiLink url="/wiki/bounties#supported-mods">
-                supported mods
-              </WikiLink>
-              .
+              Unless exact mods are required, additional supported mods may be
+              used alongside the required mods, provided no forbidden mods are
+              present. If no mods are required or forbidden, any supported
+              combination satisfies the mod requirements. Other score and goal
+              requirements still apply.
             </p>
           </WikiSubSection>
           <WikiSubSection id="exact-mods" index="2.">
             <p>
-              The <AccentText>exact mods</AccentText> rule requires the{" "}
-              <WikiLink url="/wiki/hunting#what-is-valid-score">
-                valid score
-              </WikiLink>{" "}
-              to have the <AccentText>exact same</AccentText> mod combination
-              (in no particular order) as selected by the bounty creator to
-              qualify.
+              <AccentText>Exact mods</AccentText> means a score must use all
+              required mods and no additional mods, in any order. An exact
+              requirement with no required mods means <AccentText>No Mod (NM)</AccentText>.
+              Classic (CL) and Spun Out (SO) are ignored when they have no custom
+              settings, including for exact and NM requirements.
             </p>
           </WikiSubSection>
           <WikiSubSection id="included-mods" index="3.">
             <p>
-              The <AccentText>included mods</AccentText> rule requires the{" "}
-              <WikiLink url="/wiki/hunting#what-is-valid-score">
-                valid score
-              </WikiLink>{" "}
-              to <AccentText>contain</AccentText> the mod combination selected
-              by the bounty creator to qualify, but any other supported mod
-              combination can be added as well, see{" "}
-              <WikiLink url="/wiki/bounties#supported-mods">
-                supported mods
-              </WikiLink>
-              .
+              <AccentText>Required mods</AccentText> must all be present in the
+              score. For example, requiring HD and HR means both must be used.
+              Additional supported mods are allowed unless exact mods are required.
             </p>
           </WikiSubSection>
           <WikiSubSection id="excluded-mods" index="4.">
             <p>
-              The <AccentText>excluded mods</AccentText> rule requires the{" "}
-              <WikiLink url="/wiki/hunting#what-is-valid-score">
-                valid score
-              </WikiLink>{" "}
-              to <AccentText>not contain</AccentText> any of the mods selected
-              by the bounty creator to qualify.
+              <AccentText>Forbidden mods</AccentText> must all be absent from
+              the score and appear crossed out. For example, a bounty requiring
+              HD and forbidding HT permits HDHR when additional mods are allowed,
+              but rejects any score using HT.
             </p>
           </WikiSubSection>
         </WikiSubSection>
@@ -317,8 +298,9 @@ export default function WikiBountiesPage() {
           <WikiLink url="/wiki/bounties#mod-rules">
             mod requirement rule
           </WikiLink>
-          , except for the <AccentText>Classic (CL)</AccentText> mod that is{" "}
-          <AccentText>ignored</AccentText> during verification.
+          , except for <AccentText>Classic (CL)</AccentText> and{" "}
+          <AccentText>Spun Out (SO)</AccentText>, which are{" "}
+          <AccentText>ignored</AccentText> during verification when they have no custom settings.
         </p>
         <p>
           Mod customization is also <AccentText>not allowed</AccentText>.
@@ -335,7 +317,6 @@ export default function WikiBountiesPage() {
           <ModIcon mod="EZ" />
           <ModIcon mod="HT" />
           <ModIcon mod="NF" />
-          <ModIcon mod="SO" />
         </div>
       </WikiSection>
       <WikiSection title="Bounty statuses" id="bounty-status">

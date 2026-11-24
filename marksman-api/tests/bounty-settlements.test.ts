@@ -22,7 +22,7 @@ beforeEach(async () => {
   const [bounty] = await db.insert(schema.bounties).values({
     creatorOsuUserId: 101, status: "open", rewardBp: 30,
     goal: { type: "minimum_grade", beatmapId: 123, minimumGradeRequirement: "A",
-      beatmapChecksum: null, modRequirement: { rule: "any" } },
+      beatmapChecksum: null, modRequirement: { required: [], forbidden: [], allowOtherMods: true } },
   }).returning();
   bountyId = bounty.id;
 });

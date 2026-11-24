@@ -11,7 +11,7 @@ These SVGs are unmodified copies from revision
 the upstream `blanks/` subdirectory; the other files retain their names.
 
 Marksman's ModIcon composes the badge and glyph as CSS masks, with colors
-chosen for the Marksman palette. It covers the eight currently supported
+chosen for the Marksman palette. It covers the seven currently supported
 bounty mods and No Mod. Any Mods uses Marksman's text fallback.
 
 Upstream licence guidance: https://github.com/ppy/osu-web#licence

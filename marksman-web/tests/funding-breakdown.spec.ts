@@ -5,7 +5,7 @@ const identity: UserIdentity = { id: 'bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb', osu
 const bounty: ExtendedBounty = {
   id: 'aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa', status: 'open', rewardBp: 1000000,
   creatorOsuUserId: 43, createdAt: '2026-01-01T00:00:00.000Z', completedAt: null, cancelledAt: null, completedByOsuUserId: null, completionScoreId: null,
-  goal: { type: 'pass', beatmapId: 42, beatmapChecksum: null, modRequirement: { rule: 'any' } },
+  goal: { type: 'pass', beatmapId: 42, beatmapChecksum: null, modRequirement: { required: [], forbidden: [], allowOtherMods: true } },
   owner: null, winner: null, beatmap: null, engagement: { hunterCount: 0, bookmarkCount: 0, isBookmarkedByCurrentUser: false },
 };
 for (const width of [320, 390, 640, 768, 1280]) {

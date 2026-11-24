@@ -42,7 +42,7 @@ async function seedBounty(rewardBp = 25) {
   const feeBp = Math.ceil(rewardBp / 10);
   const [bounty] = await db.insert(bounties).values({
     creatorOsuUserId: creator.osuUserId, rewardBp, status: "open",
-    goal: { type: "pass", beatmapId: 123, modRequirement: { rule: "any" }, beatmapChecksum: null },
+    goal: { type: "pass", beatmapId: 123, modRequirement: { required: [], forbidden: [], allowOtherMods: true }, beatmapChecksum: null },
   }).returning();
   await db.update(users).set({ bpBalance: creator.bpBalance - rewardBp - feeBp }).where(eq(users.id, creator.id));
   await db.insert(bountyContributions).values({ bountyId: bounty.id, userId: creator.id, amountBp: rewardBp, feeBp });

@@ -47,18 +47,15 @@ export type GoalStepProps = {
 };
 
 export type ModRequirement = ExtendedBounty["goal"]["modRequirement"];
-export type ModRule = ModRequirement["rule"];
-export type SelectedMod = Extract<
-  ModRequirement,
-  { mods: unknown }
->["mods"][number];
+export type SelectedMod = ModRequirement["required"][number];
+
+export type ModSelection = "optional" | "required" | "forbidden";
 
 export type ModsStepProps = {
   bountyType: BountyType;
-  selectedModRule: ModRule;
-  selectedMods: SelectedMod[];
-  setSelectedModRule: (rule: ModRule) => void;
-  onModToggle: (mod: SelectedMod, checked: boolean) => void;
+  settings: ModRequirement;
+  onModChange: (mod: SelectedMod, selection: ModSelection) => void;
+  onAllowOtherModsChange: (allowed: boolean) => void;
   validationErrors: string[];
 };
 

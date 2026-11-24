@@ -1,99 +1,82 @@
 import ModIcon from "@/components/osu/ModIcon";
 import type {
-  ModRule,
+  ModSelection,
   ModsStepProps,
   SelectedMod,
 } from "./creation-tool.types";
-import {
-  radioIconLabelClassName,
-  radioTextualLabelClassName,
-} from "./GoalStep";
 
-const mods = [
-  "HR",
-  "HD",
-  "DT",
-  "FL",
-  "EZ",
-  "NF",
-  "HT",
-  "SO",
-] satisfies SelectedMod[];
-
-const rules = [
-  { value: "any", label: "Any mods" },
-  { value: "exact", label: "Exact mods" },
-  { value: "includes", label: "Include mods" },
-  { value: "excludes", label: "Exclude mods" },
-] satisfies { value: ModRule; label: string }[];
+const mods = ["HR", "HD", "DT", "FL", "EZ", "NF", "HT"] satisfies SelectedMod[];
 
 export default function ModsStep({ props }: { props: ModsStepProps }) {
+  const { settings } = props;
+
   return (
-    <div className="flex w-full flex-col items-start text-left gap-2">
-      <fieldset className="w-full flex gap-2">
-        <legend className="sr-only">Mod rule</legend>
-        <div className="w-full grid grid-cols-2 sm:grid-cols-4 gap-2">
-          {rules.map(({ value, label }) => (
-            <label key={value} className={radioTextualLabelClassName}>
-              <input
-                className="sr-only"
-                type="radio"
-                name="mod-rule"
-                value={value}
-                checked={props.selectedModRule === value}
-                onChange={() => {
-                  props.setSelectedModRule(value);
-                }}
-              />
-              {label}
-            </label>
-          ))}
-        </div>
-      </fieldset>
-      {props.selectedModRule !== "any" ? (
-        <fieldset className="flex w-full flex-col gap-2">
-          <legend className="sr-only">Mods</legend>
-          <div className="w-full grid grid-cols-2 sm:grid-cols-4 gap-2">
-            {mods.map((mod) => (
-              <label
-                key={mod}
-                className={radioIconLabelClassName}
-                aria-disabled={props.bountyType === "pass" && mod === "NF"}
-              >
-                <input
-                  className="sr-only"
-                  type="checkbox"
-                  aria-label={mod}
-                  checked={props.selectedMods.includes(mod)}
-                  onChange={(event) =>
-                    props.onModToggle(mod, event.target.checked)
-                  }
-                  disabled={props.bountyType === "pass" && mod === "NF"}
-                />
+    <div className="flex w-full flex-col gap-4 text-left">
+      <label className="flex items-center gap-2 self-end">
+        <input
+          type="checkbox"
+          className="accent-accent"
+          checked={!settings.allowOtherMods}
+          onChange={(event) =>
+            props.onAllowOtherModsChange(!event.target.checked)
+          }
+        />
+        Exact mods
+      </label>
+
+      <div className="grid w-fit grid-cols-4 gap-1 sm:grid-cols-7 self-center">
+        {mods.map((mod) => {
+          const selection: ModSelection = settings.required.includes(mod)
+            ? "required"
+            : settings.forbidden.includes(mod)
+              ? "forbidden"
+              : "optional";
+          const states: ModSelection[] = [
+            "optional",
+            ...(props.bountyType === "pass" && mod === "NF"
+              ? []
+              : ["required" as const]),
+            ...(settings.allowOtherMods ? ["forbidden" as const] : []),
+          ];
+          const next = states[(states.indexOf(selection) + 1) % states.length];
+          const stateLabel =
+            selection === "optional" && !settings.allowOtherMods
+              ? "not selected"
+              : selection;
+
+          return (
+            <button
+              key={mod}
+              type="button"
+              aria-label={`${mod}: ${stateLabel}. Click to change to ${next}.`}
+              title={`${mod}: ${stateLabel}. Click to change to ${next}.`}
+              disabled={states.length === 1}
+              onClick={() => props.onModChange(mod, next)}
+              className="flex min-h-12 cursor-pointer items-center justify-center rounded px-1 py-2 hover:bg-surface-hover focus-visible:outline-2 focus-visible:outline-accent disabled:cursor-not-allowed disabled:opacity-30"
+            >
+              <span aria-hidden="true" className="pointer-events-none">
                 <ModIcon
                   mod={mod}
-                  crossed={props.selectedModRule === "excludes"}
                   size="lg"
+                  crossed={
+                    selection === "forbidden" ||
+                    (!settings.allowOtherMods && selection === "optional")
+                  }
+                  grayed={settings.allowOtherMods && selection === "optional"}
                 />
-              </label>
-            ))}
-          </div>
-          <p>
-            {props.selectedModRule === "exact"
-              ? "Leave all unchecked to require no mods (NM)."
-              : null}
-          </p>
-        </fieldset>
-      ) : (
-        <p>Any mod combination is allowed.</p>
-      )}
-      {props.validationErrors.length > 0 ? (
+              </span>
+            </button>
+          );
+        })}
+      </div>
+
+      {props.validationErrors.length > 0 && (
         <div role="alert" className="text-danger">
           {props.validationErrors.map((error) => (
             <p key={error}>{error}</p>
           ))}
         </div>
-      ) : null}
+      )}
     </div>
   );
 }

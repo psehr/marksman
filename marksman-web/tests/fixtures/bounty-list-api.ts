@@ -11,10 +11,9 @@ export function listResponse(rows: ExtendedBounty[], url: string, viewerOsuId?: 
     if (query.goals.length && !query.goals.includes(row.goal.type)) return false;
     const requirement = row.goal.modRequirement;
     if (query.mods.includes("NM")) {
-      if (requirement.rule !== "exact" || requirement.mods.length) return false;
+      if (requirement.allowOtherMods || requirement.required.length) return false;
     } else if (query.mods.length) {
-      if (requirement.rule !== "exact" && requirement.rule !== "includes") return false;
-      if (!query.mods.every(mod => mod !== "NM" && requirement.mods.includes(mod))) return false;
+      if (!query.mods.every(mod => mod !== "NM" && requirement.required.includes(mod))) return false;
     }
     return !query.search || [row.owner?.username, row.beatmap?.song?.title, row.beatmap?.song?.artist, row.beatmap?.version.name, row.beatmap?.creator?.username].some(value => value?.toLowerCase().includes(query.search.toLowerCase()));
   });

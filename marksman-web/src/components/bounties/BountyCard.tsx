@@ -89,51 +89,62 @@ export function BountyCardContent({
   status?: React.ReactNode;
   hunterCount?: number;
 }) {
-  let mod_requirement;
   let acc_requirement;
   let mods;
   let goalType;
 
-  switch (content.goal?.modRequirement.rule) {
-    case "any":
-      mod_requirement = (
-        <BadgeLabel label="Any mods can be used." text={`Any mods`} />
-      );
-      break;
-    case "exact":
-      mod_requirement = (
-        <BadgeLabel label="Exact mods must be used." text={`Exact mods`} />
-      );
-      if (content.goal.modRequirement.mods.length === 0) {
-        mods = <ModIcon mod="NM" size="xs" key="NM" />;
-      } else {
-        mods = content.goal.modRequirement.mods.map((mod) => (
-          <ModIcon mod={mod} size="xs" key={mod} />
-        ));
-      }
-      break;
-    case "excludes":
-      mod_requirement = (
-        <BadgeLabel
-          label="Some mods must be excluded."
-          text={`Excluded mods`}
-        />
-      );
-      mods = content.goal.modRequirement.mods.map((mod) => (
-        <ModIcon mod={mod} size="xs" key={mod} crossed />
-      ));
-      break;
-    case "includes":
-      mod_requirement = (
-        <BadgeLabel
-          label="Some mods must be included."
-          text={`Included mods`}
-        />
-      );
-      mods = content.goal.modRequirement.mods.map((mod) => (
-        <ModIcon mod={mod} size="xs" key={mod} />
-      ));
-      break;
+  const modSettings = content.goal?.modRequirement;
+
+  if (modSettings) {
+    const unrestricted =
+      modSettings.allowOtherMods &&
+      modSettings.required.length === 0 &&
+      modSettings.forbidden.length === 0;
+
+    const description = unrestricted
+      ? "Any supported mod combination can be used."
+      : !modSettings.allowOtherMods
+        ? modSettings.required.length === 0
+          ? "No mods allowed."
+          : `Exactly ${modSettings.required.join(" + ")} required; no other mods allowed.`
+        : [
+            modSettings.required.length
+              ? `Required: ${modSettings.required.join(", ")}.`
+              : "No required mods.",
+            modSettings.forbidden.length
+              ? `Forbidden: ${modSettings.forbidden.join(", ")}.`
+              : "",
+            "Other supported mods allowed.",
+          ]
+            .filter(Boolean)
+            .join(" ");
+
+    mods = unrestricted ? null : (
+      <span role="img" aria-label={description} title={description}>
+        <span aria-hidden="true" className="flex flex-wrap items-center gap-1">
+          {!modSettings.allowOtherMods && modSettings.required.length === 0 ? (
+            <ModIcon mod="NM" size="xs" />
+          ) : (
+            <>
+              {modSettings.required.map((mod) => (
+                <ModIcon mod={mod} size="xs" key={mod} />
+              ))}
+              {modSettings.forbidden.map((mod) => (
+                <ModIcon mod={mod} size="xs" key={mod} crossed />
+              ))}
+              {modSettings.allowOtherMods && (
+                <span
+                  title="Other supported mods allowed"
+                  className="inline-flex h-5 items-center justify-center px-1 text-xs font-bold text-foreground-muted"
+                >
+                  + Any mods
+                </span>
+              )}
+            </>
+          )}
+        </span>
+      </span>
+    );
   }
 
   switch (content.goal?.type) {
@@ -216,11 +227,14 @@ export function BountyCardContent({
           </div>
           <div className="flex flex-wrap gap-2 items-center">
             {goalType ?? null}
-            {goalType ? <span className="text-border">•</span> : null}
+            {goalType && (acc_requirement || mods) ? (
+              <span className="text-border">•</span>
+            ) : null}
             {acc_requirement ?? null}
-            {acc_requirement ? <span className="text-border">•</span> : null}
-            {mod_requirement ?? null}
-            <div className="flex flex-wrap gap-1">{mods ?? null}</div>
+            {acc_requirement && mods ? (
+              <span className="text-border">•</span>
+            ) : null}
+            {mods ? <div className="flex flex-wrap gap-1">{mods}</div> : null}
           </div>
         </div>
 

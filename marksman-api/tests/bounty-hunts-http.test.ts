@@ -51,7 +51,7 @@ beforeEach(async () => {
   ]).returning();
   const [bounty] = await db.insert(bounties).values({
     creatorOsuUserId: 999, rewardBp: 25, status: "open",
-    goal: { type: "minimum_grade", beatmapId: 123, minimumGradeRequirement: "A", beatmapChecksum: null, modRequirement: { rule: "any" } },
+    goal: { type: "minimum_grade", beatmapId: 123, minimumGradeRequirement: "A", beatmapChecksum: null, modRequirement: { required: [], forbidden: [], allowOtherMods: true } },
   }).returning();
   bountyId = bounty.id;
 });
@@ -135,7 +135,7 @@ test("ongoing hunts returns only the session user's active hunts with serialized
   const endedAt = new Date("2026-10-01T13:00:00.000Z");
   const [secondBounty] = await db.insert(bounties).values({
     creatorOsuUserId: 999, rewardBp: 25, status: "open",
-    goal: { type: "minimum_grade", beatmapId: 456, minimumGradeRequirement: "A", beatmapChecksum: null, modRequirement: { rule: "any" } },
+    goal: { type: "minimum_grade", beatmapId: 456, minimumGradeRequirement: "A", beatmapChecksum: null, modRequirement: { required: [], forbidden: [], allowOtherMods: true } },
   }).returning();
   const rows = await db.insert(bountyHunts).values([
     { userId: hunter.id, bountyId, status: "ongoing", startedAt },
@@ -208,7 +208,7 @@ test("repeated start returns duplicate conflict without another hunt", async () 
 test("three slots succeed and the fourth returns HUNT_SLOTS_FULL", async () => {
   const [second, third, fourth] = await db.insert(bounties).values([1, 2, 3].map(() => ({
     creatorOsuUserId: 999, rewardBp: 25, status: "open" as const,
-    goal: { type: "minimum_grade" as const, beatmapId: 123, minimumGradeRequirement: "A" as const, beatmapChecksum: null, modRequirement: { rule: "any" as const } },
+    goal: { type: "minimum_grade" as const, beatmapId: 123, minimumGradeRequirement: "A" as const, beatmapChecksum: null, modRequirement: { required: [], forbidden: [], allowOtherMods: true } },
   }))).returning();
   assert.equal((await request()).status, 200);
   assert.equal((await request({ id: second.id })).status, 200);
@@ -410,7 +410,7 @@ test("public profile hunts returns enriched matching cards and excludes inactive
   await db.update(bounties).set({ creatorOsuUserId: other.osuUserId }).where(eq(bounties.id, bountyId));
   const [second] = await db.insert(bounties).values({
     creatorOsuUserId: other.osuUserId, rewardBp: 75, status: "open",
-    goal: { type: "minimum_grade", beatmapId: 456, minimumGradeRequirement: "S", beatmapChecksum: null, modRequirement: { rule: "any" } },
+    goal: { type: "minimum_grade", beatmapId: 456, minimumGradeRequirement: "S", beatmapChecksum: null, modRequirement: { required: [], forbidden: [], allowOtherMods: true } },
   }).returning();
   const metadata: BountyBeatmapMetadata = {
     url: "https://osu.ppy.sh/beatmaps/123",

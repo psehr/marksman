@@ -25,7 +25,7 @@ const bounty: ExtendedBounty = {
     beatmapId: 42,
     beatmapChecksum: null,
     minimumGradeRequirement: "A",
-    modRequirement: { rule: "any" },
+    modRequirement: { required: [], forbidden: [], allowOtherMods: true },
   },
   owner: { coverUrl: null, countryCode: null, countryName: null,
     id: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",

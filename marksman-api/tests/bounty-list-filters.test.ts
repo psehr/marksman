@@ -11,6 +11,7 @@ import { metadata, qualifyingBounty } from "./fixtures/completion";
 // Configure the isolated database before importing the application/pool.
 Object.assign(process.env, {
   NODE_ENV: "test",
+  ALLOWED_OSU_USER_IDS: "42,43,7",
   PORT: "3001",
   DATABASE_URL:
     "postgresql://marksman_test:marksman_test@127.0.0.1:5433/marksman_test?application_name=marksman_bookmarked_tests&options=-c%20statement_timeout%3D10000",
@@ -99,7 +100,7 @@ async function seed(options: Partial<typeof bounties.$inferInsert> = {}) {
 }
 async function list(query: Record<string, string> = {}, cookie?: string) {
   const response = await httpFetch(`${baseUrl}/bounties?${new URLSearchParams(query)}`, {
-    headers: cookie ? { cookie } : {},
+    headers: { cookie: cookie ?? await cookieFor(alice.id) },
   });
   assert.equal(response.status, 200);
   return bountyListResponseSchema.parse(await response.json());
@@ -178,16 +179,17 @@ test("goal filters support either, both and no selection", async () => {
   await expectIds({ goals: "full_combo,minimum_grade" }, [fc.id, grade.id]);
 });
 
-test("mods require all selected mods and only exact/includes; NM is exact empty", async () => {
+test("mods filter required lists, including mixed rules; NM is exact empty", async () => {
   const requirements: Bounty["goal"]["modRequirement"][] = [
-    { rule: "any" }, { rule: "exact", mods: [] }, { rule: "exact", mods: ["HD"] },
-    { rule: "exact", mods: ["HD", "HR"] }, { rule: "includes", mods: ["HD", "HR", "DT"] },
-    { rule: "excludes", mods: ["HD", "HR"] },
+    { required: [], forbidden: [], allowOtherMods: true }, { required: [], forbidden: [], allowOtherMods: false }, { required: ["HD"], forbidden: [], allowOtherMods: false },
+    { required: ["HD", "HR"], forbidden: [], allowOtherMods: false }, { required: ["HD", "HR", "DT"], forbidden: [], allowOtherMods: true },
+    { required: [], forbidden: ["HD", "HR"], allowOtherMods: true },
+    { required: ["HD", "HR"], forbidden: ["HT"], allowOtherMods: true },
   ];
   const rows = [];
   for (const modRequirement of requirements) rows.push(await seed({ goal: { ...qualifyingBounty().goal, modRequirement } }));
-  await expectIds({ mods: "HD,HR" }, [rows[3].id, rows[4].id]);
-  await expectIds({ mods: "HD" }, [rows[2].id, rows[3].id, rows[4].id]);
+  await expectIds({ mods: "HD,HR" }, [rows[3].id, rows[4].id, rows[6].id]);
+  await expectIds({ mods: "HD" }, [rows[2].id, rows[3].id, rows[4].id, rows[6].id]);
   await expectIds({ mods: "NM,HD" }, [rows[1].id]);
   await expectIds({ mods: "DT,HT" }, []);
   await expectIds({}, rows.map(row => row.id));
@@ -211,7 +213,7 @@ test("search covers five fields, missing metadata, and literal pattern character
   await expectIds({}, [row.id, missing.id]);
 });
 
-test("relationships use session identity, avoid duplicates and fall back for anonymous/deleted users", async () => {
+test("relationships use session identity and alpha gate rejects anonymous/deleted users", async () => {
   const own = await seed({ creatorOsuUserId: alice.osuUserId });
   const bookmarked = await seed();
   await db.insert(bountyBookmarks).values([
@@ -222,14 +224,18 @@ test("relationships use session identity, avoid duplicates and fall back for ano
   await expectIds({ relationship: "created" }, [own.id], cookie);
   await expectIds({ relationship: "bookmarked" }, [bookmarked.id], cookie);
   for (const relationship of ["created", "bookmarked"]) {
-    await expectIds({ relationship }, [own.id, bookmarked.id]);
-    await expectIds({ relationship }, [own.id, bookmarked.id], await cookieFor(randomUUID()));
+    for (const cookie of [undefined, await cookieFor(randomUUID())]) {
+      const response = await httpFetch(`${baseUrl}/bounties?relationship=${relationship}`, {
+        headers: cookie ? { cookie } : {},
+      });
+      assert.equal(response.status, 401);
+    }
   }
 });
 
 test("combined filters paginate with stable ties and full count including beyond last page", async () => {
   const rows = [];
-  for (let i = 0; i < 25; i++) rows.push(await seed({ createdAt: new Date("2026-01-01Z"), goal: { ...qualifyingBounty().goal, modRequirement: { rule: "exact", mods: ["HD"] } } }));
+  for (let i = 0; i < 25; i++) rows.push(await seed({ createdAt: new Date("2026-01-01Z"), goal: { ...qualifyingBounty().goal, modRequirement: { required: ["HD"], forbidden: [], allowOtherMods: false } } }));
   await db.insert(bountyBookmarks).values(rows.map(row => ({ bountyId: row.id, userId: alice.id })));
   await seed({ rewardBp: 300 });
   const query = { tiers: "Normal", goals: "full_combo", mods: "HD", search: "owner", relationship: "bookmarked" };
@@ -345,7 +351,9 @@ test("hunter sorting counts only ongoing hunts before pagination with stable tie
 
 test("invalid query parameters return structured 400 responses", async () => {
   for (const query of ["winnerId=invalid", "winnerId=42", "winnerId=", "winnerId=" + randomUUID() + "&winnerId=" + randomUUID(), "creatorId=invalid", "creatorId=42", "creatorId=", "creatorId=" + randomUUID() + "&creatorId=" + randomUUID(), "page=0", "page=-1", "page=1.5", "page=abc", "status=draft", "sort=oops", "order=oops", "relationship=oops", "tiers=oops", "goals=oops", "mods=oops", "mods=HD&mods=HR"]) {
-    const response = await httpFetch(`${baseUrl}/bounties?${query}`);
+    const response = await httpFetch(`${baseUrl}/bounties?${query}`, {
+      headers: { cookie: await cookieFor(alice.id) },
+    });
     assert.equal(response.status, 400, query);
     assert.equal((await response.json()).code, "INVALID_BOUNTY_LIST_QUERY");
   }

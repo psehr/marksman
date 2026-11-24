@@ -90,7 +90,7 @@ for (const type of ["full_combo", "minimum_grade"] as const) {
     [
       "missing required mod",
       (_s, b) => {
-        b.goal.modRequirement = { rule: "includes", mods: ["HD"] };
+        b.goal.modRequirement = { required: ["HD"], forbidden: [], allowOtherMods: true };
       },
     ],
   ];
@@ -147,30 +147,30 @@ for (const [minimum, accuracy, expected] of [
   });
 
 const modCases: Array<[Bounty["goal"]["modRequirement"], string[], boolean]> = [
-  [{ rule: "any" }, [], true],
-  [{ rule: "any" }, ["CL"], true],
-  [{ rule: "exact", mods: [] }, ["CL"], true],
-  [{ rule: "exact", mods: ["HD"] }, ["HD", "CL"], true],
-  [{ rule: "includes", mods: ["HD"] }, ["HD", "CL"], true],
-  [{ rule: "excludes", mods: ["HR"] }, ["HD", "CL"], true],
-  [{ rule: "excludes", mods: ["HR"] }, ["HR", "CL"], false],
-  [{ rule: "any" }, ["CL", "UNRECOGNIZED"], false],
-  [{ rule: "any" }, ["UNRECOGNIZED"], false],
-  [{ rule: "exact", mods: [] }, [], true],
-  [{ rule: "exact", mods: [] }, ["HD"], false],
-  [{ rule: "exact", mods: ["HD", "HR"] }, ["HR", "HD"], true],
-  [{ rule: "exact", mods: ["HD", "HR"] }, ["HD"], false],
-  [{ rule: "exact", mods: ["HD"] }, ["HR"], false],
-  [{ rule: "exact", mods: ["HD"] }, ["HD", "UNRECOGNIZED"], false],
+  [{ required: [], forbidden: [], allowOtherMods: true }, [], true],
+  [{ required: [], forbidden: [], allowOtherMods: true }, ["CL"], true],
+  [{ required: [], forbidden: [], allowOtherMods: false }, ["CL"], true],
+  [{ required: ["HD"], forbidden: [], allowOtherMods: false }, ["HD", "CL"], true],
+  [{ required: ["HD"], forbidden: [], allowOtherMods: true }, ["HD", "CL"], true],
+  [{ required: [], forbidden: ["HR"], allowOtherMods: true }, ["HD", "CL"], true],
+  [{ required: [], forbidden: ["HR"], allowOtherMods: true }, ["HR", "CL"], false],
+  [{ required: [], forbidden: [], allowOtherMods: true }, ["CL", "UNRECOGNIZED"], false],
+  [{ required: [], forbidden: [], allowOtherMods: true }, ["UNRECOGNIZED"], false],
+  [{ required: [], forbidden: [], allowOtherMods: false }, [], true],
+  [{ required: [], forbidden: [], allowOtherMods: false }, ["HD"], false],
+  [{ required: ["HD", "HR"], forbidden: [], allowOtherMods: false }, ["HR", "HD"], true],
+  [{ required: ["HD", "HR"], forbidden: [], allowOtherMods: false }, ["HD"], false],
+  [{ required: ["HD"], forbidden: [], allowOtherMods: false }, ["HR"], false],
+  [{ required: ["HD"], forbidden: [], allowOtherMods: false }, ["HD", "UNRECOGNIZED"], false],
   [
-    { rule: "includes", mods: ["HD", "HR"] },
+    { required: ["HD", "HR"], forbidden: [], allowOtherMods: true },
     ["HR", "HD", "UNRECOGNIZED"],
     false,
   ],
-  [{ rule: "includes", mods: ["HD", "HR"] }, ["HD"], false],
-  [{ rule: "excludes", mods: ["HD", "HR"] }, [], true],
-  [{ rule: "excludes", mods: ["HD", "HR"] }, ["UNRECOGNIZED"], false],
-  [{ rule: "excludes", mods: ["HD", "HR"] }, ["HR"], false],
+  [{ required: ["HD", "HR"], forbidden: [], allowOtherMods: true }, ["HD"], false],
+  [{ required: [], forbidden: ["HD", "HR"], allowOtherMods: true }, [], true],
+  [{ required: [], forbidden: ["HD", "HR"], allowOtherMods: true }, ["UNRECOGNIZED"], false],
+  [{ required: [], forbidden: ["HD", "HR"], allowOtherMods: true }, ["HR"], false],
 ];
 for (const [requirement, acronyms, expected] of modCases) {
   test(`mods ${JSON.stringify(requirement)} against ${JSON.stringify(acronyms)}`, () => {
@@ -185,7 +185,7 @@ for (const [requirement, acronyms, expected] of modCases) {
 for (const settings of [{}, { no_slider_head_accuracy: false }]) {
   test(`CL settings ${JSON.stringify(settings)} with exact NM`, () => {
     const b = qualifyingBounty();
-    b.goal.modRequirement = { rule: "exact", mods: [] };
+    b.goal.modRequirement = { required: [], forbidden: [], allowOtherMods: false };
     const s = qualifyingScore();
     s.mods = [{ acronym: "CL", settings }];
     assert.equal(checkCompletion(s, b, hunter, metadata), Object.keys(settings).length === 0);
@@ -368,7 +368,7 @@ test("grade evaluation reports failure without evaluating FC metadata", () => {
 test("evaluation retains simultaneous failures instead of short-circuiting", () => {
   const b = qualifyingBounty();
   b.goal.minimumAccuracy = 99;
-  b.goal.modRequirement = { rule: "includes", mods: ["HD"] };
+  b.goal.modRequirement = { required: ["HD"], forbidden: [], allowOtherMods: true };
   const result = evaluateBountyCompletion(
     {
       ...qualifyingScore(),

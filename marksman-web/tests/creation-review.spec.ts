@@ -51,7 +51,7 @@ test("review preserves edits and submits once, refreshes account and navigates",
   expect(requests).toBe(1);
   expect(payload).toEqual({ rewardBp: 25, goal: {
     type: "full_combo", beatmapId: 123456, beatmapChecksum: null,
-    modRequirement: { rule: "any" }, minimumComboRatio: 0.99,
+    modRequirement: { required: [], forbidden: [], allowOtherMods: false }, minimumComboRatio: 0.99,
   } });
 });
 
@@ -77,7 +77,7 @@ test("review reflects grade, accuracy and exact NM choices", async ({ page }) =>
   await review(page);
   await page.getByText("Minimum Grade", { exact: true }).last().click();
   await page.getByRole("checkbox", { name: "Require minimum accuracy", exact: true }).locator("..").click();
-  await page.getByText("Exact mods", { exact: true }).click();
+  await page.getByRole("checkbox", { name: "Exact mods", exact: true }).check();
   await expect(page.getByText("Acc. ≥95%", { exact: true })).toBeVisible();
   await expect(page.getByText("Stable combo threshold:", { exact: false })).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Create bounty · 110 BP" })).toBeEnabled();
@@ -103,18 +103,12 @@ test("creation flow fits a narrow mobile viewport", async ({ page }) => {
 });
 
 
-test("Pass resets prior mods, disables NF and submits a Pass goal", async ({ page }) => {
+test("Pass removes required NF and submits a Pass goal", async ({ page }) => {
   await review(page);
-  await page.getByRole("radio", { name: "Exact mods", exact: true }).locator("..").click();
-  await page.getByRole("checkbox", { name: "NF", exact: true }).locator("..").click();
+  await page.getByRole("button", { name: /^NF: not selected/ }).click();
   await page.getByRole("radio", { name: "Pass", exact: true }).locator("..").click();
-  for (const name of ["Exact mods", "Include mods", "Exclude mods"]) {
-    await page.getByRole("radio", { name, exact: true }).locator("..").click();
-    await expect(page.getByRole("checkbox", { name: "NF", exact: true })).toBeDisabled();
-    await expect(page.getByRole("checkbox", { name: "NF", exact: true })).not.toBeChecked();
-  }
-  await page.getByRole("radio", { name: "Exact mods", exact: true }).locator("..").click();
-  await page.getByRole("checkbox", { name: "HD", exact: true }).locator("..").click();
+  await expect(page.getByRole("button", { name: /^NF: not selected/ })).toBeDisabled();
+  await page.getByRole("button", { name: /^HD: not selected/ }).click();
   await expect(page.getByText("Clear/Pass", { exact: true })).toBeVisible();
   let payload: any;
   await page.route("**/bounties", route => {
@@ -128,7 +122,7 @@ test("Pass resets prior mods, disables NF and submits a Pass goal", async ({ pag
   await page.route(`**/bounties/${id}`, route => route.fulfill({ status: 404, json: {} }));
   await page.getByRole("button", { name: "Create bounty · 110 BP", exact: true }).click();
   await expect(page).toHaveURL(`/bounties/${id}`);
-  expect(payload.goal).toEqual({ type: "pass", beatmapId: 123456, beatmapChecksum: null, modRequirement: { rule: "exact", mods: ["HD"] } });
+  expect(payload.goal).toEqual({ type: "pass", beatmapId: 123456, beatmapChecksum: null, modRequirement: { required: ["HD"], forbidden: [], allowOtherMods: false } });
 });
 
 for (const width of [320, 390, 1280]) {

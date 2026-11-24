@@ -36,7 +36,7 @@ async function seedBounty(beatmapId: number, status: "open" | "cancelled" | "com
   const [row] = await db.insert(bounties).values({
     creatorOsuUserId: 101, status, rewardBp: 30,
     goal: { type: "minimum_grade", beatmapId, minimumGradeRequirement: "A",
-      beatmapChecksum: null, modRequirement: { rule: "any" } },
+      beatmapChecksum: null, modRequirement: { required: [], forbidden: [], allowOtherMods: true } },
   }).returning();
   return row.id;
 }

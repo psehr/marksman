@@ -10,17 +10,16 @@ import ModsStep from "./ModsStep";
 import {
   ExtendedBounty,
   createBountySchema,
-  modRequirementSchema,
+  modSettingsSchema,
   osuBeatmapMetadatatoBountyBeatmapMetadata,
 } from "@marksman/contracts";
 import type {
   BeatmapStepProps,
   BountyType,
   GoalStepProps,
-  ModRule,
-  SelectedMod,
   ModsStepProps,
   RewardStepProps,
+  ModRequirement,
 } from "./creation-tool.types";
 import {
   beatmapIdFromInput,
@@ -100,7 +99,10 @@ export default function BountyCreationTool() {
     setSelectedMinimumAccuracy,
     setSelectedBountyType: (type) => {
       if (type === "pass") {
-        setSelectedMods((mods) => mods.filter((mod) => mod !== "NF"));
+        setModSettings((current) => ({
+          ...current,
+          required: current.required.filter((mod) => mod !== "NF"),
+        }));
       }
       setSelectedBountyType(type);
     },
@@ -111,27 +113,50 @@ export default function BountyCreationTool() {
     setCustomizeStableComboThreshold,
   };
 
-  const [selectedModRule, setSelectedModRule] = useState<ModRule>("any");
-  const [selectedMods, setSelectedMods] = useState<SelectedMod[]>([]);
-  const modValidation = modRequirementSchema.safeParse(
-    selectedModRule === "any"
-      ? { rule: "any" }
-      : { rule: selectedModRule, mods: selectedMods },
-  );
+  const [modSettings, setModSettings] = useState<ModRequirement>({
+    required: [],
+    forbidden: [],
+    allowOtherMods: false,
+  });
+
+  const modValidation = modSettingsSchema.safeParse(modSettings);
 
   const modsStepProps: ModsStepProps = {
     bountyType: selectedBountyType,
-    selectedModRule,
-    selectedMods,
-    setSelectedModRule,
-    onModToggle: (mod, checked) =>
-      setSelectedMods((current) =>
-        checked
-          ? current.includes(mod)
-            ? current
-            : [...current, mod]
-          : current.filter((value) => value !== mod),
-      ),
+    settings: modSettings,
+    onModChange: (mod, selection) => {
+      setModSettings((current) => {
+        if (
+          (selection === "required" &&
+            selectedBountyType === "pass" &&
+            mod === "NF") ||
+          (selection === "forbidden" && !current.allowOtherMods)
+        ) {
+          return current;
+        }
+
+        const required = current.required.filter((value) => value !== mod);
+        const forbidden = current.forbidden.filter((value) => value !== mod);
+
+        return {
+          ...current,
+          required: selection === "required" ? [...required, mod] : required,
+          forbidden:
+            selection === "forbidden" ? [...forbidden, mod] : forbidden,
+        };
+      });
+    },
+    onAllowOtherModsChange: (allowed) => {
+      setModSettings((current) => ({
+        ...current,
+        allowOtherMods: allowed,
+        forbidden: !allowed
+          ? []
+          : current.required.includes("HT") || current.forbidden.includes("HT")
+            ? current.forbidden
+            : [...current.forbidden, "HT"],
+      }));
+    },
     validationErrors: modValidation.success
       ? []
       : modValidation.error.issues.map((issue) => issue.message),
@@ -152,15 +177,10 @@ export default function BountyCreationTool() {
 
   let previewCardContent: BountyCardDisplay | null = null;
   if (beatmapMetadata) {
-    const modRequirement: ExtendedBounty["goal"]["modRequirement"] =
-      selectedModRule === "any"
-        ? { rule: "any" }
-        : { rule: selectedModRule, mods: selectedMods };
-
     const sharedGoalFields = {
       beatmapId: beatmapMetadata.id,
       beatmapChecksum: beatmapMetadata.checksum,
-      modRequirement,
+      modRequirement: modSettings,
       minimumAccuracy: requireMinimumAccuracy
         ? selectedMinimumAccuracy
         : undefined,
@@ -202,9 +222,10 @@ export default function BountyCreationTool() {
     ...(finalInput.success || !previewCardContent
       ? []
       : finalInput.error.issues
-          .filter((issue) =>
-            issue.path[0] !== "rewardBp" &&
-            !(issue.path[0] === "goal" && issue.path[1] === "modRequirement"),
+          .filter(
+            (issue) =>
+              issue.path[0] !== "rewardBp" &&
+              !(issue.path[0] === "goal" && issue.path[1] === "modRequirement"),
           )
           .map((issue) => issue.message)),
     ...(beatmapValidity.status === "valid"
@@ -241,22 +262,30 @@ export default function BountyCreationTool() {
   }
 
   const sections = [
-    { title: "Beatmap Selection", content: <BeatmapStep props={beatmapStepProps} /> },
+    {
+      title: "Beatmap Selection",
+      content: <BeatmapStep props={beatmapStepProps} />,
+    },
     { title: "Mod Requirements", content: <ModsStep props={modsStepProps} /> },
     { title: "Completion Goal", content: <GoalStep props={goalStepProps} /> },
-    { title: "Reward Selection", content: (
-      <div className="flex flex-col gap-4">
-        <RewardStep props={rewardStepProps} />
-        <CreationSubmit props={submissionProps} />
-      </div>
-    ) },
+    {
+      title: "Reward Selection",
+      content: (
+        <div className="flex flex-col gap-4">
+          <RewardStep props={rewardStepProps} />
+          <CreationSubmit props={submissionProps} />
+        </div>
+      ),
+    },
   ];
 
   return (
     <>
       {previewCardContent ? (
         <div className="w-full max-w-2xl text-end">
-          <h2 className={`text-lg sm:text-2xl font-bold text-foreground-muted ${aes_font.className}`}>
+          <h2
+            className={`text-lg sm:text-2xl font-bold text-foreground-muted ${aes_font.className}`}
+          >
             Bounty Preview
           </h2>
           <BountyPreview content={previewCardContent} />
@@ -264,11 +293,20 @@ export default function BountyCreationTool() {
       ) : null}
       <div className="flex w-full max-w-2xl flex-col gap-6">
         {sections.map(({ title, content }) => (
-          <section key={title} aria-label={title} className="w-full min-w-0 text-end">
-            <h2 className={`text-lg sm:text-2xl font-bold text-foreground-muted ${aes_font.className}`}>
+          <section
+            key={title}
+            aria-label={title}
+            className="w-full min-w-0 text-end"
+          >
+            <h2
+              className={`text-lg sm:text-2xl font-bold text-foreground-muted ${aes_font.className}`}
+            >
               {title}
             </h2>
-            <fieldset disabled={creation.pending} className="min-w-0 bg-surface border border-border rounded p-4">
+            <fieldset
+              disabled={creation.pending}
+              className="min-w-0 bg-surface border border-border rounded p-4"
+            >
               <legend className="sr-only">{title}</legend>
               {content}
             </fieldset>

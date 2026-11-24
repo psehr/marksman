@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-const supportedMods = ["EZ", "HD", "HR", "DT", "HT", "FL", "NF", "SO"] as const;
+const supportedMods = ["EZ", "HD", "HR", "DT", "HT", "FL", "NF"] as const;
 
 const conflictingModPairs = [
   ["DT", "HT"],
@@ -9,45 +9,56 @@ const conflictingModPairs = [
 
 const modAcronymSchema = z.enum(supportedMods);
 
-export const modsSchema = z
+const modListSchema = z
   .array(modAcronymSchema)
   .max(10)
   .refine((mods) => new Set(mods).size === mods.length, {
     message: "Mods must not contain duplicates",
+  });
+
+export const modsSchema = modListSchema.refine(
+  (mods) =>
+    conflictingModPairs.every(
+      ([first, second]) => !(mods.includes(first) && mods.includes(second)),
+    ),
+  { message: "Mods must not contain conflicting combinations" },
+);
+
+export const modSettingsSchema = z
+  .object({
+    required: modsSchema,
+    forbidden: modListSchema,
+    allowOtherMods: z.boolean(),
   })
   .refine(
-    (mods) =>
-      conflictingModPairs.every(
-        ([first, second]) => !(mods.includes(first) && mods.includes(second)),
-      ),
-    { message: "Mods must not contain conflicting combinations" },
+    ({ required, forbidden }) =>
+      required.every((mod) => !forbidden.includes(mod)),
+    {
+      message: "A mod cannot be both required and forbidden.",
+      path: ["forbidden"],
+    },
+  )
+  .refine(
+    ({ forbidden, allowOtherMods }) => allowOtherMods || forbidden.length === 0,
+    {
+      message: "Forbidden mods must be empty when other mods are disabled.",
+      path: ["forbidden"],
+    },
   );
 
-export const modRequirementSchema = z.discriminatedUnion("rule", [
-  // the mods can be anything
-  z.object({
-    rule: z.literal("any"),
-  }),
-  // the mods have to strictly be correspondent
-  z.object({
-    rule: z.literal("exact"),
-    mods: modsSchema,
-  }),
-  // the mods must include a positive set of mods
-  z.object({
-    rule: z.literal("includes"),
-    mods: modsSchema.min(1, {
-      error: "Select at least one mod to include.",
-    }),
-  }),
-  // the mods must exclude a positive set of mods
-  z.object({
-    rule: z.literal("excludes"),
-    mods: modsSchema.min(1, {
-      error: "Select at least one mod to exclude.",
-    }),
-  }),
-]);
+export type ModSettings = z.infer<typeof modSettingsSchema>;
+
+export function matchesModSettings(
+  mods: z.infer<typeof modsSchema>,
+  settings: ModSettings,
+): boolean {
+  return (
+    settings.required.every((requiredMod) => mods.includes(requiredMod)) &&
+    settings.forbidden.every((forbiddenMod) => !mods.includes(forbiddenMod)) &&
+    (settings.allowOtherMods ||
+      mods.every((mod) => settings.required.includes(mod)))
+  );
+}
 
 export const osuModSchema = z.object({
   acronym: z.string().min(1),

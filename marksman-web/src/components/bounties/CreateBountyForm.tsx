@@ -7,7 +7,7 @@ import { useRef, useState, type FormEvent } from "react";
 import { useAuth } from "../auth/AuthProvider";
 
 const apiUrl = process.env.NEXT_PUBLIC_API_URL;
-const mods = ["EZ", "HD", "HR", "DT", "HT", "FL", "NF", "SO"] as const;
+const mods = ["EZ", "HD", "HR", "DT", "HT", "FL", "NF"] as const;
 const grades = ["D", "C", "B", "A", "S", "SH", "X", "XH"] as const;
 const gradeLabels: Record<string, string> = {
   SH: "Silver S",
@@ -83,10 +83,11 @@ export default function CreateBountyForm() {
             minimumComboRatio: combo.trim() ? Number(combo) / 100 : undefined,
           }),
       ...(accuracy.trim() ? { minimumAccuracy: Number(accuracy) } : {}),
-      modRequirement:
-        modRule === "any"
-          ? { rule: "any" }
-          : { rule: modRule, mods: selectedMods },
+      modRequirement: {
+        required: modRule === "exact" || modRule === "includes" ? selectedMods : [],
+        forbidden: modRule === "excludes" ? selectedMods : [],
+        allowOtherMods: modRule !== "exact",
+      },
     },
   });
 

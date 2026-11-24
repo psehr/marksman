@@ -28,7 +28,7 @@ let otherBountyId: string;
 async function seedBounty() {
   const [row] = await db.insert(bounties).values({
     creatorOsuUserId: 999, rewardBp: 25, status: "open",
-    goal: { type: "minimum_grade", beatmapId: 123, minimumGradeRequirement: "A", beatmapChecksum: null, modRequirement: { rule: "any" } },
+    goal: { type: "minimum_grade", beatmapId: 123, minimumGradeRequirement: "A", beatmapChecksum: null, modRequirement: { required: [], forbidden: [], allowOtherMods: true } },
   }).returning();
   return row.id;
 }

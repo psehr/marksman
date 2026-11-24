@@ -16,7 +16,7 @@ const pair = {
     createdAt: "2026-11-04T09:00:00.000Z",
     completedByOsuUserId: null, completionScoreId: null, completedAt: null, cancelledAt: null,
     goal: { type: "full_combo", beatmapId: 123, beatmapChecksum: null, minimumComboRatio: 0.99,
-      modRequirement: { rule: "any" } },
+      modRequirement: { required: [], forbidden: [], allowOtherMods: true } },
     beatmap: null, owner: null, winner: null,
     engagement: { hunterCount: 0, bookmarkCount: 0, isBookmarkedByCurrentUser: null },
   },

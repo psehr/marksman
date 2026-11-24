@@ -2,12 +2,12 @@ import { expect, test, type Page } from "@playwright/test";
 import type { ExtendedBounty } from "@marksman/contracts";
 
 const rules: ExtendedBounty["goal"]["modRequirement"][] = [
-  { rule: "exact", mods: ["HD", "HR"] },
-  { rule: "includes", mods: ["HD", "HR"] },
-  { rule: "exact", mods: ["HD"] },
-  { rule: "excludes", mods: ["HD", "HR"] },
-  { rule: "any" },
-  { rule: "exact", mods: [] },
+  { required: ["HD", "HR"], forbidden: [], allowOtherMods: false },
+  { required: ["HD", "HR"], forbidden: [], allowOtherMods: true },
+  { required: ["HD"], forbidden: [], allowOtherMods: false },
+  { required: [], forbidden: ["HD", "HR"], allowOtherMods: true },
+  { required: [], forbidden: [], allowOtherMods: true },
+  { required: [], forbidden: [], allowOtherMods: false },
 ];
 const rewards = [300, 1000, 100, 300, 10000, 1];
 const fixtures: ExtendedBounty[] = rules.map((modRequirement, index) => ({
@@ -24,7 +24,11 @@ const fixtures: ExtendedBounty[] = rules.map((modRequirement, index) => ({
 const cards = (page: Page) => page.locator('a[href^="/bounties/"]').filter({ hasText: "Created by" });
 async function setup(page: Page, handler: (params: URLSearchParams) => Promise<unknown> | unknown) {
   await page.route("**/*", route => new URL(route.request().url()).origin === "http://127.0.0.1:3100" ? route.continue() : route.abort());
-  await page.route("**/auth/me", route => route.fulfill({ status: 401, json: {} }));
+  await page.route("**/auth/me", route => route.fulfill({ json: {
+    identity: { coverUrl: null, countryCode: null, countryName: null, id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa", osuUserId: 42, username: "fixture" },
+    stats: { bpBalance: 1000 }, createdAt: "2026-01-01T00:00:00.000Z",
+  } }));
+  await page.route("**/auth/access", route => route.fulfill({ status: 204 }));
   await page.route(/\/bounties(?:\?.*)?$/, async route => {
     if (route.request().isNavigationRequest() || route.request().headers()["rsc"]) return route.fallback();
     await route.fulfill({ json: await handler(new URL(route.request().url()).searchParams) });
@@ -173,7 +177,7 @@ test("Pass URL filter survives reload, toggle and browser history", async ({ pag
   const requests: string[] = [];
   await setup(page, params => {
     requests.push(params.get("goals") ?? "");
-    return { items: [{ ...fixtures[0], goal: { type: "pass", beatmapId: 42, beatmapChecksum: null, modRequirement: { rule: "any" } } }], total: 1, page: 1, pageSize: 20 };
+    return { items: [{ ...fixtures[0], goal: { type: "pass", beatmapId: 42, beatmapChecksum: null, modRequirement: { required: [], forbidden: [], allowOtherMods: true } } }], total: 1, page: 1, pageSize: 20 };
   });
   await page.goto("/bounties?goals=pass&keep=yes");
   await page.getByText("Show additional filters", { exact: true }).click();
@@ -196,7 +200,7 @@ test("Pass URL filter survives reload, toggle and browser history", async ({ pag
 for (const width of [320, 375, 390, 1280]) {
   test(`goal filters and badges fit at ${width}px`, async ({ page }) => {
     await page.setViewportSize({ width, height: 1000 });
-    const pass = { ...fixtures[2], goal: { type: "pass", beatmapId: 42, beatmapChecksum: null, modRequirement: { rule: "any" } } };
+    const pass = { ...fixtures[2], goal: { type: "pass", beatmapId: 42, beatmapChecksum: null, modRequirement: { required: [], forbidden: [], allowOtherMods: true } } };
     await setup(page, () => ({ items: [fixtures[0], fixtures[1], pass], total: 3, page: 1, pageSize: 20 }));
     await page.goto("/bounties?goals=pass");
     await expect(cards(page)).toHaveCount(3);

@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { bountyModFilterSchema, modRequirementSchema } from "./mods";
+import { bountyModFilterSchema, modSettingsSchema } from "./mods";
 import { bountyBeatmapMetadataSchema } from "./beatmap";
 import { userIdentitySchema } from "./user";
 import { osuGradeSchema, scoreResponseSchema } from "./score";
@@ -14,7 +14,11 @@ const baseGoalSchema = z.object({
     .regex(/^[a-f0-9]{32}$/i)
     .nullable()
     .default(null),
-  modRequirement: modRequirementSchema.default({ rule: "any" }),
+  modRequirement: modSettingsSchema.default({
+    required: [],
+    forbidden: [],
+    allowOtherMods: true,
+  }),
   minimumAccuracy: z.number().min(0).max(100).optional(),
 });
 
@@ -26,7 +30,6 @@ const bountyGoalSchema = z.discriminatedUnion("type", [
   // Additionally, a bounty goal has the following requirements:
   // - A beatmap id that corresponds to a specific difficulty/version of an osu! beatmap
   // - A mod requirement rule that describes if mods are to be used or not, and in which conditions
-  //   (the default requirement rule is "any", which means any mod combination will be accepted for bounty completion)
   // - A minimum accuracy that must be achieved for bounty completion (optional)
 
   baseGoalSchema.extend({
@@ -45,18 +48,10 @@ const bountyGoalSchema = z.discriminatedUnion("type", [
 
   baseGoalSchema
     .extend({ type: z.literal("pass") })
-    .refine(
-      ({ modRequirement }) =>
-        !(
-          (modRequirement.rule === "exact" ||
-            modRequirement.rule === "includes") &&
-          modRequirement.mods.includes("NF")
-        ),
-      {
-        message: "Pass goals cannot require No Fail.",
-        path: ["modRequirement", "mods"],
-      },
-    ),
+    .refine(({ modRequirement }) => !modRequirement.required.includes("NF"), {
+      message: "Pass goals cannot require No Fail.",
+      path: ["modRequirement", "required"],
+    }),
 ]);
 
 export const bountySchema = z.object({

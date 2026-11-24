@@ -9,6 +9,7 @@ import {
   HuntAttemptVerificationResult,
   HuntAttemptStatus,
   modsSchema,
+  matchesModSettings,
 } from "@marksman/contracts";
 import { InvalidBeatmapMetadataError } from "./errors";
 
@@ -226,15 +227,15 @@ function isCorrectMods(
 ): boolean {
   let settingsExist = false;
 
-  // ignoring classic mod if it has default settings
-  const classicFilteredMods = score.mods.filter((mod) => {
+  // Ignore Classic and Spun Out only after checking their settings.
+  const filteredMods = score.mods.filter((mod) => {
     if (mod.settings && Object.keys(mod.settings).length > 0)
       settingsExist = true;
 
-    return mod.acronym !== "CL";
+    return mod.acronym !== "CL" && mod.acronym !== "SO";
   });
 
-  const modsAcronyms = classicFilteredMods.map((mod) => mod.acronym);
+  const modsAcronyms = filteredMods.map((mod) => mod.acronym);
 
   // customized mods reject
   if (settingsExist) return false;
@@ -246,24 +247,10 @@ function isCorrectMods(
   if (bounty.goal.type === "pass" && parsedModsAcronyms.data.includes("NF"))
     return false;
 
-  switch (bounty.goal.modRequirement.rule) {
-    case "any":
-      return true;
-    case "exact":
-      if (bounty.goal.modRequirement.mods.length !== modsAcronyms.length)
-        return false;
-      return bounty.goal.modRequirement.mods.every((mod) =>
-        modsAcronyms.includes(mod),
-      );
-    case "excludes":
-      return bounty.goal.modRequirement.mods.every(
-        (mod) => !modsAcronyms.includes(mod),
-      );
-    case "includes":
-      return bounty.goal.modRequirement.mods.every((mod) =>
-        modsAcronyms.includes(mod),
-      );
-  }
+  return matchesModSettings(
+    parsedModsAcronyms.data,
+    bounty.goal.modRequirement,
+  );
 }
 
 function isGradeSatisfied(

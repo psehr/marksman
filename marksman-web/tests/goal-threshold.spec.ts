@@ -16,7 +16,7 @@ const bounty: ExtendedBounty = {
     beatmapId: 42,
     beatmapChecksum: null,
     minimumGradeRequirement: "A",
-    modRequirement: { rule: "any" },
+    modRequirement: { required: [], forbidden: [], allowOtherMods: true },
   },
   owner: { coverUrl: null, countryCode: null, countryName: null,
     id: "bbbbbbbb-bbbb-4bbb-8bbb-bbbbbbbbbbbb",
@@ -60,7 +60,7 @@ for (const [label, ratio, missing] of [
     const data: ExtendedBounty = {
       ...bounty,
       goal: { type: "full_combo", beatmapId: 42, beatmapChecksum: null,
-        modRequirement: { rule: "any" }, minimumComboRatio: ratio },
+        modRequirement: { required: [], forbidden: [], allowOtherMods: true }, minimumComboRatio: ratio },
       beatmap: missing ? null : bounty.beatmap,
     };
     await page.route("**/auth/me", route => route.fulfill({ status: 401, json: {} }));
@@ -83,7 +83,7 @@ for (const [label, ratio, missing] of [
 
 
 test("Pass detail displays its goal and intrinsic NF restriction", async ({ page }) => {
-  const data: ExtendedBounty = { ...bounty, goal: { type: "pass", beatmapId: 42, beatmapChecksum: null, modRequirement: { rule: "any" } } };
+  const data: ExtendedBounty = { ...bounty, goal: { type: "pass", beatmapId: 42, beatmapChecksum: null, modRequirement: { required: [], forbidden: [], allowOtherMods: true } } };
   await page.route("**/auth/me", route => route.fulfill({ status: 401, json: {} }));
   await page.route("**/_next/image?**", route => route.fulfill({ status: 204 }));
   await page.route(`**/bounties/${bounty.id}`, route => route.request().isNavigationRequest() || route.request().headers()["rsc"] ? route.fallback() : route.fulfill({ json: data }));

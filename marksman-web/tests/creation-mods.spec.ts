@@ -1,6 +1,6 @@
 import { expect, test } from "@playwright/test";
 
-test("wizard mod rules validate selections and preserve compatible mods when changing goal type", async ({ page }) => {
+test("icon cycles, exact mode, HT defaults and Pass preserve valid requirements", async ({ page }) => {
   await page.route("**/auth/access", route => route.fulfill({ status: 204 }));
   await page.route("**/auth/me", route => route.fulfill({ json: {
     identity: { coverUrl: null, countryCode: null, countryName: null, id: "12345678-1234-4234-8234-123456789abc", osuUserId: 12345, username: "fixture" },
@@ -14,32 +14,41 @@ test("wizard mod rules validate selections and preserve compatible mods when cha
   } }));
   await page.goto("/bounties/creation-tool");
   await page.getByRole("textbox", { name: "beatmap input" }).fill("123456");
-  await expect(page.getByRole("radio", { name: "Any mods", exact: true })).toBeChecked();
-  await expect(page.getByRole("button", { name: /^Create bounty/ })).toBeEnabled();
-  await page.getByRole("radio", { name: "Exact mods" }).locator("..").click();
-  await expect(page.getByRole("button", { name: /^Create bounty/ })).toBeEnabled();
-  await expect(page.getByText("Leave all unchecked to require no mods (NM).")).toBeVisible();
-  await page.getByRole("radio", { name: "Include mods" }).locator("..").click();
-  await expect(page.getByRole("button", { name: /^Create bounty/ })).toBeDisabled();
-  await page.getByRole("checkbox", { name: "HD", exact: true }).locator("..").click();
-  await expect(page.getByRole("button", { name: /^Create bounty/ })).toBeEnabled();
-  await page.getByRole("checkbox", { name: "DT", exact: true }).locator("..").click();
-  await page.getByRole("checkbox", { name: "HT", exact: true }).locator("..").click();
-  await expect(page.getByRole("button", { name: /^Create bounty/ })).toBeDisabled();
-  await expect(page.getByRole("alert").filter({ hasText: "conflicting" })).toHaveCount(1);
-  await page.getByRole("checkbox", { name: "HT", exact: true }).locator("..").click();
+  const exact = page.getByRole("checkbox", { name: "Exact mods", exact: true });
+  const mod = (name: string, state: string) => page.getByRole("button", { name: new RegExp(`^${name}: ${state}[.]`) });
+  const submit = page.getByRole("button", { name: /^Create bounty/ });
+  await expect(exact).toBeChecked();
+  await expect(submit).toBeEnabled();
+  await expect(mod("SO", "not selected")).toHaveCount(0);
+  await expect(mod("HD", "not selected")).toBeVisible();
+  await mod("HD", "not selected").click();
+  await expect(mod("HD", "required")).toBeVisible();
+  await exact.uncheck();
+  await expect(mod("HT", "forbidden")).toBeVisible();
+  await expect(mod("HD", "required")).toBeVisible();
+  await mod("HD", "required").click();
+  await expect(mod("HD", "forbidden")).toBeVisible();
+  await mod("HD", "forbidden").click();
+  await expect(mod("HD", "optional")).toBeVisible();
+  await mod("HD", "optional").click();
+  await mod("DT", "optional").click();
+  await mod("HT", "forbidden").click();
+  await mod("HT", "optional").click();
+  await expect(submit).toBeDisabled();
+  await expect(page.getByRole("alert").filter({ hasText: "conflicting" })).toBeVisible();
+  await mod("HT", "required").click();
+  await expect(submit).toBeEnabled();
   await page.getByRole("radio", { name: "Minimum Grade", exact: true }).locator("..").click();
-  await expect(page.getByRole("checkbox", { name: "HD", exact: true })).toBeChecked();
-  await expect(page.getByRole("checkbox", { name: "DT", exact: true })).toBeChecked();
-  await page.getByRole("checkbox", { name: "NF", exact: true }).locator("..").click();
+  await mod("NF", "optional").click();
+  await expect(mod("NF", "required")).toBeVisible();
   await page.getByRole("radio", { name: "Pass", exact: true }).locator("..").click();
-  await expect(page.getByRole("checkbox", { name: "NF", exact: true })).not.toBeChecked();
-  await expect(page.getByRole("checkbox", { name: "DT", exact: true })).toBeChecked();
-  await expect(page.getByRole("radio", { name: "Include mods" })).toBeChecked();
-  await expect(page.getByRole("checkbox", { name: "HD", exact: true })).toBeChecked();
-  await page.getByRole("radio", { name: "Any mods", exact: true }).locator("..").click();
-  await expect(page.getByRole("checkbox", { name: "HD", exact: true })).toHaveCount(0);
-  await page.getByRole("radio", { name: "Exclude mods" }).locator("..").click();
-  await expect(page.getByRole("checkbox", { name: "HD", exact: true })).toBeChecked();
-  await expect(page.getByRole("button", { name: /^Create bounty/ })).toBeEnabled();
+  await expect(mod("NF", "optional")).toBeVisible();
+  await mod("NF", "optional").click();
+  await expect(mod("NF", "forbidden")).toBeVisible();
+  await expect(mod("HD", "required")).toBeVisible();
+  await expect(mod("DT", "required")).toBeVisible();
+  await exact.check();
+  await expect(mod("NF", "not selected")).toBeDisabled();
+  await expect(mod("HT", "not selected")).toBeVisible();
+  await expect(submit).toBeEnabled();
 });

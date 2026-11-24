@@ -9,9 +9,13 @@ are marked until deployment is confirmed. Deployment names increment as
 
 ## Alpha - Update 3 — Pending
 
+### Features
+
+- feat: choose required and forbidden mods individually, with an exact-mods option.
+
 ### Fixes
 
-- fix: use higher-resolution beatmap covers when available.
+- dc0ecf1 — fix: use higher-resolution beatmap covers when available.
 
 ## Alpha - Update 2 — 2026-11-23
 

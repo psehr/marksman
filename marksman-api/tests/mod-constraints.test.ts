@@ -5,10 +5,10 @@ import { evaluateBountyCompletion, evaluateHuntAttempt } from "../src/services/b
 import { hunter, metadata, qualifyingBounty, qualifyingScore } from "./fixtures/completion";
 
 const rules: Bounty["goal"]["modRequirement"][] = [
-  { rule: "any" },
-  { rule: "exact", mods: ["HD"] },
-  { rule: "includes", mods: ["HD"] },
-  { rule: "excludes", mods: ["HR"] },
+  { required: [], forbidden: [], allowOtherMods: true },
+  { required: ["HD"], forbidden: [], allowOtherMods: false },
+  { required: ["HD"], forbidden: [], allowOtherMods: true },
+  { required: [], forbidden: ["HR"], allowOtherMods: true },
 ];
 const cases: [string, ScoreResponse["mods"], boolean][] = [
   ["supported mod without settings", [{ acronym: "HD" }], true],
@@ -20,7 +20,7 @@ const cases: [string, ScoreResponse["mods"], boolean][] = [
 ];
 for (const requirement of rules) {
   for (const [label, mods, expected] of cases) {
-    test(`${requirement.rule}: ${label} in completion and hunting`, () => {
+    test(`${JSON.stringify(requirement)}: ${label} in completion and hunting`, () => {
       const bounty = qualifyingBounty();
       bounty.goal.modRequirement = requirement;
       const score = { ...qualifyingScore(), mods };

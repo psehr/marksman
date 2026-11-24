@@ -6,7 +6,7 @@ import { hunter, metadata, qualifyingBounty, qualifyingScore } from "./fixtures/
 
 function passBounty(): Bounty {
   const bounty = qualifyingBounty();
-  bounty.goal = { type: "pass", beatmapId: bounty.goal.beatmapId, beatmapChecksum: null, modRequirement: { rule: "any" } };
+  bounty.goal = { type: "pass", beatmapId: bounty.goal.beatmapId, beatmapChecksum: null, modRequirement: { required: [], forbidden: [], allowOtherMods: true } };
   return bounty;
 }
 
@@ -19,10 +19,14 @@ for (const [rule, mods, accepted] of [
   test(`Pass contract: ${rule} ${mods ?? ""} accepted=${accepted}`, () => {
     const bounty = passBounty();
     const result = createBountySchema.safeParse({ rewardBp: 25, goal: {
-      ...bounty.goal, modRequirement: { rule, ...(mods ? { mods: [...mods] } : {}) },
+      ...bounty.goal, modRequirement: {
+        required: rule === "exact" || rule === "includes" ? [...(mods ?? [])] : [],
+        forbidden: rule === "excludes" ? [...(mods ?? [])] : [],
+        allowOtherMods: rule !== "exact",
+      },
     } });
     assert.equal(result.success, accepted);
-    if (!result.success) assert.deepEqual(result.error.issues[0].path, ["goal", "modRequirement", "mods"]);
+    if (!result.success) assert.deepEqual(result.error.issues[0].path, ["goal", "modRequirement", "required"]);
   });
 }
 
@@ -31,14 +35,14 @@ test("Pass is a valid list goal filter", () => {
 });
 
 for (const modRequirement of [
-  { rule: "any" }, { rule: "exact", mods: [] },
-  { rule: "includes", mods: ["HD"] }, { rule: "excludes", mods: ["EZ"] },
+  { required: [], forbidden: [], allowOtherMods: true }, { required: [], forbidden: [], allowOtherMods: false },
+  { required: ["HD"], forbidden: [], allowOtherMods: true }, { required: [], forbidden: ["EZ"], allowOtherMods: true },
 ] as const) {
-  test(`Pass verification rejects NF with ${modRequirement.rule} in manual and hunt paths`, () => {
+  test(`Pass verification rejects NF with ${JSON.stringify(modRequirement)} in manual and hunt paths`, () => {
     const bounty = passBounty();
     bounty.goal.modRequirement = JSON.parse(JSON.stringify(modRequirement));
     const score = qualifyingScore();
-    score.mods = modRequirement.rule === "includes" ? [{ acronym: "HD" }] : [];
+    score.mods = modRequirement.required.map((acronym) => ({ acronym }));
     assert.equal(isBountyCompletionValid(evaluateBountyCompletion(score, bounty, hunter, metadata)), true);
     assert.equal(checkHuntAttemptValidity(evaluateHuntAttempt(score, bounty, hunter, new Date(bounty.createdAt), null)), "valid");
     score.mods.push({ acronym: "NF" });
@@ -70,7 +74,7 @@ for (const type of ["minimum_grade", "full_combo"] as const) {
     if (type === "minimum_grade") bounty.goal = { ...bounty.goal, type, minimumGradeRequirement: "D" };
     const score = qualifyingScore();
     score.mods = [{ acronym: "NF" }];
-    assert.equal(createBountySchema.safeParse({ rewardBp: 25, goal: { ...bounty.goal, modRequirement: { rule: "exact", mods: ["NF"] } } }).success, true);
+    assert.equal(createBountySchema.safeParse({ rewardBp: 25, goal: { ...bounty.goal, modRequirement: { required: ["NF"], forbidden: [], allowOtherMods: false } } }).success, true);
     assert.equal(isBountyCompletionValid(evaluateBountyCompletion(score, bounty, hunter, metadata)), true);
   });
 }

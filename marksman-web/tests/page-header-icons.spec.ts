@@ -26,7 +26,7 @@ for (const width of [320, 640, 1280]) {
         id, status: "open", rewardBp: 100, creatorOsuUserId: 42,
         createdAt: "2026-01-01T00:00:00.000Z", completedAt: null, cancelledAt: null,
         completedByOsuUserId: null, completionScoreId: null,
-        goal: { type: "pass", beatmapId: 42, beatmapChecksum: null, modRequirement: { rule: "any" } },
+        goal: { type: "pass", beatmapId: 42, beatmapChecksum: null, modRequirement: { required: [], forbidden: [], allowOtherMods: true } },
         beatmap: null, owner: null, winner: null,
         engagement: { hunterCount: 0, bookmarkCount: 0, isBookmarkedByCurrentUser: false },
       } });

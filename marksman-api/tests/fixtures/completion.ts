@@ -40,7 +40,7 @@ export function qualifyingBounty(): Bounty {
       type: "full_combo",
       beatmapId: 123456,
       beatmapChecksum: null,
-      modRequirement: { rule: "any" },
+      modRequirement: { required: [], forbidden: [], allowOtherMods: true },
     },
   };
 }

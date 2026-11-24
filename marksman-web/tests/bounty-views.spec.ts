@@ -7,7 +7,7 @@ const bounty: ExtendedBounty = {
   id, status: "open", rewardBp: 300, creatorOsuUserId: 42,
   createdAt: "2026-01-01T00:00:00.000Z", completedAt: null, cancelledAt: null,
   completedByOsuUserId: null, completionScoreId: null,
-  goal: { type: "pass", beatmapId: 42, beatmapChecksum: null, modRequirement: { rule: "any" } },
+  goal: { type: "pass", beatmapId: 42, beatmapChecksum: null, modRequirement: { required: [], forbidden: [], allowOtherMods: true } },
   beatmap: null, owner: null, winner: null,
   engagement: { hunterCount: 0, bookmarkCount: 3, isBookmarkedByCurrentUser: false },
 };
@@ -533,5 +533,44 @@ for (const failure of [false, true]) {
     }
     await expect(section.getByText("Beatmap ID copied!", { exact: true })).toBeVisible();
     expect(await page.evaluate(() => (window as unknown as { copiedId: string }).copiedId)).toBe("42");
+  });
+}
+
+for (const [label, requirement] of [
+  ["exact", { required: ["HD", "HR"], forbidden: [], allowOtherMods: false }],
+  ["NM", { required: [], forbidden: [], allowOtherMods: false }],
+  ["mixed", { required: ["HD"], forbidden: ["HT"], allowOtherMods: true }],
+  ["unrestricted", { required: [], forbidden: [], allowOtherMods: true }],
+] as const) {
+  test(`mod detail layout: ${label}`, async ({ page }) => {
+    await setup(page, { goal: { ...bounty.goal, modRequirement: {
+      required: [...requirement.required], forbidden: [...requirement.forbidden],
+      allowOtherMods: requirement.allowOtherMods,
+    } } });
+    await page.goto(`/bounties/${id}`);
+    const mods = page.locator("section").filter({ has: page.getByRole("heading", { name: "Mods", exact: true }) });
+    if (label === "unrestricted") {
+      await expect(mods.getByText("Any supported mods are allowed", { exact: true })).toBeVisible();
+      await expect(mods.getByRole("heading", { name: "Required", exact: true })).toHaveCount(0);
+      await expect(mods.getByRole("heading", { name: "Forbidden", exact: true })).toHaveCount(0);
+      await expect(mods.getByRole("img")).toHaveCount(0);
+      return;
+    }
+    if (!requirement.allowOtherMods) {
+      await expect(mods.getByRole("heading", { name: "Exact mods", exact: true })).toBeVisible();
+      await expect(mods.getByText("Additional mods are forbidden.", { exact: true })).toBeVisible();
+      await expect(mods.getByRole("heading", { name: "Forbidden", exact: true })).toHaveCount(0);
+      if (label === "NM") await expect(mods.getByRole("img", { name: "No mods", exact: true })).toBeVisible();
+      else {
+        await expect(mods.getByRole("img", { name: "Hidden", exact: true })).toBeVisible();
+        await expect(mods.getByRole("img", { name: "Hard Rock", exact: true })).toBeVisible();
+      }
+    } else {
+      await expect(mods.getByRole("heading", { name: "Required", exact: true })).toBeVisible();
+      await expect(mods.getByRole("heading", { name: "Forbidden", exact: true })).toBeVisible();
+      await expect(mods.getByText("Additional supported mods are allowed.", { exact: true })).toBeVisible();
+      if (label === "mixed") await expect(mods.getByRole("img", { name: "Half Time forbidden", exact: true })).toBeVisible();
+      else await expect(mods.getByText("None", { exact: true })).toHaveCount(2);
+    }
   });
 }

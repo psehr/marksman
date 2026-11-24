@@ -13,7 +13,7 @@ function bounty(index: number, username: string, status: ExtendedBounty["status"
     createdAt: `2026-01-0${index}T00:00:00.000Z`, completedAt: null,
     cancelledAt: null, completedByOsuUserId: null, completionScoreId: null,
     goal: { type: "minimum_grade", beatmapId: 42, beatmapChecksum: null,
-      minimumGradeRequirement: "A", modRequirement: { rule: "any" } },
+      minimumGradeRequirement: "A", modRequirement: { required: [], forbidden: [], allowOtherMods: true } },
     beatmap: null, owner: { coverUrl: null, countryCode: null, countryName: null, id: user.identity.id, osuUserId: index === 1 ? 123 : 456, username }, winner: null,
     engagement: { hunterCount: 0, bookmarkCount: 0, isBookmarkedByCurrentUser: null },
   };
@@ -116,12 +116,12 @@ test("official mod badges load local SVGs and retain labels, sizes and exclusion
   const fixtures = supported.map((mod, index) => ({
     ...rows[0],
     id: `00000000-0000-4000-8000-${String(index + 1).padStart(12, "0")}`,
-    goal: { ...rows[0].goal, modRequirement: { rule: "exact", mods: [mod] } },
+    goal: { ...rows[0].goal, modRequirement: { required: [mod], forbidden: [], allowOtherMods: false } },
   }));
   const extra = [
-    { rule: "exact", mods: [] },
-    { rule: "any" },
-    { rule: "excludes", mods: ["HR"] },
+    { required: [], forbidden: [], allowOtherMods: false },
+    { required: [], forbidden: [], allowOtherMods: true },
+    { required: [], forbidden: ["HR"], allowOtherMods: true },
   ].map((modRequirement, index) => ({
     ...rows[0], id: `00000000-0000-4000-8000-${String(index + 20).padStart(12, "0")}`,
     goal: { ...rows[0].goal, modRequirement },
@@ -197,7 +197,7 @@ for (const width of [375, 1280]) {
     await setup(page);
     await page.route(listUrl, route => (route.request().isNavigationRequest() || route.request().headers()["rsc"])
       ? route.fallback() : route.fulfill({ json: listResponse(rows.slice(0, 2).map(row => ({
-        ...row, beatmap: metadata, goal: { ...row.goal, minimumAccuracy: 98.5, modRequirement: { rule: "exact", mods: ["HD", "HR", "DT"] } },
+        ...row, beatmap: metadata, goal: { ...row.goal, minimumAccuracy: 98.5, modRequirement: { required: ["HD", "HR", "DT"], forbidden: [], allowOtherMods: false } },
       })), route.request().url()) }));
     await page.goto("/bounties");
     const cards = creators(page);
@@ -248,7 +248,7 @@ test("official grade badges preserve minimum labels and load all grade variants"
   }));
   const fullCombo = { ...bounty(9, "FC player", "open", 100),
     goal: { type: "full_combo", beatmapId: 42, beatmapChecksum: null,
-      minimumComboRatio: 0.99, modRequirement: { rule: "any" } } };
+      minimumComboRatio: 0.99, modRequirement: { required: [], forbidden: [], allowOtherMods: true } } };
   await page.route(listUrl, route => (route.request().isNavigationRequest() || route.request().headers()["rsc"])
     ? route.fallback() : route.fulfill({ json: listResponse([...fixtures, fullCombo] as ExtendedBounty[], route.request().url()) }));
   await page.goto("/bounties");
