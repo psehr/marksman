@@ -228,8 +228,8 @@ test("closed and owned bounties still return eligibility previews", async () => 
 });
 
 test("minimum-grade preview keeps explicit zero accuracy and omits FC", async () => {
-  const bounty = await seedBounty({ goal: { type: "minimum_grade", beatmapId, beatmapChecksum: null,
-    minimumGradeRequirement: "S", minimumAccuracy: 0, modRequirement: { required: [], forbidden: [], allowOtherMods: true } } });
+  const bounty = await seedBounty({ goal: { type: "pass", beatmapId, beatmapChecksum: null,
+    minimumGrade: "S", minimumAccuracy: 0, modRequirement: { required: [], forbidden: [], allowOtherMods: true } } });
   score.rank = "A";
   score.accuracy = 0;
   delete score.beatmap.max_combo;

@@ -203,7 +203,7 @@ test("retains failing candidates with simultaneous reasons, evaluates once-fetch
 });
 
 test("minimum-grade previews include explicit zero accuracy and omit inapplicable FC", async () => {
-  const bounty = await seedBounty({ goal: { type: "minimum_grade", beatmapId, beatmapChecksum: null, minimumGradeRequirement: "S", minimumAccuracy: 0, modRequirement: { required: [], forbidden: [], allowOtherMods: true } } });
+  const bounty = await seedBounty({ goal: { type: "pass", beatmapId, beatmapChecksum: null, minimumGrade: "S", minimumAccuracy: 0, modRequirement: { required: [], forbidden: [], allowOtherMods: true } } });
   scores[0].rank = "A";
   scores[0].accuracy = 0;
   const [candidate] = await readCandidates(await request(bounty.id));

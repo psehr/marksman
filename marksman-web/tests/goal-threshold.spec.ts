@@ -12,10 +12,10 @@ const bounty: ExtendedBounty = {
   completedByOsuUserId: null,
   completionScoreId: null,
   goal: {
-    type: "minimum_grade",
+    type: "pass",
     beatmapId: 42,
     beatmapChecksum: null,
-    minimumGradeRequirement: "A",
+    minimumGrade: "A",
     modRequirement: { required: [], forbidden: [], allowOtherMods: true },
   },
   owner: { coverUrl: null, countryCode: null, countryName: null,
@@ -51,6 +51,15 @@ const bounty: ExtendedBounty = {
   },
 };
 
+test.beforeEach(async ({ page }) => {
+  await page.route("**/auth/access", route => route.fulfill({ status: 204 }));
+  await page.route("**/auth/me", route => route.fulfill({ json: {
+    identity: { ...bounty.owner!, id: "cccccccc-cccc-4ccc-8ccc-cccccccccccc", osuUserId: 123, username: "fixture" },
+    stats: { bpBalance: 1000 }, createdAt: "2025-01-01T00:00:00.000Z",
+  } }));
+  await page.route("**/users/*/hunts", route => route.fulfill({ json: [] }));
+});
+
 for (const [label, ratio, missing] of [
   ["default", undefined, false],
   ["custom", 0.995, false],
@@ -63,7 +72,6 @@ for (const [label, ratio, missing] of [
         modRequirement: { required: [], forbidden: [], allowOtherMods: true }, minimumComboRatio: ratio },
       beatmap: missing ? null : bounty.beatmap,
     };
-    await page.route("**/auth/me", route => route.fulfill({ status: 401, json: {} }));
     await page.route("**/_next/image?**", route => route.fulfill({ status: 204 }));
     await page.route(`**/bounties/${bounty.id}`, route => {
       if (route.request().isNavigationRequest() || route.request().headers()["rsc"]) return route.fallback();
@@ -84,7 +92,6 @@ for (const [label, ratio, missing] of [
 
 test("Pass detail displays its goal and intrinsic NF restriction", async ({ page }) => {
   const data: ExtendedBounty = { ...bounty, goal: { type: "pass", beatmapId: 42, beatmapChecksum: null, modRequirement: { required: [], forbidden: [], allowOtherMods: true } } };
-  await page.route("**/auth/me", route => route.fulfill({ status: 401, json: {} }));
   await page.route("**/_next/image?**", route => route.fulfill({ status: 204 }));
   await page.route(`**/bounties/${bounty.id}`, route => route.request().isNavigationRequest() || route.request().headers()["rsc"] ? route.fallback() : route.fulfill({ json: data }));
   await page.goto(`/bounties/${bounty.id}`);
@@ -92,3 +99,18 @@ test("Pass detail displays its goal and intrinsic NF restriction", async ({ page
   await expect(page.getByText("Clear/Pass the map without using No-Fail.", { exact: true })).toBeVisible();
   await expect(page.getByText("Stable-Combo-Threshold:", { exact: false })).toHaveCount(0);
 });
+
+for (const type of ["pass", "full_combo"] as const) {
+  test(`${type} detail shows grade and accuracy alongside the goal`, async ({ page }) => {
+    const data: ExtendedBounty = { ...bounty, goal: {
+      ...bounty.goal, type, minimumGrade: "S", minimumAccuracy: 98,
+    } };
+    await page.route("**/auth/access", route => route.fulfill({ status: 204 }));
+    await page.route("**/_next/image?**", route => route.fulfill({ status: 204 }));
+    await page.route(`**/bounties/${bounty.id}`, route => route.request().isNavigationRequest() || route.request().headers()["rsc"] ? route.fallback() : route.fulfill({ json: data }));
+    await page.goto(`/bounties/${bounty.id}`);
+    await expect(page.getByRole("img", { name: "Grade: S", exact: true })).toBeVisible();
+    await expect(page.getByText("Achieve at least 98% accuracy", { exact: true })).toBeVisible();
+    await expect(page.getByText(type === "pass" ? "Clear/Pass the map without using No-Fail." : "A full-combo is required", { exact: true })).toBeVisible();
+  });
+}

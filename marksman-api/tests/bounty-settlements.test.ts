@@ -21,7 +21,7 @@ beforeEach(async () => {
   await testDatabase.clear();
   const [bounty] = await db.insert(schema.bounties).values({
     creatorOsuUserId: 101, status: "open", rewardBp: 30,
-    goal: { type: "minimum_grade", beatmapId: 123, minimumGradeRequirement: "A",
+    goal: { type: "pass", beatmapId: 123, minimumGrade: "A",
       beatmapChecksum: null, modRequirement: { required: [], forbidden: [], allowOtherMods: true } },
   }).returning();
   bountyId = bounty.id;

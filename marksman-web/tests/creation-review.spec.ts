@@ -75,7 +75,7 @@ for (const scenario of ["funding", "session", "network"] as const) {
 
 test("review reflects grade, accuracy and exact NM choices", async ({ page }) => {
   await review(page);
-  await page.getByText("Minimum Grade", { exact: true }).last().click();
+  await page.getByRole("checkbox", { name: "Require minimum grade", exact: true }).check();
   await page.getByRole("checkbox", { name: "Require minimum accuracy", exact: true }).locator("..").click();
   await page.getByRole("checkbox", { name: "Exact mods", exact: true }).check();
   await expect(page.getByText("Acc. ≥95%", { exact: true })).toBeVisible();
@@ -130,6 +130,8 @@ for (const width of [320, 390, 1280]) {
     await page.setViewportSize({ width, height: 900 });
     await review(page);
     await page.getByRole("radio", { name: "Pass", exact: true }).locator("..").click();
+    await page.getByRole("checkbox", { name: "Require minimum grade", exact: true }).check();
+    await expect(page.getByRole("radio", { name: "SS", exact: true })).toBeVisible();
     await expect(page.getByText("Clear/Pass", { exact: true })).toBeVisible();
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   });
@@ -182,4 +184,52 @@ for (const [value, message] of [["0", "Reward must be positive."], ["1.5", "Rewa
     await expect(field.getByRole("alert")).toHaveCount(value === "1000001" ? 2 : 1);
     await expect(page.getByRole("button", { name: /^Create bounty/ })).toBeDisabled();
   });
+}
+
+for (const goalType of ["pass", "full_combo"] as const) {
+  for (const enabled of [false, true]) {
+    test(`${goalType} submits optional grade and accuracy ${enabled ? "enabled" : "disabled"}`, async ({ page }) => {
+      await review(page);
+      const goal = page.getByRole("region", { name: "Completion Goal", exact: true });
+      const accuracy = goal.getByRole("checkbox", { name: "Require minimum accuracy", exact: true });
+      const grade = goal.getByRole("checkbox", { name: "Require minimum grade", exact: true });
+      await expect(goal.getByRole("radio", { name: "Minimum Grade", exact: true })).toHaveCount(0);
+      await expect(grade).not.toBeChecked();
+      await expect(goal.getByRole("radio", { name: "S", exact: true })).toHaveCount(0);
+      const checkboxNames = await goal.getByRole("checkbox").evaluateAll(inputs => inputs.map(input => input.closest("label")?.textContent?.trim()));
+      expect(checkboxNames.indexOf("Require minimum grade")).toBe(checkboxNames.indexOf("Require minimum accuracy") + 1);
+      // Retain selections while toggling the requirement, but omit them when disabled.
+      await grade.check();
+      await goal.getByRole("radio", { name: "S", exact: true }).locator("..").click();
+      await grade.uncheck();
+      await accuracy.check();
+      await goal.getByRole("slider").fill("98");
+      await accuracy.uncheck();
+      await goal.getByRole("radio", { name: "Pass", exact: true }).locator("..").click();
+      if (goalType === "full_combo") await goal.getByRole("radio", { name: "Full-Combo", exact: true }).locator("..").click();
+      if (enabled) {
+        await accuracy.check();
+        await grade.check();
+        await expect(goal.getByRole("radio", { name: "S", exact: true })).toBeChecked();
+        await expect(page.getByRole("img", { name: "Minimum grade: S", exact: true })).toBeVisible();
+        await expect(page.getByText("Acc. ≥98%", { exact: true })).toBeVisible();
+      } else {
+        await expect(page.getByRole("img", { name: "Minimum grade: S", exact: true })).toHaveCount(0);
+        await expect(page.getByText("Acc. ≥98%", { exact: true })).toHaveCount(0);
+      }
+      let payload: any;
+      await page.route("**/bounties", route => {
+        payload = route.request().postDataJSON();
+        return route.abort();
+      });
+      await page.getByRole("button", { name: /^Create bounty/ }).click();
+      await expect(page.getByRole("alert").filter({ hasText: "Could not confirm creation" })).toBeVisible();
+      expect(payload.goal).toEqual({
+        type: goalType, beatmapId: 123456, beatmapChecksum: null,
+        modRequirement: { required: [], forbidden: [], allowOtherMods: false },
+        ...(goalType === "full_combo" ? { minimumComboRatio: 0.99 } : {}),
+        ...(enabled ? { minimumGrade: "S", minimumAccuracy: 98 } : {}),
+      });
+    });
+  }
 }

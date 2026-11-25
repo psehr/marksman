@@ -90,6 +90,7 @@ export function BountyCardContent({
   hunterCount?: number;
 }) {
   let acc_requirement;
+  let gradeRequirement;
   let mods;
   let goalType;
 
@@ -168,22 +169,19 @@ export function BountyCardContent({
       );
       break;
 
-    case "minimum_grade":
-      goalType = (
-        <div className="flex items-center gap-1">
-          <BadgeLabel
-            label={`Achieve a minimum grade of ${content.goal.minimumGradeRequirement}`}
-            text="Minimum grade"
-            color="info"
-          />
-          <GradeIcon
-            grade={content.goal.minimumGradeRequirement}
-            minimum
-            size="sm"
-          />
-        </div>
-      );
-      break;
+  }
+
+  if (content.goal?.minimumGrade !== undefined) {
+    gradeRequirement = (
+      <div className="flex items-center gap-1">
+        <BadgeLabel
+          label={`Achieve a minimum grade of ${content.goal.minimumGrade}`}
+          text="Minimum grade"
+          color="info"
+        />
+        <GradeIcon grade={content.goal.minimumGrade} minimum size="sm" />
+      </div>
+    );
   }
 
   if (content.goal?.minimumAccuracy !== undefined) {
@@ -227,11 +225,15 @@ export function BountyCardContent({
           </div>
           <div className="flex flex-wrap gap-2 items-center">
             {goalType ?? null}
-            {goalType && (acc_requirement || mods) ? (
+            {goalType && (acc_requirement || gradeRequirement || mods) ? (
               <span className="text-border">•</span>
             ) : null}
             {acc_requirement ?? null}
-            {acc_requirement && mods ? (
+            {acc_requirement && (gradeRequirement || mods) ? (
+              <span className="text-border">•</span>
+            ) : null}
+            {gradeRequirement ?? null}
+            {gradeRequirement && mods ? (
               <span className="text-border">•</span>
             ) : null}
             {mods ? <div className="flex flex-wrap gap-1">{mods}</div> : null}

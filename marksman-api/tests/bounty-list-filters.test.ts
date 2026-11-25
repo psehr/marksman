@@ -114,7 +114,7 @@ async function expectIds(query: Record<string, string>, ids: string[], cookie?: 
 test("query defaults, CSV selections, duplicates and NM precedence", () => {
   const defaults = bountySearchQuerySchema.parse({});
   assert.deepEqual([defaults.tiers, defaults.goals, defaults.mods], [[], [], []]);
-  const parsed = bountySearchQuerySchema.parse({ tiers: "Normal,Hard", goals: "full_combo,minimum_grade", mods: "HD,HD,HR", page: "2" });
+  const parsed = bountySearchQuerySchema.parse({ tiers: "Normal,Hard", goals: "full_combo,pass", mods: "HD,HD,HR", page: "2" });
   assert.deepEqual(parsed.mods, ["HD", "HR"]);
   assert.equal(parsed.page, 2);
   assert.deepEqual(bountySearchQuerySchema.parse({ mods: "HD,NM" }).mods, ["NM"]);
@@ -173,10 +173,10 @@ test("tier boundaries and disjoint tier selections", async () => {
 
 test("goal filters support either, both and no selection", async () => {
   const fc = await seed();
-  const grade = await seed({ goal: { ...qualifyingBounty().goal, type: "minimum_grade", minimumGradeRequirement: "A" } });
+  const pass = await seed({ goal: { ...qualifyingBounty().goal, type: "pass", minimumGrade: "A" } });
   await expectIds({ goals: "full_combo" }, [fc.id]);
-  await expectIds({ goals: "minimum_grade" }, [grade.id]);
-  await expectIds({ goals: "full_combo,minimum_grade" }, [fc.id, grade.id]);
+  await expectIds({ goals: "pass" }, [pass.id]);
+  await expectIds({ goals: "full_combo,pass" }, [fc.id, pass.id]);
 });
 
 test("mods filter required lists, including mixed rules; NM is exact empty", async () => {

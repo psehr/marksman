@@ -21,10 +21,10 @@ const bounty: ExtendedBounty = {
   completedByOsuUserId: null,
   completionScoreId: null,
   goal: {
-    type: "minimum_grade",
+    type: "pass",
     beatmapId: 42,
     beatmapChecksum: null,
-    minimumGradeRequirement: "A",
+    minimumGrade: "A",
     modRequirement: { required: [], forbidden: [], allowOtherMods: true },
   },
   owner: { coverUrl: null, countryCode: null, countryName: null,

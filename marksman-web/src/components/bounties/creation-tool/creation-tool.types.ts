@@ -31,6 +31,8 @@ export type GoalStepProps = {
   selectedBountyType: BountyType;
   selectedMinimumGrade: Exclude<OsuGrade, "F" | "SH" | "XH">;
   selectedMinimumComboPercentage: number;
+  requireMinimumGrade: boolean;
+  setRequireMinimumGrade: (enabled: boolean) => void;
   requireMinimumAccuracy: boolean;
   selectedMinimumAccuracy: number;
   setRequireMinimumAccuracy: (enabled: boolean) => void;
@@ -66,7 +68,7 @@ export type RewardStepProps = {
   validationErrors: string[];
 };
 
-export type BountyType = "minimum_grade" | "full_combo" | "pass";
+export type BountyType = "full_combo" | "pass";
 
 export type BeatmapValidationInput = Pick<
   BeatmapStepProps,

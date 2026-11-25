@@ -28,7 +28,7 @@ export default function WikiBountiesPage() {
           changes and it can no longer be completed afterwards.
         </p>
         <p>
-          The five <AccentText>main characteristics</AccentText> of bounties are
+          The six <AccentText>main characteristics</AccentText> of bounties are
           the following:
         </p>
         <WikiSubSection id="reward" index="I.">
@@ -96,17 +96,11 @@ export default function WikiBountiesPage() {
               .
             </p>
           </WikiSubSection>
-          <WikiSubSection id="minimum-grade" index="2.">
+          <WikiSubSection id="pass" index="2.">
             <p>
-              The <AccentText>minimum grade</AccentText> type requires the{" "}
-              <WikiLink url="/wiki/hunting#what-is-valid-score">
-                valid score
-              </WikiLink>{" "}
-              to be graded <AccentText>at or above</AccentText> a user-defined{" "}
-              <WikiLink url="/wiki/bounties#grade-requirement">
-                grade requirement
-              </WikiLink>
-              .
+              The <AccentText>Pass</AccentText> type requires a passed score
+              without No Fail (NF). Optional grade and accuracy requirements
+              also apply when set.
             </p>
           </WikiSubSection>
         </WikiSubSection>
@@ -121,7 +115,17 @@ export default function WikiBountiesPage() {
             percentage value, chosen by the bounty creator.
           </p>
         </WikiSubSection>
-        <WikiSubSection id="mod-rules" index="V.">
+        <WikiSubSection id="minimum-grade" index="V.">
+          <p>
+            A <AccentText>minimum grade</AccentText> is an optional requirement
+            for either Pass or Full-Combo bounties. The score must achieve the
+            selected grade or higher, as explained in the{" "}
+            <WikiLink url="/wiki/bounties#grade-requirement">grade requirement</WikiLink>
+            {" "}section. If minimum accuracy is also set, both requirements must
+            be met alongside the goal and mod requirements.
+          </p>
+        </WikiSubSection>
+        <WikiSubSection id="mod-rules" index="VI.">
           <p>
             A bounty's mod requirements determine which mods a qualifying score
             must use or avoid. Mods can be <AccentText>required</AccentText>,{" "}
@@ -251,10 +255,9 @@ export default function WikiBountiesPage() {
       </WikiSection>
       <WikiSection title="Grade requirement" id="grade-requirement">
         <p>
-          Marksman bounties can be of the{" "}
-          <AccentText>grade requirement</AccentText>{" "}
-          <WikiLink url="/wiki/bounties#goal-types">type</WikiLink>, in which
-          case the completion requires the{" "}
+          Either <WikiLink url="/wiki/bounties#goal-types">goal type</WikiLink>
+          {" "}can have an optional <AccentText>minimum grade</AccentText>
+          {" "}requirement. When set, completion requires the{" "}
           <WikiLink url="/wiki/hunting#what-is-valid-score">
             valid score
           </WikiLink>{" "}

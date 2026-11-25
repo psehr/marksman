@@ -42,7 +42,8 @@ export default function CreateBountyForm() {
   const FEE_MULT = FEE_PERCENTAGE / 100;
 
   const [beatmap, setBeatmap] = useState("");
-  const [goalType, setGoalType] = useState("minimum_grade");
+  const [goalType, setGoalType] = useState("pass");
+  const [requireMinimumGrade, setRequireMinimumGrade] = useState(false);
   const [grade, setGrade] = useState("A");
   const [combo, setCombo] = useState("99");
   const [accuracy, setAccuracy] = useState("");
@@ -77,11 +78,10 @@ export default function CreateBountyForm() {
     goal: {
       type: goalType,
       beatmapId,
-      ...(goalType === "minimum_grade"
-        ? { minimumGradeRequirement: grade }
-        : {
-            minimumComboRatio: combo.trim() ? Number(combo) / 100 : undefined,
-          }),
+      ...(requireMinimumGrade ? { minimumGrade: grade } : {}),
+      ...(goalType === "full_combo"
+        ? { minimumComboRatio: combo.trim() ? Number(combo) / 100 : undefined }
+        : {}),
       ...(accuracy.trim() ? { minimumAccuracy: Number(accuracy) } : {}),
       modRequirement: {
         required: modRule === "exact" || modRule === "includes" ? selectedMods : [],
@@ -261,28 +261,18 @@ export default function CreateBountyForm() {
               <select
                 className={inputClass}
                 value={goalType}
-                onChange={(e) => setGoalType(e.target.value)}
+                onChange={(e) => {
+                  setGoalType(e.target.value);
+                  if (e.target.value === "pass" && (modRule === "exact" || modRule === "includes")) {
+                    setSelectedMods((current) => current.filter((mod) => mod !== "NF"));
+                  }
+                }}
               >
-                <option value="minimum_grade">Minimum grade</option>
+                <option value="pass">Pass</option>
                 <option value="full_combo">Full combo (combo threshold)</option>
               </select>
             </label>
-            {goalType === "minimum_grade" ? (
-              <label className="block">
-                Minimum grade
-                <select
-                  className={inputClass}
-                  value={grade}
-                  onChange={(e) => setGrade(e.target.value)}
-                >
-                  {grades.map((value) => (
-                    <option key={value} value={value}>
-                      {gradeLabels[value] ?? value}
-                    </option>
-                  ))}
-                </select>
-              </label>
-            ) : (
+            {goalType === "full_combo" ? (
               <label className="block">
                 Minimum combo (%)
                 <input
@@ -299,7 +289,7 @@ export default function CreateBountyForm() {
                   99 means at least 99% of the map’s maximum combo.
                 </span>
               </label>
-            )}
+            ) : null}
             <label className="block">
               Minimum accuracy (%) — optional
               <input
@@ -313,11 +303,41 @@ export default function CreateBountyForm() {
               />
             </label>
             <label className="block">
+              <input
+                type="checkbox"
+                checked={requireMinimumGrade}
+                onChange={(e) => setRequireMinimumGrade(e.target.checked)}
+              />{" "}
+              Require minimum grade
+            </label>
+            {requireMinimumGrade ? (
+              <label className="block">
+                Minimum grade
+                <select
+                  className={inputClass}
+                  value={grade}
+                  onChange={(e) => setGrade(e.target.value)}
+                >
+                  {grades.map((value) => (
+                    <option key={value} value={value}>
+                      {gradeLabels[value] ?? value}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            ) : null}
+            <label className="block">
               Mod rule
               <select
                 className={inputClass}
                 value={modRule}
-                onChange={(e) => setModRule(e.target.value as ModRule)}
+                onChange={(e) => {
+                  const nextRule = e.target.value as ModRule;
+                  setModRule(nextRule);
+                  if (goalType === "pass" && (nextRule === "exact" || nextRule === "includes")) {
+                    setSelectedMods((current) => current.filter((mod) => mod !== "NF"));
+                  }
+                }}
               >
                 <option value="any">Any mods</option>
                 <option value="exact">Exactly these mods</option>
@@ -334,6 +354,7 @@ export default function CreateBountyForm() {
                       <input
                         type="checkbox"
                         checked={selectedMods.includes(mod)}
+                        disabled={goalType === "pass" && mod === "NF" && (modRule === "exact" || modRule === "includes")}
                         onChange={(e) =>
                           setSelectedMods((current) =>
                             e.target.checked
@@ -405,8 +426,8 @@ export default function CreateBountyForm() {
               <p>Created by {user.identity.username}</p>
             )}
             <p>
-              {goalType === "minimum_grade"
-                ? `Minimum grade: ${gradeLabels[grade] ?? grade}`
+              {goalType === "pass"
+                ? "Pass the map without No Fail"
                 : `Full combo goal: at least ${combo || "—"}% combo`}
             </p>
             <p>
@@ -414,6 +435,7 @@ export default function CreateBountyForm() {
                 ? `Minimum accuracy: ${accuracy}%`
                 : "No additional accuracy requirement"}
             </p>
+            {requireMinimumGrade ? <p>Minimum grade: {gradeLabels[grade] ?? grade}</p> : null}
             <p>{modSummary}</p>
             <p>Total Cost: {total_cost || "—"} BP</p>
             <p className="text-sm">Base cost: {reward || "—"} BP</p>

@@ -228,7 +228,7 @@ test("HTTP success uses the session identity and returns completed status after 
   await assertState("completed", 70, 35);
 });
 test("HTTP accepts minimum-grade completion without requiring FC", async () => {
-  const goal: Bounty["goal"] = { ...bounty.goal, type: "minimum_grade", minimumGradeRequirement: "A" };
+  const goal: Bounty["goal"] = { ...bounty.goal, type: "pass", minimumGrade: "A" };
   await db.update(bounties).set({ goal });
   scoreReply = () => Response.json({ ...qualifyingScore(), beatmap_id: beatmapId, legacy_score_id: 123, max_combo: 1, statistics: { miss: 5 }, rank: "A" });
   const response = await request(undefined, { cookie: await cookieFor() });

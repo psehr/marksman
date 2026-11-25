@@ -1,4 +1,7 @@
 import assert from "node:assert/strict";
+import { readFileSync } from "node:fs";
+import { resolve } from "node:path";
+import { eq } from "drizzle-orm";
 import { before, beforeEach, after, mock, test } from "node:test";
 import * as schema from "../src/db/schema";
 import { createTestDatabase } from "./fixtures/test-database";
@@ -184,3 +187,36 @@ for (const table of ["ledger_entries", "bounty_settlements"] as const) {
     await assertPaid();
   });
 }
+
+test("converted open grade bounty rechecks NF verdicts before paying an eligible replacement", async () => {
+  const oldGoal = {
+    type: "minimum_grade", minimumGradeRequirement: "S", minimumAccuracy: 98,
+    beatmapId: bounty.goal.beatmapId, beatmapChecksum: null,
+    modRequirement: { required: ["NF"], forbidden: [], allowOtherMods: false },
+  };
+  await pool.query("UPDATE bounties SET goal=$1 WHERE id=$2", [JSON.stringify(oldGoal), bounty.id]);
+  await db.update(schema.huntAttempts).set({ scoreEvidence: { ...qualifyingScore(), mods: [{ acronym: "NF" }] } });
+  const replacementScore = { ...qualifyingScore(), id: 987655, ended_at: "2026-09-21T12:01:01Z" };
+  const [replacement] = await db.insert(schema.huntAttempts).values({
+    huntId: winnerHuntId, scoreId: replacementScore.id, scoreEndedAt: new Date(replacementScore.ended_at),
+    discoveredAt: deadline, scoreEvidence: replacementScore, verificationStatus: "invalid",
+    verificationResult: { ...evaluateHuntAttempt(replacementScore,bounty,hunter,startedAt,null), modsAreCorrect: false },
+    verifiedAt: deadline,
+  }).returning();
+  await pool.query(readFileSync(resolve(__dirname,"../drizzle/0024_optional_minimum_grade.sql"),"utf8"));
+  // A persisted old NF verdict must not trigger payout while re-verification is pending.
+  await settleBounty(bounty.id);
+  assert.equal((await snapshot()).bounties[0].status,"open");
+  const { verifyHuntAttempt } = require("../src/services/bounty-hunts-attempts") as typeof import("../src/services/bounty-hunts-attempts");
+  const attempts = await db.select().from(schema.huntAttempts);
+  for (const attempt of attempts) await verifyHuntAttempt(attempt.id);
+  const verified = await db.select().from(schema.huntAttempts);
+  assert.equal(verified.find(attempt => attempt.scoreId === 987654)!.verificationStatus,"invalid");
+  assert.equal(verified.find(attempt => attempt.id === replacement.id)!.verificationStatus,"valid");
+  await db.update(schema.bountySettlements).set({ nextAttemptAt: new Date(0) }).where(eq(schema.bountySettlements.bountyId,bounty.id));
+  await settleBounty(bounty.id);
+  const state = await snapshot();
+  assert.equal(state.bounties[0].status,"completed");
+  assert.equal(state.bounties[0].completionScoreId,replacementScore.id);
+  assert.equal(state.users.find(user => user.id === hunter.id)!.bpBalance,5+bounty.rewardBp);
+});

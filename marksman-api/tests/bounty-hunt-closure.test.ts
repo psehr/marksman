@@ -28,7 +28,7 @@ let upstreamCalls = 0;
 async function seedBounty() {
   const [row] = await db.insert(bounties).values({
     creatorOsuUserId: creator.osuUserId, status: "open", rewardBp: 30,
-    goal: { type: "minimum_grade", beatmapId: 123, minimumGradeRequirement: "A", beatmapChecksum: null, modRequirement: { required: [], forbidden: [], allowOtherMods: true } },
+    goal: { type: "pass", beatmapId: 123, minimumGrade: "A", beatmapChecksum: null, modRequirement: { required: [], forbidden: [], allowOtherMods: true } },
   }).returning();
   return row.id;
 }

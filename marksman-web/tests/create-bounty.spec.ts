@@ -89,10 +89,10 @@ test("previews a grade bounty, submits once, and refreshes the balance", async (
     {
       rewardBp: 300,
       goal: {
-        type: "minimum_grade",
+        type: "pass",
         beatmapId: 123456,
         beatmapChecksum: null,
-        minimumGradeRequirement: "A",
+        minimumGrade: "A",
         modRequirement: { required: ["HD"], forbidden: [], allowOtherMods: false },
       },
     },

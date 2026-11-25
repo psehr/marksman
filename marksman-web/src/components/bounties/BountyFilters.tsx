@@ -262,13 +262,6 @@ export default function BountyFilters(props: {
               >
                 Clear/Pass
               </IconFilterButton>
-              <IconFilterButton
-                onClick={() => props.onToggleGoal("minimum_grade")}
-                pressed={props.selectedFilters.goals.has("minimum_grade")}
-                className="px-4 border border-info text-info rounded-xs h-8"
-              >
-                Minimum Grade
-              </IconFilterButton>
             </div>
           </fieldset>
           <fieldset className="min-w-0">

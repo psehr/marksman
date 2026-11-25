@@ -68,13 +68,23 @@ test("Pass requires passed and configured accuracy but no FC or grade", () => {
   assert.equal(isBountyCompletionValid(evaluateBountyCompletion(score, bounty, hunter, metadata)), false);
 });
 
-for (const type of ["minimum_grade", "full_combo"] as const) {
-  test(`${type} retains existing NF eligibility`, () => {
+for (const minimumGrade of [undefined, "D"] as const) {
+  test(`Full Combo retains NF eligibility with optional grade ${minimumGrade ?? "unset"}`, () => {
     const bounty = qualifyingBounty();
-    if (type === "minimum_grade") bounty.goal = { ...bounty.goal, type, minimumGradeRequirement: "D" };
+    bounty.goal.minimumGrade = minimumGrade;
     const score = qualifyingScore();
     score.mods = [{ acronym: "NF" }];
     assert.equal(createBountySchema.safeParse({ rewardBp: 25, goal: { ...bounty.goal, modRequirement: { required: ["NF"], forbidden: [], allowOtherMods: false } } }).success, true);
     assert.equal(isBountyCompletionValid(evaluateBountyCompletion(score, bounty, hunter, metadata)), true);
   });
 }
+
+test("Pass with a minimum grade still rejects required and played NF", () => {
+  const bounty = passBounty();
+  bounty.goal.minimumGrade = "D";
+  const score = qualifyingScore();
+  score.mods = [{ acronym: "NF" }];
+  assert.equal(createBountySchema.safeParse({ rewardBp: 25, goal: { ...bounty.goal, modRequirement: { required: ["NF"], forbidden: [], allowOtherMods: true } } }).success, false);
+  assert.equal(isBountyCompletionValid(evaluateBountyCompletion(score, bounty, hunter, metadata)), false);
+  assert.equal(checkHuntAttemptValidity(evaluateHuntAttempt(score, bounty, hunter, new Date(bounty.createdAt), null)), "invalid");
+});

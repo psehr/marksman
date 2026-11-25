@@ -11,7 +11,7 @@ test("serializes typed filters and preserves pagination metadata", async () => {
     const params = new URLSearchParams(url.slice(url.indexOf("?") + 1));
     assert.equal(params.get("search"), "title & artist + 100%");
     assert.equal(params.get("tiers"), "Normal,Hard");
-    assert.equal(params.get("goals"), "full_combo,minimum_grade");
+    assert.equal(params.get("goals"), "full_combo,pass");
     assert.equal(params.get("mods"), "HD,HR");
     assert.equal(params.get("page"), "3");
     assert.equal(params.get("status"), "completed");
@@ -21,7 +21,7 @@ test("serializes typed filters and preserves pagination metadata", async () => {
     assert.equal(init?.credentials, "include");
     return Response.json(page);
   });
-  assert.deepEqual(await getBounties({ search: "title & artist + 100%", tiers: ["Normal", "Hard"], goals: ["full_combo", "minimum_grade"], mods: ["HD", "HR"], page: 3, status: "completed", relationship: "created", sort: "reward", order: "asc" }), page);
+  assert.deepEqual(await getBounties({ search: "title & artist + 100%", tiers: ["Normal", "Hard"], goals: ["full_combo", "pass"], mods: ["HD", "HR"], page: 3, status: "completed", relationship: "created", sort: "reward", order: "asc" }), page);
   assert.equal(transport.mock.callCount(), 1);
 });
 

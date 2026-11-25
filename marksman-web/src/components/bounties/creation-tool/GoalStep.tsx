@@ -49,37 +49,7 @@ export default function GoalStep({ props }: { props: GoalStepProps }) {
             }}
           />
         </label>
-        <label className={radioTextualLabelClassName}>
-          Minimum Grade
-          <input
-            className="sr-only"
-            type="radio"
-            name="type"
-            value="minimum_grade"
-            checked={props.selectedBountyType === "minimum_grade"}
-            onChange={() => props.setSelectedBountyType("minimum_grade")}
-          />
-        </label>
       </fieldset>
-      {props.selectedBountyType === "minimum_grade" ? (
-        <fieldset className="flex flex-wrap gap-1">
-          <legend className="sr-only">Minimum Grade</legend>
-          {minimumGrades.map((grade) => (
-            <label className={radioIconLabelClassName} key={grade}>
-              <GradeIcon grade={grade} />
-              <input
-                className="sr-only"
-                type="radio"
-                name="minimum-grade"
-                value={grade}
-                checked={props.selectedMinimumGrade === grade}
-                onChange={() => props.setSelectedMinimumGrade(grade)}
-                aria-label={grade === "X" ? "SS" : grade}
-              />
-            </label>
-          ))}
-        </fieldset>
-      ) : null}
       {props.selectedBountyType === "full_combo" ? (
         <fieldset className="flex w-full flex-col gap-2 sm:items-end">
           <legend className="sr-only">Customize stable combo threshold</legend>
@@ -164,6 +134,39 @@ export default function GoalStep({ props }: { props: GoalStepProps }) {
               }
             />
           </label>
+        ) : null}
+      </fieldset>
+      <fieldset className="flex w-full flex-col gap-2 sm:items-end">
+        <legend className="sr-only">Minimum grade (optional)</legend>
+        <label className="flex items-start gap-2 text-left sm:text-right">
+          <input
+            type="checkbox"
+            className="accent-accent mt-1 shrink-0"
+            checked={props.requireMinimumGrade}
+            onChange={(event) =>
+              props.setRequireMinimumGrade(event.target.checked)
+            }
+          />
+          Require minimum grade
+        </label>
+        {props.requireMinimumGrade ? (
+          <fieldset className="flex flex-wrap gap-1">
+            <legend className="sr-only">Minimum Grade</legend>
+            {minimumGrades.map((grade) => (
+              <label className={radioIconLabelClassName} key={grade}>
+                <GradeIcon grade={grade} />
+                <input
+                  className="sr-only"
+                  type="radio"
+                  name="minimum-grade"
+                  value={grade}
+                  checked={props.selectedMinimumGrade === grade}
+                  onChange={() => props.setSelectedMinimumGrade(grade)}
+                  aria-label={grade === "X" ? "SS" : grade}
+                />
+              </label>
+            ))}
+          </fieldset>
         ) : null}
       </fieldset>
     </div>

@@ -15,7 +15,7 @@ function pair(index: number): UserHuntedBounties[number] {
     status: "open", rewardBp: index === 1 ? 12000 : 300, creatorOsuUserId: 43,
     createdAt: "2026-01-02T00:00:00.000Z", completedAt: null, cancelledAt: null,
     completedByOsuUserId: null, completionScoreId: null,
-    goal: { type: "minimum_grade", minimumGradeRequirement: "A", beatmapId: index,
+    goal: { type: "pass", minimumGrade: "A", beatmapId: index,
       beatmapChecksum: null, minimumAccuracy: 99.5,
       modRequirement: { required: ["HD", "HR", "DT"], forbidden: [], allowOtherMods: false } },
     owner: other.identity, winner: null,

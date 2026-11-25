@@ -169,6 +169,13 @@
       "when": 1795555418314,
       "tag": "0023_mod_settings",
       "breakpoints": true
+    },
+    {
+      "idx": 24,
+      "version": "7",
+      "when": 1795636736488,
+      "tag": "0024_optional_minimum_grade",
+      "breakpoints": true
     }
   ]
 }

@@ -66,9 +66,9 @@ async function seedFundedBounty() {
     createBountySchema.parse({
       rewardBp: 25,
       goal: {
-        type: "minimum_grade",
+        type: "pass",
         beatmapId: 123,
-        minimumGradeRequirement: "A",
+        minimumGrade: "A",
       },
     }),
     creatorOsuUserId,

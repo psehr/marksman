@@ -12,8 +12,8 @@ function bounty(index: number, username: string, status: ExtendedBounty["status"
     status, rewardBp, creatorOsuUserId: index === 1 ? 123 : 456,
     createdAt: `2026-01-0${index}T00:00:00.000Z`, completedAt: null,
     cancelledAt: null, completedByOsuUserId: null, completionScoreId: null,
-    goal: { type: "minimum_grade", beatmapId: 42, beatmapChecksum: null,
-      minimumGradeRequirement: "A", modRequirement: { required: [], forbidden: [], allowOtherMods: true } },
+    goal: { type: "pass", beatmapId: 42, beatmapChecksum: null,
+      minimumGrade: "A", modRequirement: { required: [], forbidden: [], allowOtherMods: true } },
     beatmap: null, owner: { coverUrl: null, countryCode: null, countryName: null, id: user.identity.id, osuUserId: index === 1 ? 123 : 456, username }, winner: null,
     engagement: { hunterCount: 0, bookmarkCount: 0, isBookmarkedByCurrentUser: null },
   };
@@ -244,7 +244,7 @@ test("official grade badges preserve minimum labels and load all grade variants"
   const labels = ["D", "C", "B", "A", "S", "Silver S", "SS", "Silver SS"];
   const fixtures = grades.map((grade, index) => ({
     ...bounty(index + 1, `Grade ${grade}`, "open", 100),
-    goal: { ...rows[0].goal, minimumGradeRequirement: grade },
+    goal: { ...rows[0].goal, minimumGrade: grade },
   }));
   const fullCombo = { ...bounty(9, "FC player", "open", 100),
     goal: { type: "full_combo", beatmapId: 42, beatmapChecksum: null,

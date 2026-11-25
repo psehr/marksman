@@ -24,7 +24,7 @@ function checkCompletion(
   return isBountyCompletionValid(evaluateBountyCompletion(...args));
 }
 
-for (const type of ["full_combo", "minimum_grade"] as const) {
+for (const type of ["full_combo", "pass"] as const) {
   const cases: Array<[string, (s: ScoreResponse, b: Bounty) => void]> = [
     [
       "another player's score",
@@ -96,16 +96,16 @@ for (const type of ["full_combo", "minimum_grade"] as const) {
   ];
   test(`${type}: qualifying score passes`, () => {
     const b = qualifyingBounty();
-    if (type === "minimum_grade")
-      b.goal = { ...b.goal, type, minimumGradeRequirement: "A" };
+    if (type === "pass")
+      b.goal = { ...b.goal, type, minimumGrade: "A" };
     assert.equal(checkCompletion(qualifyingScore(), b, hunter, metadata), true);
   });
   for (const [name, change] of cases) {
     test(`${type}: rejects ${name}`, () => {
       const s = qualifyingScore(),
         b = qualifyingBounty();
-      if (type === "minimum_grade")
-        b.goal = { ...b.goal, type, minimumGradeRequirement: "A" };
+      if (type === "pass")
+        b.goal = { ...b.goal, type, minimumGrade: "A" };
       change(s, b);
       assert.equal(checkCompletion(s, b, hunter, metadata), false);
     });
@@ -211,10 +211,10 @@ for (const [requiredLevel, requirements] of grades.entries())
           const b = qualifyingBounty();
           b.goal = {
             ...b.goal,
-            type: "minimum_grade",
-            minimumGradeRequirement: requirement,
+            type: "pass",
+            minimumGrade: requirement,
           };
-          // A grade goal must not accidentally require an FC or its metadata.
+          // A Pass goal with a minimum grade must not require an FC or its metadata.
           const goalMetadata = { ...metadata, max_combo: 0 };
           const s = {
             ...qualifyingScore(),
@@ -353,7 +353,7 @@ test("FC evaluation reports every check and leaves grade inapplicable", () => {
 
 test("grade evaluation reports failure without evaluating FC metadata", () => {
   const b = qualifyingBounty();
-  b.goal = { ...b.goal, type: "minimum_grade", minimumGradeRequirement: "S" };
+  b.goal = { ...b.goal, type: "pass", minimumGrade: "S" };
   const result = evaluateBountyCompletion(
     { ...qualifyingScore(), rank: "A", legacy_score_id: 123 },
     b,

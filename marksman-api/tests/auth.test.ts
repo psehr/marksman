@@ -293,7 +293,7 @@ async function login() {
 
 const bountyInput = {
   rewardBp: 30,
-  goal: { type: "minimum_grade", beatmapId: 123, minimumGradeRequirement: "A" },
+  goal: { type: "pass", beatmapId: 123, minimumGrade: "A" },
 };
 const trustedHeaders = { Origin: "http://localhost:3000", "Content-Type": "application/json" };
 

@@ -85,17 +85,17 @@ for (const valid of [true, false]) {
     const settlements = await db.select().from(bountySettlements);
     assert.deepEqual(settlements, valid ? [{
       bountyId, openedAt: now,
-      settleAfter: new Date(now.getTime() + 30_000),
-      nextAttemptAt: new Date(now.getTime() + 30_000),
+      settleAfter: new Date(now.getTime() + 10_000),
+      nextAttemptAt: new Date(now.getTime() + 10_000),
       attempts: 0, lastError: null, settledAt: null,
     }] : []);
   });
 }
 
 for (const legacy of [null, 123]) {
-  test(`minimum grade skips metadata with legacy score id ${legacy}`, async () => {
+  test(`Pass with minimum grade skips metadata with legacy score id ${legacy}`, async () => {
     if (legacy) await stable();
-    await db.update(bounties).set({ goal: { type: "minimum_grade", beatmapId: metadata.id, beatmapChecksum: null, minimumGradeRequirement: "A", modRequirement: { required: [], forbidden: [], allowOtherMods: true } } }).where(eq(bounties.id, bountyId));
+    await db.update(bounties).set({ goal: { type: "pass", beatmapId: metadata.id, beatmapChecksum: null, minimumGrade: "A", modRequirement: { required: [], forbidden: [], allowOtherMods: true } } }).where(eq(bounties.id, bountyId));
     const lookup = mock.method(beatmaps, "getBeatmap", async () => { throw new Error("Unexpected metadata request"); });
     const result = await verifyHuntAttempt(attemptId);
     assert.equal(result?.verificationStatus, "valid");

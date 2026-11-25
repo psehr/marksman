@@ -63,7 +63,7 @@ export function evaluateHuntAttempt(
         ? isAccuracySatisfied(scoreEvidence, bounty)
         : undefined,
     gradeIsSatisfied:
-      bounty.goal.type === "minimum_grade"
+      bounty.goal.minimumGrade !== undefined
         ? isGradeSatisfied(scoreEvidence, bounty)
         : undefined,
     fcIsSatisfied:
@@ -134,7 +134,7 @@ export function evaluateBountyCompletion(
         : undefined,
 
     gradeIsSatisfied:
-      bounty.goal.type === "minimum_grade"
+      bounty.goal.minimumGrade !== undefined
         ? isGradeSatisfied(score, bounty)
         : undefined,
   };
@@ -257,12 +257,11 @@ function isGradeSatisfied(
   score: HuntAttemptScoreEvidence,
   bounty: Bounty,
 ): boolean {
-  if (bounty.goal.type !== "minimum_grade") return true;
+  if (!bounty.goal.minimumGrade) return true;
 
   const achievedGrade = score.rank;
 
   return (
-    gradeStrength[achievedGrade] >=
-    gradeStrength[bounty.goal.minimumGradeRequirement]
+    gradeStrength[achievedGrade] >= gradeStrength[bounty.goal.minimumGrade]
   );
 }

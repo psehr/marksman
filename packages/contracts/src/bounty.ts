@@ -20,17 +20,19 @@ const baseGoalSchema = z.object({
     allowOtherMods: true,
   }),
   minimumAccuracy: z.number().min(0).max(100).optional(),
+  minimumGrade: osuGradeSchema.exclude(["F"]).optional(),
 });
 
 const bountyGoalSchema = z.discriminatedUnion("type", [
-  // A bounty goal is defined by exclusively one of the following bounty types
-  // The "full combo" type is used to require an FC for completion (with a minimum combo threshold ratio)
-  // The "minimum_grade" type can be used to require clearing the map (minimum grade of "D"), or simply requiring a minimum grade for completion
+  // A bounty goal is defined by exclusively one of the following bounty types:
+  // - The "full combo" type is used to require an FC for completion (with a minimum combo threshold ratio).
+  // - The "pass" type can be used to require clearing the map, without using NF.
   //
   // Additionally, a bounty goal has the following requirements:
-  // - A beatmap id that corresponds to a specific difficulty/version of an osu! beatmap
-  // - A mod requirement rule that describes if mods are to be used or not, and in which conditions
-  // - A minimum accuracy that must be achieved for bounty completion (optional)
+  // - A beatmap id that corresponds to a specific difficulty/version of an osu! beatmap.
+  // - A mod requirement rule that describes if mods are to be used or not, and in which conditions (optional).
+  // - A minimum accuracy that must be achieved for bounty completion (optional).
+  // - A minimum grade that must be achieved (optional).
 
   baseGoalSchema.extend({
     type: z.literal("full_combo"),
@@ -39,11 +41,6 @@ const bountyGoalSchema = z.discriminatedUnion("type", [
     // For example a ratio of 0.99 of a 2,000 combo beatmap means that over 1,980 combo is considered to be a valid FC
     // A ratio of 1 means the achieved combo needs to be perfect, without any sliderend dropped
     minimumComboRatio: z.number().gt(0).max(1).default(0.99).optional(),
-  }),
-
-  baseGoalSchema.extend({
-    type: z.literal("minimum_grade"),
-    minimumGradeRequirement: osuGradeSchema.exclude(["F"]),
   }),
 
   baseGoalSchema
@@ -128,7 +125,7 @@ export const bountyScoreCandidateSchema = scoreResponseSchema.extend({
   validity: bountyCompletionValiditySchema,
 });
 
-const bountyTypeEnum = z.enum(["full_combo", "minimum_grade", "pass"]);
+const bountyTypeEnum = z.enum(["full_combo", "pass"]);
 
 export const bountySearchQuerySchema = z.object({
   status: z.enum(["open", "completed", "cancelled"]).default("open"),

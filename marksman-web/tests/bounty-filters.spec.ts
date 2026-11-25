@@ -17,7 +17,7 @@ const fixtures: ExtendedBounty[] = rules.map((modRequirement, index) => ({
   createdAt: `2026-01-0${index + 1}T00:00:00.000Z`,
   completedAt: null, cancelledAt: null, completedByOsuUserId: null, completionScoreId: null,
   goal: index % 2 === 0
-    ? { type: "minimum_grade", minimumGradeRequirement: "A", beatmapId: 42, beatmapChecksum: null, modRequirement }
+    ? { type: "pass", minimumGrade: "A", beatmapId: 42, beatmapChecksum: null, modRequirement }
     : { type: "full_combo", minimumComboRatio: 0.99, beatmapId: 42, beatmapChecksum: null, modRequirement },
   beatmap: null, owner: { coverUrl: null, countryCode: null, countryName: null, id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa", osuUserId: 42, username: `Player${index + 1}` },
   winner: null, engagement: { hunterCount: 0, bookmarkCount: 0, isBookmarkedByCurrentUser: null },
@@ -81,11 +81,11 @@ test("goals use OR within their group and AND with tiers, search and status", as
   await openFilters(page);
   await goal(page, "Full-Combo").click();
   await expect(cards(page)).toHaveText([/Player4/]);
-  await goal(page, "Minimum Grade").click();
+  await goal(page, "Clear/Pass").click();
   await expect(cards(page)).toHaveCount(2);
-  await page.getByRole("textbox", { name: "Search bounties..." }).fill("zzzzzzzz");
+  await page.getByRole("textbox", { name: "Search bounties" }).fill("zzzzzzzz");
   await expect(page.getByText("No bounties found", { exact: true })).toBeVisible();
-  await page.getByRole("textbox", { name: "Search bounties..." }).fill("");
+  await page.getByRole("textbox", { name: "Search bounties" }).fill("");
   await goal(page, "Full-Combo").click();
   await expect(cards(page)).toHaveText([/Player1/]);
   await page.getByRole("button", { name: "Completed", exact: true }).click();
@@ -135,11 +135,11 @@ test("NM is exact empty mods and mutually exclusive with other selections", asyn
 
 test("unknown and duplicate URL values are ignored without losing valid selections", async ({ page }) => {
   await setup(page);
-  await page.goto("/bounties?tiers=bogus,Hard,Hard&goals=invalid,minimum_grade&mods=ANY,HD,HD");
+  await page.goto("/bounties?tiers=bogus,Hard,Hard&goals=invalid,pass&mods=ANY,HD,HD");
   await expect(cards(page)).toHaveText([/Player1/]);
   await openFilters(page);
   await expect(tier(page, "Hard")).toHaveAttribute("aria-pressed", "true");
-  await expect(goal(page, "Minimum Grade")).toHaveAttribute("aria-pressed", "true");
+  await expect(goal(page, "Clear/Pass")).toHaveAttribute("aria-pressed", "true");
   await expect(mod(page, "Hidden")).toHaveAttribute("aria-pressed", "true");
   await page.goto("/bounties?tiers=bogus&goals=invalid&mods=ANY");
   await expect(cards(page)).toHaveCount(6);
@@ -147,6 +147,7 @@ test("unknown and duplicate URL values are ignored without losing valid selectio
 
 test("signed-out personal-filter fallback still respects additional filters", async ({ page }) => {
   await setup(page);
+  await page.route("**/auth/me", route => route.fulfill({ status: 401, json: {} }));
   await page.goto("/bounties?relationship=bookmarked&tiers=Lunatic&mods=HD");
   await expect(cards(page)).toHaveText([/Player2/]);
   await expect(group(page, "Show").getByRole("button", { name: "All", exact: true })).toHaveAttribute("aria-pressed", "true");

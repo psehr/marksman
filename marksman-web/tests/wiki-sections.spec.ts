@@ -105,7 +105,7 @@ test("old About links redirect to Wiki with query and section intact", async ({ 
   }
 });
 
-for (const fragment of ["fc-ruling", "included-mods"]) {
+for (const fragment of ["fc-ruling", "included-mods", "minimum-grade", "grade-requirement"]) {
   test(`external wiki fragment ${fragment} scrolls after delayed access and on reload`, async ({ page }) => {
     let release!: () => void;
     const gate = new Promise<void>(resolve => { release = resolve; });
@@ -132,3 +132,15 @@ for (const fragment of ["fc-ruling", "included-mods"]) {
     }
   });
 }
+
+test("wiki separates optional grade from goal types and keeps its permanent anchors", async ({ page }) => {
+  await page.goto("/wiki/bounties#minimum-grade");
+  await expect(page.locator("#minimum-grade")).toHaveAttribute("data-selected","true");
+  await expect(page.locator("#goal-types #full-combo")).toHaveCount(1);
+  await expect(page.locator("#goal-types #pass")).toContainText("without No Fail (NF)");
+  await expect(page.locator("#goal-types #minimum-grade")).toHaveCount(0);
+  await expect(page.locator("#minimum-grade")).toContainText("both requirements must be met");
+  await page.locator("#minimum-grade").getByRole("link", { name: "grade requirement", exact: true }).click();
+  await expect(page.locator("#grade-requirement")).toHaveAttribute("data-selected","true");
+  await expect(page.locator("#grade-requirement")).toContainText("optional minimum grade requirement");
+});

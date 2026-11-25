@@ -16,7 +16,7 @@ const fixtures: ExtendedBounty[] = rules.map((modRequirement, index) => ({
   createdAt: `2026-01-0${index + 1}T00:00:00.000Z`,
   completedAt: null, cancelledAt: null, completedByOsuUserId: null, completionScoreId: null,
   goal: index % 2 === 0
-    ? { type: "minimum_grade", minimumGradeRequirement: "A", beatmapId: 42, beatmapChecksum: null, modRequirement }
+    ? { type: "pass", minimumGrade: "A", beatmapId: 42, beatmapChecksum: null, modRequirement }
     : { type: "full_combo", minimumComboRatio: 0.99, beatmapId: 42, beatmapChecksum: null, modRequirement },
   beatmap: null, owner: { coverUrl: null, countryCode: null, countryName: null, id: "aaaaaaaa-aaaa-4aaa-8aaa-aaaaaaaaaaaa", osuUserId: 42, username: `Player${index + 1}` },
   winner: null, engagement: { hunterCount: 0, bookmarkCount: 0, isBookmarkedByCurrentUser: null },

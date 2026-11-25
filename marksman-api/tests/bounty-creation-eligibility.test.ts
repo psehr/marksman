@@ -11,6 +11,7 @@ import { metadata, qualifyingBounty } from "./fixtures/completion";
 // Configure the isolated database before importing the application/pool.
 Object.assign(process.env, {
   NODE_ENV: "test",
+  ALLOWED_OSU_USER_IDS: "7",
   PORT: "3001",
   DATABASE_URL:
     "postgresql://marksman_test:marksman_test@127.0.0.1:5433/marksman_test?application_name=marksman_bookmarked_tests&options=-c%20statement_timeout%3D10000",
@@ -102,13 +103,13 @@ async function snapshot() {
     metadata: await db.select().from(bountyBeatmaps).orderBy(bountyBeatmaps.beatmapId),
   };
 }
-async function create(mode: OsuBeatmapMetadata["mode"], status: OsuBeatmapMetadata["status"]) {
+async function create(mode: OsuBeatmapMetadata["mode"], status: OsuBeatmapMetadata["status"], requirements: { type?: "pass" | "full_combo"; minimumGrade?: "S"; minimumAccuracy?: number } = {}) {
   const id = ++nextMapId; // Avoid cached metadata from earlier cases.
   maps.set(id, { ...metadata, id, mode, status });
   return httpFetch(`${baseUrl}/bounties`, {
     method: "POST",
     headers: { "Content-Type": "application/json", Origin: "http://localhost:3000", cookie: await cookieFor(creator.id) },
-    body: JSON.stringify({ rewardBp: 30, goal: { ...qualifyingBounty().goal, beatmapId: id } }),
+    body: JSON.stringify({ rewardBp: 30, goal: { ...qualifyingBounty().goal, ...requirements, beatmapId: id } }),
   });
 }
 
@@ -140,4 +141,17 @@ for (const mode of ["osu", "mania", "taiko", "fruits"] as const) {
       ]);
     });
   }
+}
+
+for (const type of ["pass", "full_combo"] as const) {
+  test(`creation persists ${type} with combined optional grade and accuracy`, async () => {
+    const response = await create("osu", "ranked", { type, minimumGrade: "S", minimumAccuracy: 98 });
+    assert.equal(response.status, 201);
+    const created = bountySchema.parse((await response.json()).bounty);
+    assert.equal(created.goal.type, type);
+    assert.equal(created.goal.minimumGrade, "S");
+    assert.equal(created.goal.minimumAccuracy, 98);
+    const stored = (await snapshot()).bounties[0];
+    assert.deepEqual(stored.goal, created.goal);
+  });
 }

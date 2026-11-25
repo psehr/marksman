@@ -38,7 +38,6 @@ test("icon cycles, exact mode, HT defaults and Pass preserve valid requirements"
   await expect(page.getByRole("alert").filter({ hasText: "conflicting" })).toBeVisible();
   await mod("HT", "required").click();
   await expect(submit).toBeEnabled();
-  await page.getByRole("radio", { name: "Minimum Grade", exact: true }).locator("..").click();
   await mod("NF", "optional").click();
   await expect(mod("NF", "required")).toBeVisible();
   await page.getByRole("radio", { name: "Pass", exact: true }).locator("..").click();

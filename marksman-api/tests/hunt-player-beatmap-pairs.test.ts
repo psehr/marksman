@@ -35,7 +35,7 @@ after(async () => {
 async function seedBounty(beatmapId: number, status: "open" | "cancelled" | "completed" = "open") {
   const [row] = await db.insert(bounties).values({
     creatorOsuUserId: 101, status, rewardBp: 30,
-    goal: { type: "minimum_grade", beatmapId, minimumGradeRequirement: "A",
+    goal: { type: "pass", beatmapId, minimumGrade: "A",
       beatmapChecksum: null, modRequirement: { required: [], forbidden: [], allowOtherMods: true } },
   }).returning();
   return row.id;

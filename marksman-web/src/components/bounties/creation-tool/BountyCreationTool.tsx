@@ -83,6 +83,7 @@ export default function BountyCreationTool() {
 
   const [selectedMinimumComboPercentage, setSelectedMinimumComboPercentage] =
     useState(99);
+  const [requireMinimumGrade, setRequireMinimumGrade] = useState(false);
   const [requireMinimumAccuracy, setRequireMinimumAccuracy] = useState(false);
   const [selectedMinimumAccuracy, setSelectedMinimumAccuracy] = useState(95);
 
@@ -93,6 +94,8 @@ export default function BountyCreationTool() {
     selectedBountyType,
     selectedMinimumComboPercentage,
     selectedMinimumGrade,
+    requireMinimumGrade,
+    setRequireMinimumGrade,
     requireMinimumAccuracy,
     selectedMinimumAccuracy,
     setRequireMinimumAccuracy,
@@ -181,6 +184,7 @@ export default function BountyCreationTool() {
       beatmapId: beatmapMetadata.id,
       beatmapChecksum: beatmapMetadata.checksum,
       modRequirement: modSettings,
+      minimumGrade: requireMinimumGrade ? selectedMinimumGrade : undefined,
       minimumAccuracy: requireMinimumAccuracy
         ? selectedMinimumAccuracy
         : undefined,
@@ -195,16 +199,10 @@ export default function BountyCreationTool() {
               ? selectedMinimumComboPercentage / 100
               : 0.99,
           }
-        : selectedBountyType === "minimum_grade"
-          ? {
-              ...sharedGoalFields,
-              type: "minimum_grade",
-              minimumGradeRequirement: selectedMinimumGrade,
-            }
-          : {
-              ...sharedGoalFields,
-              type: "pass",
-            };
+        : {
+            ...sharedGoalFields,
+            type: "pass",
+          };
 
     previewCardContent = {
       beatmap: osuBeatmapMetadatatoBountyBeatmapMetadata(beatmapMetadata),

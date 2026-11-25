@@ -47,12 +47,12 @@ export default function GoalCategory({ bounty }: { bounty: ExtendedBounty }) {
           </p>
         </div>
       ) : null}
-      {bounty.goal.type === "minimum_grade" ? (
+      {bounty.goal.minimumGrade !== undefined ? (
         <div className="flex flex-col gap-2 items-center">
           <p>
             Achieve a <span className="text-accent">minimum grade</span> of
           </p>
-          <GradeIcon grade={bounty.goal.minimumGradeRequirement} size="lg" />
+          <GradeIcon grade={bounty.goal.minimumGrade} size="lg" />
         </div>
       ) : null}
       {bounty.goal.minimumAccuracy !== undefined ? (
