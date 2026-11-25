@@ -11,12 +11,16 @@ are marked until deployment is confirmed. Deployment names increment as
 
 ### Features
 
-- feat: add optional minimum grade requirements to Pass and Full-Combo bounties.
+- 761e76d — feat: add optional minimum grade requirements to Pass and Full-Combo bounties.
 - 4df8521 — feat: choose required and forbidden mods individually, with an exact-mods option.
 
 ### Fixes
 
 - dc0ecf1 — fix: use higher-resolution beatmap covers when available.
+
+### Styles
+
+- style: simplify bounty card requirement badges and enlarge mod and grade icons.
 
 ## Alpha - Update 2 — 2026-11-23
 

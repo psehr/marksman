@@ -124,14 +124,14 @@ export function BountyCardContent({
       <span role="img" aria-label={description} title={description}>
         <span aria-hidden="true" className="flex flex-wrap items-center gap-1">
           {!modSettings.allowOtherMods && modSettings.required.length === 0 ? (
-            <ModIcon mod="NM" size="xs" />
+            <ModIcon mod="NM" size="sm" />
           ) : (
             <>
               {modSettings.required.map((mod) => (
-                <ModIcon mod={mod} size="xs" key={mod} />
+                <ModIcon mod={mod} size="sm" key={mod} />
               ))}
               {modSettings.forbidden.map((mod) => (
-                <ModIcon mod={mod} size="xs" key={mod} crossed />
+                <ModIcon mod={mod} size="sm" key={mod} crossed />
               ))}
               {modSettings.allowOtherMods && (
                 <span
@@ -168,18 +168,12 @@ export function BountyCardContent({
         />
       );
       break;
-
   }
 
   if (content.goal?.minimumGrade !== undefined) {
     gradeRequirement = (
       <div className="flex items-center gap-1">
-        <BadgeLabel
-          label={`Achieve a minimum grade of ${content.goal.minimumGrade}`}
-          text="Minimum grade"
-          color="info"
-        />
-        <GradeIcon grade={content.goal.minimumGrade} minimum size="sm" />
+        <GradeIcon grade={content.goal.minimumGrade} minimum size="md" />
       </div>
     );
   }
@@ -188,6 +182,7 @@ export function BountyCardContent({
     acc_requirement = (
       <BadgeLabel
         label={`A minimum accuracy of ${content.goal.minimumAccuracy}% is required.`}
+        color="info"
         text={`Acc. ≥${content.goal.minimumAccuracy}%`}
       />
     );
@@ -225,17 +220,11 @@ export function BountyCardContent({
           </div>
           <div className="flex flex-wrap gap-2 items-center">
             {goalType ?? null}
-            {goalType && (acc_requirement || gradeRequirement || mods) ? (
-              <span className="text-border">•</span>
-            ) : null}
+
             {acc_requirement ?? null}
-            {acc_requirement && (gradeRequirement || mods) ? (
-              <span className="text-border">•</span>
-            ) : null}
+
             {gradeRequirement ?? null}
-            {gradeRequirement && mods ? (
-              <span className="text-border">•</span>
-            ) : null}
+
             {mods ? <div className="flex flex-wrap gap-1">{mods}</div> : null}
           </div>
         </div>

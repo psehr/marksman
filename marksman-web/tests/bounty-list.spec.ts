@@ -134,7 +134,7 @@ test("official mod badges load local SVGs and retain labels, sizes and exclusion
     await expect(icon).toBeVisible();
     await expect(icon).toHaveAttribute("title", name);
     const box = await icon.boundingBox();
-    expect(box!.height).toBe(20);
+    expect(box!.height).toBe(24);
     expect(box!.width / box!.height).toBeCloseTo(120 / 84, 1);
   }
   await expect(page.getByRole("img", { name: "Hard Rock forbidden", exact: true }).locator("svg")).toHaveCount(1);
@@ -259,8 +259,8 @@ test("official grade badges preserve minimum labels and load all grade variants"
     const artwork = badge.locator("span").last();
     await expect(artwork).toHaveCSS("background-image", new RegExp(`GradeSmall-${files[index]}\\.svg`));
     const box = await artwork.boundingBox();
-    expect(box?.height).toBe(16);
-    expect(box?.width).toBe(32);
+    expect(box?.height).toBe(24);
+    expect(box?.width).toBe(48);
     const response = await page.request.get(`/images/grades/GradeSmall-${files[index]}.svg`);
     expect(response.ok()).toBeTruthy();
     expect(await response.text()).toContain('<svg width="32" height="16"');
