@@ -1,6 +1,6 @@
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 
-test("icon cycles, exact mode, HT defaults and Pass preserve valid requirements", async ({ page }) => {
+async function setup(page: Page) {
   await page.route("**/auth/access", route => route.fulfill({ status: 204 }));
   await page.route("**/auth/me", route => route.fulfill({ json: {
     identity: { coverUrl: null, countryCode: null, countryName: null, id: "12345678-1234-4234-8234-123456789abc", osuUserId: 12345, username: "fixture" },
@@ -14,6 +14,10 @@ test("icon cycles, exact mode, HT defaults and Pass preserve valid requirements"
   } }));
   await page.goto("/bounties/creation-tool");
   await page.getByRole("textbox", { name: "beatmap input" }).fill("123456");
+}
+
+test("icon cycles, exact mode, HT defaults and Pass preserve valid requirements", async ({ page }) => {
+  await setup(page);
   const exact = page.getByRole("checkbox", { name: "Exact mods", exact: true });
   const mod = (name: string, state: string) => page.getByRole("button", { name: new RegExp(`^${name}: ${state}[.]`) });
   const submit = page.getByRole("button", { name: /^Create bounty/ });
@@ -50,4 +54,33 @@ test("icon cycles, exact mode, HT defaults and Pass preserve valid requirements"
   await expect(mod("NF", "not selected")).toBeDisabled();
   await expect(mod("HT", "not selected")).toBeVisible();
   await expect(submit).toBeEnabled();
+});
+
+test("extra mod indicator accounts for conflicts, Pass NF and explicit exclusions", async ({ page }) => {
+  await setup(page);
+  const mod = (name: string, state: string) => page.getByRole("button", { name: new RegExp(`^${name}: ${state}[.]`) });
+  const extra = page.getByTitle("Other supported mods allowed", { exact: true });
+  const exact = page.getByRole("checkbox", { name: "Exact mods", exact: true });
+  for (const name of ["HR", "HD", "DT", "FL", "NF"]) await mod(name,"not selected").click();
+  await exact.uncheck();
+  // Only EZ and HT are unrequired; they conflict with required HR and DT.
+  await expect(extra).toHaveCount(0);
+  await expect(page.getByRole("img", { name: /No additional supported mods can be used/ })).toHaveCount(1);
+  await page.getByRole("radio", { name: "Pass", exact: true }).locator("..").click();
+  // NF is now optional in settings but unavailable for a Pass score.
+  await expect(extra).toHaveCount(0);
+  await page.getByRole("radio", { name: "Full-Combo", exact: true }).locator("..").click();
+  await expect(extra).toBeVisible();
+  await mod("NF","optional").click();
+  await expect(extra).toHaveCount(0);
+  await mod("NF","required").click();
+  await expect(extra).toHaveCount(0);
+  await mod("EZ","optional").click();
+  await mod("EZ","required").click();
+  // All seven mods are now explicitly required or forbidden.
+  await expect(extra).toHaveCount(0);
+  await mod("NF","forbidden").click();
+  await expect(extra).toBeVisible();
+  await exact.check();
+  await expect(extra).toHaveCount(0);
 });

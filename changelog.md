@@ -16,11 +16,12 @@ are marked until deployment is confirmed. Deployment names increment as
 
 ### Fixes
 
+- fix: hide the extra-mod indicator when no compatible additional mods are available.
 - dc0ecf1 — fix: use higher-resolution beatmap covers when available.
 
 ### Styles
 
-- style: replace bounty card tier badges with tier-colored borders and a subtle inner glow, with a rainbow treatment for Phantasm.
+- 2ac474b — style: replace bounty card tier badges with tier-colored borders and a subtle inner glow, with a rainbow treatment for Phantasm.
 - 23308d0 — style: simplify bounty card requirement badges and enlarge mod and grade icons.
 
 ## Alpha - Update 2 — 2026-11-23

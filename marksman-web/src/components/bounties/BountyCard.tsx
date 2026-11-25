@@ -4,6 +4,8 @@ import ModIcon from "../osu/ModIcon";
 import {
   ExtendedBounty,
   getBountyTier,
+  bountyModFilterSchema,
+  modsSchema,
   type BountyTier,
 } from "@marksman/contracts";
 import { formatDistance } from "date-fns";
@@ -138,6 +140,16 @@ export function BountyCardContent({
   const modSettings = content.goal?.modRequirement;
 
   if (modSettings) {
+    const hasPossibleExtraMod =
+      modSettings.allowOtherMods &&
+      bountyModFilterSchema.options.some(
+        (mod) =>
+          mod !== "NM" &&
+          !modSettings.required.includes(mod) &&
+          !modSettings.forbidden.includes(mod) &&
+          !(content.goal?.type === "pass" && mod === "NF") &&
+          modsSchema.safeParse([...modSettings.required, mod]).success,
+      );
     const unrestricted =
       modSettings.allowOtherMods &&
       modSettings.required.length === 0 &&
@@ -156,7 +168,9 @@ export function BountyCardContent({
             modSettings.forbidden.length
               ? `Forbidden: ${modSettings.forbidden.join(", ")}.`
               : "",
-            "Other supported mods allowed.",
+            hasPossibleExtraMod
+              ? "Other supported mods allowed."
+              : "No additional supported mods can be used.",
           ]
             .filter(Boolean)
             .join(" ");
@@ -174,7 +188,7 @@ export function BountyCardContent({
               {modSettings.forbidden.map((mod) => (
                 <ModIcon mod={mod} size="sm" key={mod} crossed />
               ))}
-              {modSettings.allowOtherMods && (
+              {hasPossibleExtraMod && (
                 <span
                   title="Other supported mods allowed"
                   className="inline-flex h-5 items-center justify-center px-1 text-xs font-bold text-foreground-muted"
