@@ -20,7 +20,8 @@ are marked until deployment is confirmed. Deployment names increment as
 
 ### Styles
 
-- style: simplify bounty card requirement badges and enlarge mod and grade icons.
+- style: replace bounty card tier badges with tier-colored borders and a subtle inner glow, with a rainbow treatment for Phantasm.
+- 23308d0 — style: simplify bounty card requirement badges and enlarge mod and grade icons.
 
 ## Alpha - Update 2 — 2026-11-23
 

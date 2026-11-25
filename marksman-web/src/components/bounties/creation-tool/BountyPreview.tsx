@@ -1,4 +1,4 @@
-import { BountyCardContent, BountyCardDisplay } from "../BountyCard";
+import { BountyCardContent, BountyCardDisplay, bountyCardBorderStyle } from "../BountyCard";
 
 export default function BountyPreview({
   content,
@@ -10,7 +10,10 @@ export default function BountyPreview({
   );
 
   return (
-    <div className="bg-card border-border relative isolate flex w-full min-w-0 flex-col overflow-hidden rounded border">
+    <div
+      className="bg-card border-[var(--bounty-tier-border,var(--color-border))] relative isolate flex w-full min-w-0 flex-col overflow-hidden rounded border"
+      style={bountyCardBorderStyle(content.rewardBp)}
+    >
       <BountyCardContent content={content} status={status} />
     </div>
   );

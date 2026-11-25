@@ -1,16 +1,55 @@
 "use client";
 
 import ModIcon from "../osu/ModIcon";
-import { ExtendedBounty, getBountyTier } from "@marksman/contracts";
+import {
+  ExtendedBounty,
+  getBountyTier,
+  type BountyTier,
+} from "@marksman/contracts";
 import { formatDistance } from "date-fns";
 import Link from "next/link";
 import Image from "next/image";
 import BPIcon from "../economy/BPIcon";
-import BountyTierBadge from "./BountyTierBadge";
 import GradeIcon from "../osu/GradeIcon";
 import { BeatmapCard } from "../beatmaps/BeatmapCard";
 import { BadgeLabel } from "../ui/BadgeLabel";
 import BountyHuntStamps from "./BountyHuntStamps";
+
+const tierColors = {
+  Easy: "#a3cf83",
+  Normal: "#83bfcf",
+  Hard: "#efa85c",
+  Lunatic: "#ed8d83",
+  Extra: "#c4a3ed",
+  Phantasm: "#c4a3ed",
+} satisfies Record<BountyTier, string>;
+
+const phantasmColors = [
+  "#ed8d83",
+  "#efa85c",
+  "#e6c65b",
+  "#a3cf83",
+  "#83bfcf",
+  "#c4a3ed",
+];
+const phantasmGradient = `linear-gradient(110deg, ${phantasmColors.join(", ")})`;
+
+export function bountyCardBorderStyle(
+  rewardBp: number | null,
+): React.CSSProperties {
+  if (!rewardBp) return {};
+  const tier = getBountyTier(rewardBp);
+  if (tier === "Phantasm") {
+    return {
+      "--bounty-tier-border": "transparent",
+      background: `linear-gradient(var(--color-card), var(--color-card)) padding-box, linear-gradient(110deg, ${phantasmColors.map((color) => `${color}a6`).join(", ")}) border-box`,
+    } as React.CSSProperties;
+  }
+  const color = tierColors[tier];
+  return {
+    "--bounty-tier-border": `color-mix(in srgb, ${color} 65%, transparent)`,
+  } as React.CSSProperties;
+}
 
 export type BountyCardDisplay = {
   beatmap: ExtendedBounty["beatmap"];
@@ -68,7 +107,8 @@ export default function BountyCard({ bounty }: { bounty: ExtendedBounty }) {
 
   return (
     <Link
-      className="relative isolate bg-card border-border hover:border-focus-ring focus-visible:border-accent flex w-full min-w-0 cursor-pointer flex-col justify-between overflow-hidden rounded border transition-all focus-visible:outline-0"
+      className="relative isolate bg-card border-[var(--bounty-tier-border,var(--color-border))] hover:border-focus-ring focus-visible:border-accent flex w-full min-w-0 cursor-pointer flex-col justify-between overflow-hidden rounded border transition-all focus-visible:outline-0"
+      style={bountyCardBorderStyle(bounty.rewardBp)}
       href={`/bounties/${bounty.id}`}
     >
       <BountyCardContent
@@ -94,6 +134,7 @@ export function BountyCardContent({
   let mods;
   let goalType;
 
+  const tier = content.rewardBp ? getBountyTier(content.rewardBp) : null;
   const modSettings = content.goal?.modRequirement;
 
   if (modSettings) {
@@ -207,6 +248,26 @@ export function BountyCardContent({
           />
         </>
       )}
+      {tier && (
+        <div
+          aria-hidden="true"
+          className="pointer-events-none absolute inset-0 rounded-[inherit] forced-colors:hidden"
+          style={
+            tier === "Phantasm"
+              ? {
+                  background: phantasmGradient,
+                  opacity: 0.2,
+                  maskImage: [
+                    "linear-gradient(to right, black, transparent 40px, transparent calc(100% - 40px), black)",
+                    "linear-gradient(to bottom, black, transparent 40px, transparent calc(100% - 40px), black)",
+                  ].join(", "),
+                }
+              : {
+                  boxShadow: `inset 0 0 100px 2px color-mix(in srgb, ${tierColors[tier]} 20%, transparent)`,
+                }
+          }
+        />
+      )}
       <BeatmapCard beatmapMetadata={content.beatmap} variant="bounty" />
       {hunterCount > 0 && (
         <div className="relative z-10 flex justify-end px-4">
@@ -229,13 +290,12 @@ export function BountyCardContent({
           </div>
         </div>
 
-        <div className="flex shrink-0 flex-col items-end gap-2 sm:flex-row sm:items-center">
-          {content.rewardBp ? (
-            <BountyTierBadge tier={getBountyTier(content.rewardBp)} size="md" />
-          ) : (
-            ""
-          )}
-          <div className="flex gap-1">
+        <div className="flex shrink-0 items-end">
+          <div
+            className="flex gap-1"
+            title={tier ? `Reward tier: ${tier}` : undefined}
+          >
+            {tier && <span className="sr-only">Reward tier: {tier}. </span>}
             <span className="text-accent text-2xl font-bold leading-none -translate-y-px">
               {content.rewardBp ? content.rewardBp.toLocaleString() : "-"}
             </span>
