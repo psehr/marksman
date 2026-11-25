@@ -106,10 +106,10 @@ test("creation flow fits a narrow mobile viewport", async ({ page }) => {
 test("Pass removes required NF and submits a Pass goal", async ({ page }) => {
   await review(page);
   await page.getByRole("button", { name: /^NF: not selected/ }).click();
-  await page.getByRole("radio", { name: "Pass", exact: true }).locator("..").click();
+  await page.getByRole("radio", { name: "Clear/Pass", exact: true }).locator("..").click();
   await expect(page.getByRole("button", { name: /^NF: not selected/ })).toBeDisabled();
   await page.getByRole("button", { name: /^HD: not selected/ }).click();
-  await expect(page.getByText("Clear/Pass", { exact: true })).toBeVisible();
+  await expect(page.getByTitle("Clear/Pass the map without using No-Fail", { exact: true })).toBeVisible();
   let payload: any;
   await page.route("**/bounties", route => {
     payload = route.request().postDataJSON();
@@ -129,10 +129,10 @@ for (const width of [320, 390, 1280]) {
   test(`Pass preview and goal options fit at ${width}px`, async ({ page }) => {
     await page.setViewportSize({ width, height: 900 });
     await review(page);
-    await page.getByRole("radio", { name: "Pass", exact: true }).locator("..").click();
+    await page.getByRole("radio", { name: "Clear/Pass", exact: true }).locator("..").click();
     await page.getByRole("checkbox", { name: "Require minimum grade", exact: true }).check();
     await expect(page.getByRole("radio", { name: "SS", exact: true })).toBeVisible();
-    await expect(page.getByText("Clear/Pass", { exact: true })).toBeVisible();
+    await expect(page.getByTitle("Clear/Pass the map without using No-Fail", { exact: true })).toBeVisible();
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
   });
 }
@@ -205,7 +205,7 @@ for (const goalType of ["pass", "full_combo"] as const) {
       await accuracy.check();
       await goal.getByRole("slider").fill("98");
       await accuracy.uncheck();
-      await goal.getByRole("radio", { name: "Pass", exact: true }).locator("..").click();
+      await goal.getByRole("radio", { name: "Clear/Pass", exact: true }).locator("..").click();
       if (goalType === "full_combo") await goal.getByRole("radio", { name: "Full-Combo", exact: true }).locator("..").click();
       if (enabled) {
         await accuracy.check();

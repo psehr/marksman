@@ -23,7 +23,7 @@ export default function GoalStep({ props }: { props: GoalStepProps }) {
 
   return (
     <div className="flex flex-col items-end gap-4 w-full text-end">
-      <fieldset className="flex gap-2">
+      <fieldset className="grid w-full grid-cols-2 gap-2">
         <legend className="sr-only">Goal Type</legend>
         <label className={radioTextualLabelClassName}>
           Full-Combo
@@ -37,7 +37,7 @@ export default function GoalStep({ props }: { props: GoalStepProps }) {
           />
         </label>
         <label className={radioTextualLabelClassName}>
-          Pass
+          Clear/Pass
           <input
             className="sr-only"
             type="radio"
@@ -50,6 +50,32 @@ export default function GoalStep({ props }: { props: GoalStepProps }) {
           />
         </label>
       </fieldset>
+      {props.selectedBountyType === "full_combo" ? (
+        <p className="w-full text-center text-xs text-foreground-muted pb-8">
+          Requires the score to be a full-combo.{" "}
+          <Link
+            href="/wiki/bounties#fc-ruling"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="underline  text-foreground-muted"
+          >
+            Learn more
+          </Link>
+        </p>
+      ) : null}
+      {props.selectedBountyType === "pass" ? (
+        <p className="w-full text-center text-xs text-foreground-muted pb-8">
+          Requires a beatmap clear/pass, without using No-Fail.{" "}
+          <Link
+            href="/wiki/bounties#pass"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="underline  text-foreground-muted"
+          >
+            Learn more
+          </Link>
+        </p>
+      ) : null}
       {props.selectedBountyType === "full_combo" ? (
         <fieldset className="flex w-full flex-col gap-2 sm:items-end">
           <legend className="sr-only">Customize stable combo threshold</legend>

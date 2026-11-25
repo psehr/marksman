@@ -12,19 +12,7 @@ export default function ModsStep({ props }: { props: ModsStepProps }) {
 
   return (
     <div className="flex w-full flex-col gap-4 text-left">
-      <label className="flex items-center gap-2 self-end">
-        <input
-          type="checkbox"
-          className="accent-accent"
-          checked={!settings.allowOtherMods}
-          onChange={(event) =>
-            props.onAllowOtherModsChange(!event.target.checked)
-          }
-        />
-        Exact mods
-      </label>
-
-      <div className="grid w-fit grid-cols-4 gap-1 sm:grid-cols-7 self-center">
+      <div className="grid w-fit grid-cols-4 gap-1 sm:grid-cols-7 self-center pb-8">
         {mods.map((mod) => {
           const selection: ModSelection = settings.required.includes(mod)
             ? "required"
@@ -69,6 +57,18 @@ export default function ModsStep({ props }: { props: ModsStepProps }) {
           );
         })}
       </div>
+
+      <label className="flex items-center gap-2 self-end">
+        <input
+          type="checkbox"
+          className="accent-accent"
+          checked={!settings.allowOtherMods}
+          onChange={(event) =>
+            props.onAllowOtherModsChange(!event.target.checked)
+          }
+        />
+        Exact mods
+      </label>
 
       {props.validationErrors.length > 0 && (
         <div role="alert" className="text-danger">

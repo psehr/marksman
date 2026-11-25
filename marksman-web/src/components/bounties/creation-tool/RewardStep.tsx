@@ -3,11 +3,7 @@ import { RewardStepProps } from "./creation-tool.types";
 import TextInput from "@/components/ui/TextInput";
 import { rewardFee } from "./creation-tool.utils";
 import BountyTierBadge from "../BountyTierBadge";
-import {
-  bountyTiers,
-  getBountyTier,
-  getNextBountyTier,
-} from "@marksman/contracts";
+import { bountyTiers, getBountyTier } from "@marksman/contracts";
 import { aes_font } from "@/lib/fonts";
 
 export default function RewardStep({ props }: { props: RewardStepProps }) {
@@ -21,26 +17,6 @@ export default function RewardStep({ props }: { props: RewardStepProps }) {
     Number.isInteger(props.reward) && props.reward > 0
       ? getBountyTier(props.reward)
       : null;
-
-  const nextTier = currentTier ? getNextBountyTier(currentTier) : null;
-
-  function nextTierBreakdown() {
-    if (currentTier && currentTier === "Phantasm") {
-      return (
-        <p className="text-xs text-foreground-muted">
-          This is the highest reward tier.
-        </p>
-      );
-    }
-    if (nextTier) {
-      return (
-        <p className="text-xs text-foreground-muted">
-          Next Tier: {nextTier.name} at BP ≥{" "}
-          {nextTier.minimumBp.toLocaleString()}
-        </p>
-      );
-    }
-  }
 
   function tierBreakdown() {
     return (
@@ -62,7 +38,6 @@ export default function RewardStep({ props }: { props: RewardStepProps }) {
             </button>
           ))}
         </div>
-        {nextTierBreakdown()}
       </div>
     );
   }
@@ -73,26 +48,28 @@ export default function RewardStep({ props }: { props: RewardStepProps }) {
 
   return (
     <div className="flex flex-col items-start gap-4">
-      <div
-        aria-label="Available balance"
-        className={`flex w-full flex-wrap items-center justify-end gap-2 ${insufficientBalance ? "text-danger" : "text-foreground"}`}
-      >
-        <span className="text-sm">Available balance:</span>
-        <span
-          className={`${aes_font.className} inline-flex items-center gap-1 text-lg font-bold tabular-nums`}
+      <div className="flex w-full min-w-0 flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
+        <div
+          aria-label="Available balance"
+          className={`flex w-full flex-wrap items-center justify-end gap-2 sm:order-last sm:w-auto sm:shrink-0 ${insufficientBalance ? "text-danger" : "text-foreground"}`}
         >
-          {balance?.toLocaleString() ?? "—"}
-          <BPIcon />
-        </span>
+          <span className="text-sm">Available balance:</span>
+          <span
+            className={`${aes_font.className} inline-flex items-center gap-1 text-lg font-bold tabular-nums`}
+          >
+            {balance?.toLocaleString() ?? "—"}
+            <BPIcon />
+          </span>
+        </div>
+        <p
+          aria-label="Reward cost summary"
+          className="w-full min-w-0 text-right text-xs text-foreground-muted wrap-anywhere sm:flex-1 sm:text-left"
+        >
+          Reward: {reward?.toLocaleString() ?? "—"} BP · Fee:{" "}
+          {fee?.toLocaleString() ?? "—"} BP · Total:{" "}
+          {totalCost?.toLocaleString() ?? "—"} BP
+        </p>
       </div>
-      <p
-        aria-label="Reward cost summary"
-        className="w-full text-right text-xs text-foreground-muted wrap-anywhere"
-      >
-        Reward: {reward?.toLocaleString() ?? "—"} BP · Fee:{" "}
-        {fee?.toLocaleString() ?? "—"} BP · Total:{" "}
-        {totalCost?.toLocaleString() ?? "—"} BP
-      </p>
       <label htmlFor="reward" className="sr-only">
         Reward Input
       </label>

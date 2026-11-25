@@ -70,7 +70,7 @@ export default function ModIcon({
       {icon ? (
         <span
           aria-hidden="true"
-          className={`absolute inset-y-px inset-x-[1.4286px] ${crossed ? "opacity-75" : ""}`}
+          className={`absolute inset-y-px inset-x-[1.4286px] ${crossed ? "opacity-50" : ""}`}
         >
           <span
             className="absolute inset-0"

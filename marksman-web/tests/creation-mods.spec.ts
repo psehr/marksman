@@ -44,7 +44,7 @@ test("icon cycles, exact mode, HT defaults and Pass preserve valid requirements"
   await expect(submit).toBeEnabled();
   await mod("NF", "optional").click();
   await expect(mod("NF", "required")).toBeVisible();
-  await page.getByRole("radio", { name: "Pass", exact: true }).locator("..").click();
+  await page.getByRole("radio", { name: "Clear/Pass", exact: true }).locator("..").click();
   await expect(mod("NF", "optional")).toBeVisible();
   await mod("NF", "optional").click();
   await expect(mod("NF", "forbidden")).toBeVisible();
@@ -66,7 +66,7 @@ test("extra mod indicator accounts for conflicts, Pass NF and explicit exclusion
   // Only EZ and HT are unrequired; they conflict with required HR and DT.
   await expect(extra).toHaveCount(0);
   await expect(page.getByRole("img", { name: /No additional supported mods can be used/ })).toHaveCount(1);
-  await page.getByRole("radio", { name: "Pass", exact: true }).locator("..").click();
+  await page.getByRole("radio", { name: "Clear/Pass", exact: true }).locator("..").click();
   // NF is now optional in settings but unavailable for a Pass score.
   await expect(extra).toHaveCount(0);
   await page.getByRole("radio", { name: "Full-Combo", exact: true }).locator("..").click();
