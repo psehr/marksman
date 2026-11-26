@@ -41,7 +41,7 @@ for (const query of ["", "?view=invalid", "?view=overview"]) {
     await expect(page.getByRole("heading", { name: "Beatmap", exact: true })).toBeVisible();
     await expect(page.getByText("Comments coming soon.")).toHaveCount(0);
     await expect(page.getByText("Ongoing Hunts", { exact: true })).toHaveCount(0);
-    await expect(page.getByText("OPEN", { exact: true })).toBeVisible();
+    await expect(page.locator(`a[href="/bounties/${id}"]`).getByText(/^Created by owner /)).toBeVisible();
   });
 }
 for (const view of ["engagement", "activity", "funding", "comments"] as const) {
@@ -58,7 +58,7 @@ for (const view of ["engagement", "activity", "funding", "comments"] as const) {
       await expect(page.getByText("Bookmarks", { exact: true }).locator("..")).toHaveText(/3\s*Bookmarks/);
       await expect(page.getByText("Comments coming soon.")).toHaveCount(0);
     }
-    await expect(page.getByText("OPEN", { exact: true })).toBeVisible();
+    await expect(page.locator(`a[href="/bounties/${id}"]`).getByText(/^Created by owner /)).toBeVisible();
     await expect(page.getByRole("heading", { name: "Goal", exact: true })).toHaveCount(0);
     await page.reload();
     await selected(page, view[0].toUpperCase() + view.slice(1));
@@ -112,12 +112,13 @@ for (const width of [320, 375, 390, 640, 768, 1280]) {
 
 
 for (const status of ["open", "completed", "cancelled"] as const) {
-  test(`${status} banner stays above every view and closed bounties hide actions`, async ({ page }) => {
+  test(`${status} card stays above every view and closed bounties hide actions`, async ({ page }) => {
     await setup(page, { status });
     await page.goto(`/bounties/${id}`);
     for (const name of ["Overview", "Engagement", "Activity", "Funding", "Comments"]) {
       await views(page).getByRole("button", { name, exact: true }).click();
-      const banner = page.getByText(status.toUpperCase(), { exact: true });
+      const card = page.locator(`a[href="/bounties/${id}"]`);
+      const banner = status === "open" ? card.getByText(/^Created by owner /) : card.getByTitle(status === "completed" ? "Completed" : "Cancelled", { exact: true });
       await expect(banner).toBeVisible();
       expect(await banner.evaluate(element => !!(element.compareDocumentPosition(document.querySelector('[aria-label="Bounty views"]')!) & Node.DOCUMENT_POSITION_FOLLOWING))).toBe(true);
     }
@@ -157,11 +158,12 @@ test("bookmark and hunter stats update from polling without switching views", as
 
 for (const status of ["completed", "cancelled"] as const) {
   for (const width of [320, 375, 390, 1280]) {
-    test(`${status} spaced banner fits at ${width}px`, async ({ page }) => {
+    test(`${status} card badge fits at ${width}px`, async ({ page }) => {
       await page.setViewportSize({ width, height: 900 });
       await setup(page, { status });
       await page.goto(`/bounties/${id}?view=engagement`);
-      const banner = page.getByText(status.toUpperCase(), { exact: true });
+      const card = page.locator(`a[href="/bounties/${id}"]`);
+      const banner = card.getByTitle(status === "completed" ? "Completed" : "Cancelled", { exact: true });
       await expect(banner).toBeVisible();
       expect(await banner.evaluate(element => {
         const rect = element.getBoundingClientRect();

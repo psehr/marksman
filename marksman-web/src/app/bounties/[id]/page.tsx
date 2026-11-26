@@ -6,7 +6,6 @@ import { useParams, notFound } from "next/navigation";
 import BountyActions, {
   type AvailableActions,
 } from "@/components/bounties/details/BountyActions";
-import BountyStatus from "@/components/bounties/details/BountyStatus";
 import GoalCategory from "@/components/bounties/details/GoalCategory";
 import ModsRequirement from "@/components/bounties/details/ModsRequirement";
 import BeatmapRequirement from "@/components/bounties/details/BeatmapRequirement";
@@ -56,7 +55,6 @@ export default function BountyDetailsPage() {
         <div className="flex flex-col w-full max-w-2xl h-fit gap-4">
           {queryStatus === "complete" && bounty ? (
             <>
-              <BountyStatus status={bounty.status} />
               <BountyCard bounty={bounty} />
               <BountyFunding bounty={bounty} refresh={refreshFunding}>
                 {(fundingAction) => (
