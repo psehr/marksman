@@ -87,9 +87,11 @@ test("card toggles bookmarks and hunts without navigating", async ({ page }) => 
   await expect(page.getByRole("button", { name: "Bookmark bounty", exact: true })).toHaveAttribute("aria-pressed", "false");
   await page.getByRole("button", { name: "Start hunting bounty", exact: true }).click();
   await expect(page.getByRole("button", { name: "Stop hunting bounty", exact: true })).toHaveAttribute("aria-pressed", "true");
+  await expect(page.getByRole("group", { name: "Hunting slots", exact: true }).getByRole("status")).toHaveText("2 slots left");
   await expect(page.getByText("1 ongoing hunter", { exact: true })).toHaveCount(1);
   await page.getByRole("button", { name: "Stop hunting bounty", exact: true }).click();
   await expect(page.getByRole("button", { name: "Start hunting bounty", exact: true })).toHaveAttribute("aria-pressed", "false");
+  await expect(page.getByRole("group", { name: "Hunting slots", exact: true }).getByRole("status")).toHaveText("3 slots left");
   expect(state.posts).toEqual([`/bounties/${bounty.id}/bookmark`, `/bounties/${bounty.id}/unbookmark`, `/bounties/${bounty.id}/hunt`, `/hunts/${hunt.id}/stop`]);
   await expect(page).toHaveURL(/\/bounties$/);
   await page.locator(`a[href="/bounties/${bounty.id}"]`).click();
@@ -139,7 +141,8 @@ test("cards share their initial hunt read", async ({ page }) => {
   state.extraCards = true;
   await page.goto("/bounties");
   await expect(page.getByRole("button", { name: "Start hunting bounty", exact: true })).toHaveCount(2);
-  expect(state.huntReads).toBe(1);
+  // One independent navbar read; both cards still share their own initial read.
+  expect(state.huntReads).toBe(2);
 });
 
 for (const variant of ["owner", "completed", "cancelled"] as const) {

@@ -10,6 +10,7 @@ import { AuthButton } from "../auth/AuthButton";
 import MarksmanLogo from "../ui/MarksmanLogo";
 import { aes_font } from "@/lib/fonts";
 import BPIcon from "../economy/BPIcon";
+import HuntingSlots from "./HuntingSlots";
 
 function RouteLink({
   url,
@@ -38,7 +39,7 @@ function RouteLink({
 
 export default function NavBar() {
   const path = usePathname();
-  const { user } = useAuth();
+  const { user, loading, alphaAccess } = useAuth();
   const [menuOpen, setMenuOpen] = useState(false);
   const menuButton = useRef<HTMLButtonElement>(null);
   const closeMenu = () => setMenuOpen(false);
@@ -66,7 +67,7 @@ export default function NavBar() {
       }}
       className="border-border bg-surface flex min-h-16 w-full flex-wrap items-center border-b px-4 py-3"
     >
-      <div className="flex min-w-0 flex-1 place-content-start md:w-1/3 md:flex-none">
+      <div className="flex min-w-0 flex-1 place-content-start md:flex-none md:shrink-0">
         <Link
           href="/"
           onClick={closeMenu}
@@ -103,7 +104,7 @@ export default function NavBar() {
         id="mobile-navigation"
         className={`${menuOpen ? "flex" : "hidden"} w-full flex-col gap-4 pt-4 md:contents`}
       >
-        <div className="flex flex-col gap-4 text-center md:w-1/3 md:flex-row md:justify-center md:text-left">
+        <div className="flex flex-col gap-4 text-center md:flex-1 md:flex-row md:justify-center md:text-left">
           <RouteLink
             url="/bounties"
             title="Bounties"
@@ -125,35 +126,50 @@ export default function NavBar() {
             onClick={closeMenu}
           />
         </div>
-        <div className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 md:w-1/3 md:justify-end">
+        <div className="flex min-w-0 items-center justify-center gap-3 md:max-w-[40%] md:justify-end">
           {user ? (
-            <Link
-              href={`/users/${user.identity.id}`}
-              aria-label="Profile"
-              aria-current={path.startsWith(`/users/${user.identity.id}`) ? "page" : undefined}
-              onClick={closeMenu}
-              className={`flex w-full min-w-36 max-w-full items-center justify-between gap-3 rounded border border-border bg-card px-3 py-1 text-right hover:border-accent focus-visible:outline-2 focus-visible:outline-accent md:w-auto ${aes_font.className} font-bold`}
-            >
-              <Image
-                src={`https://a.ppy.sh/${user.identity.osuUserId}`}
-                alt=""
-                width={36}
-                height={36}
-                className="size-9 shrink-0 rounded-full object-cover"
-              />
-              <div className="flex min-w-0 flex-col items-end gap-0.5">
-                <span className="max-w-40 truncate text-sm text-accent" title={user.identity.username}>
-                  {user.identity.username}
-                </span>
-                <output
-                  aria-label="Your BP balance"
-                  className="inline-flex items-center gap-1 whitespace-nowrap text-xs text-foreground-muted tabular-nums"
-                >
-                  {user.stats.bpBalance.toLocaleString()}
-                  <BPIcon size="sm" />
-                </output>
-              </div>
-            </Link>
+            <>
+              {!loading && alphaAccess === "allowed" && (
+                <HuntingSlots
+                  key={user.identity.id}
+                  userId={user.identity.id}
+                />
+              )}
+              <Link
+                href={`/users/${user.identity.id}`}
+                aria-label="Profile"
+                aria-current={
+                  path.startsWith(`/users/${user.identity.id}`)
+                    ? "page"
+                    : undefined
+                }
+                onClick={closeMenu}
+                className={`flex h-12 w-full min-w-36 max-w-full items-center justify-between gap-3 rounded border border-border bg-card px-3 py-1 text-right hover:border-accent focus-visible:outline-2 focus-visible:outline-accent md:w-auto md:min-w-0 ${aes_font.className} font-bold`}
+              >
+                <Image
+                  src={`https://a.ppy.sh/${user.identity.osuUserId}`}
+                  alt=""
+                  width={36}
+                  height={36}
+                  className="size-9 shrink-0 rounded-full object-cover"
+                />
+                <div className="flex min-w-0 flex-col items-end gap-0.5">
+                  <span
+                    className="max-w-40 truncate text-sm text-accent"
+                    title={user.identity.username}
+                  >
+                    {user.identity.username}
+                  </span>
+                  <output
+                    aria-label="Your BP balance"
+                    className="inline-flex items-center gap-1 whitespace-nowrap text-xs text-foreground-muted tabular-nums"
+                  >
+                    {user.stats.bpBalance.toLocaleString()}
+                    <BPIcon size="sm" />
+                  </output>
+                </div>
+              </Link>
+            </>
           ) : (
             <AuthButton />
           )}

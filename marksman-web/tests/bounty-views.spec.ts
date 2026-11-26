@@ -70,7 +70,7 @@ test("switching preserves params/hash, Back/Forward, and mounted action controls
   const state = await setup(page);
   await page.goto(`/bounties/${id}?keep=1&keep=2#rules`);
   await selected(page, "Overview");
-  await expect.poll(() => state.hunts).toBe(1);
+  await expect.poll(() => state.hunts).toBe(2);
   await expect(page.getByRole("button", { name: "Bookmark", exact: true })).toBeVisible();
   const hunt = await page.getByRole("button", { name: "Start Hunting", exact: true }).elementHandle();
   await views(page).getByRole("button", { name: "Engagement", exact: true }).click();
@@ -94,7 +94,7 @@ test("switching preserves params/hash, Back/Forward, and mounted action controls
   await selected(page, "Overview");
   expect(new URL(page.url()).searchParams.has("view")).toBe(false);
   expect(await hunt!.evaluate(element => element.isConnected)).toBe(true);
-  expect(state.hunts).toBe(1);
+  expect(state.hunts).toBe(2);
   expect(state.posts).toBe(0);
 });
 for (const width of [320, 375, 390, 640, 768, 1280]) {
@@ -195,7 +195,7 @@ test("restored hunt message sits between the card and actions and survives view 
   })).toBe(true);
   await views(page).getByRole("button", { name: "Funding", exact: true }).click();
   await expect(huntingMessage(page)).toBeVisible();
-  expect(state.hunts).toBe(1);
+  expect(state.hunts).toBe(2);
   await page.reload();
   await expect(huntingMessage(page)).toBeVisible();
 });
@@ -243,7 +243,7 @@ for (const mode of ["other-bounty", "owner", "closed", "failed-load"] as const) 
     if (mode === "other-bounty") await expect(page.getByRole("button", { name: "Start Hunting", exact: true })).toBeEnabled();
     if (mode === "failed-load") await expect(page.getByRole("button", { name: "Reload hunts", exact: true })).toBeVisible();
     await expect(huntingMessage(page)).toHaveCount(0);
-    if (mode === "owner" || mode === "closed") expect(state.hunts).toBe(0);
+    if (mode === "owner" || mode === "closed") expect(state.hunts).toBe(1);
   });
 }
 
@@ -435,7 +435,7 @@ for (const signedIn of [true, false]) {
       await expect(huntingMessage(page)).toHaveCount(0);
       await expect(page.getByRole("button", { name: "Share achievement", exact: true })).toHaveCount(0);
       await expect(page.getByRole("button", { name: "Share bounty", exact: true })).toBeVisible();
-      expect(state.hunts).toBe(0);
+      expect(state.hunts).toBe(1);
     });
   }
 }
@@ -506,7 +506,7 @@ for (const status of ["open", "completed", "cancelled"] as const) {
     await expect(page.getByRole("button", { name: "Start Hunting", exact: true })).toHaveCount(0);
     await expect(page.getByRole("button", { name: "Cancel bounty", exact: true })).toHaveCount(status === "open" ? 1 : 0);
     if (status === "open") await expect(page.getByText("Other players can hunt it for completion.", { exact: true })).toBeVisible();
-    expect(state.hunts).toBe(0);
+    expect(state.hunts).toBe(1);
   });
 }
 

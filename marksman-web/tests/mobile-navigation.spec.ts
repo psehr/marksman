@@ -1,7 +1,10 @@
 import { mockAvatars } from "./fixtures/avatars";
 import { expect, test } from "@playwright/test";
 
-test.beforeEach(async ({ page }) => mockAvatars(page));
+test.beforeEach(async ({ page }) => {
+  await mockAvatars(page);
+  await page.route("**/users/me/hunts", route => route.fulfill({ json: [] }));
+});
 
 test("mobile navigation opens, closes with Escape and follows links", async ({ page }) => {
   await page.setViewportSize({ width: 375, height: 812 });
@@ -92,8 +95,10 @@ for (const width of [320, 390, 768, 1280]) {
       expect(await nav.evaluate(el => el.scrollWidth <= el.clientWidth)).toBe(true);
       if (width < 768) {
         const menuBox = (await page.locator("#mobile-navigation").boundingBox())!;
-        expect(Math.abs(profileBox.width - menuBox.width)).toBeLessThan(2);
-        expect(Math.abs(profileBox.x - menuBox.x)).toBeLessThan(2);
+        const slotsBox = (await nav.getByRole("group", { name: "Hunting slots", exact: true }).boundingBox())!;
+        expect(Math.abs(profileBox.x + profileBox.width - menuBox.x - menuBox.width)).toBeLessThan(2);
+        expect(Math.abs(slotsBox.x - menuBox.x)).toBeLessThan(2);
+        expect(slotsBox.x + slotsBox.width).toBeLessThan(profileBox.x);
         for (const name of ["Bounties", "Rankings", "Wiki"]) {
           const link = nav.getByRole("link", { name, exact: true });
           expect(await link.evaluate(el => getComputedStyle(el).textAlign)).toBe("center");
