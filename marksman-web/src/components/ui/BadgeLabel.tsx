@@ -3,6 +3,7 @@ const colors = {
   danger: "border-danger text-danger",
   accent: "border-accent text-accent",
   info: "border-info text-info",
+  success: "border-success text-success",
 };
 
 export type BadgeLabelColor = keyof typeof colors;

@@ -117,6 +117,8 @@ export default function BountyCard({ bounty }: { bounty: ExtendedBounty }) {
         content={content}
         status={status}
         hunterCount={bounty.engagement.hunterCount}
+        completed={bounty.status === "completed"}
+        cancelled={bounty.status === "cancelled"}
       />
     </Link>
   );
@@ -126,10 +128,14 @@ export function BountyCardContent({
   content,
   status,
   hunterCount = 0,
+  completed = false,
+  cancelled = false,
 }: {
   content: BountyCardDisplay;
   status?: React.ReactNode;
   hunterCount?: number;
+  completed?: boolean;
+  cancelled?: boolean;
 }) {
   let acc_requirement;
   let gradeRequirement;
@@ -294,6 +300,20 @@ export function BountyCardContent({
             {status ?? null}
           </div>
           <div className="flex flex-wrap gap-2 items-center">
+            {completed ? (
+              <BadgeLabel
+                label={"Completed"}
+                text={"Completed"}
+                color="success"
+              />
+            ) : null}
+            {cancelled ? (
+              <BadgeLabel
+                label={"Cancelled"}
+                text={"Cancelled"}
+                color="danger"
+              />
+            ) : null}
             {goalType ?? null}
 
             {acc_requirement ?? null}
@@ -304,7 +324,7 @@ export function BountyCardContent({
           </div>
         </div>
 
-        <div className="flex shrink-0 items-end">
+        <div className="flex shrink-0 flex-col items-end gap-2">
           <div
             className="flex gap-1"
             title={tier ? `Reward tier: ${tier}` : undefined}

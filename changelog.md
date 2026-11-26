@@ -13,6 +13,7 @@ are marked until deployment is confirmed. Deployment names increment as
 
 - 761e76d — feat: add optional minimum grade requirements to Pass and Full-Combo bounties.
 - 4df8521 — feat: choose required and forbidden mods individually, with an exact-mods option.
+- feat: show Completed and Cancelled status badges alongside bounty card requirements.
 
 ### Fixes
 
@@ -21,7 +22,7 @@ are marked until deployment is confirmed. Deployment names increment as
 
 ### Styles
 
-- style: refine creation goal buttons and guidance, mod controls, and responsive reward layout.
+- fa52bad — style: refine creation goal buttons and guidance, mod controls, and responsive reward layout.
 - 2ac474b — style: replace bounty card tier badges with tier-colored borders and a subtle inner glow, with a rainbow treatment for Phantasm.
 - 23308d0 — style: simplify bounty card requirement badges and enlarge mod and grade icons.
 
