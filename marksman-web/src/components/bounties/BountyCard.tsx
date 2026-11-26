@@ -117,6 +117,7 @@ export default function BountyCard({ bounty }: { bounty: ExtendedBounty }) {
         content={content}
         status={status}
         hunterCount={bounty.engagement.hunterCount}
+        stampSeed={bounty.id}
         completed={bounty.status === "completed"}
         cancelled={bounty.status === "cancelled"}
       />
@@ -128,12 +129,14 @@ export function BountyCardContent({
   content,
   status,
   hunterCount = 0,
+  stampSeed,
   completed = false,
   cancelled = false,
 }: {
   content: BountyCardDisplay;
   status?: React.ReactNode;
   hunterCount?: number;
+  stampSeed?: string;
   completed?: boolean;
   cancelled?: boolean;
 }) {
@@ -288,12 +291,10 @@ export function BountyCardContent({
           }
         />
       )}
-      <BeatmapCard beatmapMetadata={content.beatmap} variant="bounty" />
       {hunterCount > 0 && (
-        <div className="relative z-10 flex justify-end px-4">
-          <BountyHuntStamps count={hunterCount} />
-        </div>
+        <BountyHuntStamps count={hunterCount} seed={stampSeed} />
       )}
+      <BeatmapCard beatmapMetadata={content.beatmap} variant="bounty" />
       <div className="relative z-10 flex place-content-between items-end gap-4 p-4">
         <div className="flex min-w-0 flex-1 flex-col gap-2">
           <div className="flex flex-wrap items-center gap-2">

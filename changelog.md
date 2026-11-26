@@ -22,7 +22,8 @@ are marked until deployment is confirmed. Deployment names increment as
 
 ### Styles
 
-- style: remove the redundant status banner from bounty details.
+- style: show one faint background stamp per hunter at stable scattered positions on bounty cards.
+- 08a142f — style: remove the redundant status banner from bounty details.
 - fa52bad — style: refine creation goal buttons and guidance, mod controls, and responsive reward layout.
 - 2ac474b — style: replace bounty card tier badges with tier-colored borders and a subtle inner glow, with a rainbow treatment for Phantasm.
 - 23308d0 — style: simplify bounty card requirement badges and enlarge mod and grade icons.
