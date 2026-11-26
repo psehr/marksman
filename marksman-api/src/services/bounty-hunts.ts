@@ -106,13 +106,14 @@ export async function getOngoingHuntsForUser(userId: string): Promise<Hunt[]> {
 
 export async function getOngoingHuntedBountiesForUser(
   userId: string,
+  viewerId?: string,
 ): Promise<UserHuntedBounties> {
   const user = await findUserById(userId);
   if (!user) throw new UserNotFoundError();
 
   const huntedBounties = await getUserOngoingHuntedBounties(db, userId);
   const bounties = huntedBounties.map((pair) => pair.bounty);
-  const enrichedBounties = await enrichBounties(bounties);
+  const enrichedBounties = await enrichBounties(bounties, viewerId);
 
   const enrichedHuntedBounties = enrichedBounties.map((bounty) => {
     const foundHunt = huntedBounties.find(

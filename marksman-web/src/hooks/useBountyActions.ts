@@ -3,9 +3,13 @@
 import { useEffect, useRef, useState } from "react";
 import { ApiError } from "@/lib/api/client";
 import { cancelBounty, setBountyBookmark } from "@/lib/api/bounties";
+import { useAuth } from "@/components/auth/AuthProvider";
+import { publishBountyAction, subscribeBountyActions } from "@/lib/bounty-action-events";
+import { useActionLock } from "./useActionLock";
 
 /** Mount per identity/bounty. Each action has an independent request lock. */
-function useAction(request: () => Promise<unknown>, onSuccess: () => void | Promise<void>, refreshError: string) {
+function useAction(request: () => Promise<unknown>, onSuccess: () => void | Promise<void>, refreshError: string, key: string) {
+  const lock = useActionLock(key);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const busy = useRef(false);
@@ -18,7 +22,7 @@ function useAction(request: () => Promise<unknown>, onSuccess: () => void | Prom
   }, []);
 
   async function run() {
-    if (busy.current) return;
+    if (busy.current || !lock.acquire()) return;
     busy.current = true;
     const current = generation.current;
     setPending(true);
@@ -38,11 +42,12 @@ function useAction(request: () => Promise<unknown>, onSuccess: () => void | Prom
       }
     } finally {
       busy.current = false;
+      lock.release();
       if (generation.current === current) setPending(false);
     }
   }
 
-  return { pending, error, refreshFailed, run };
+  return { pending: pending || lock.locked, error, refreshFailed, run };
 }
 
 export function useBountyActions(
@@ -51,9 +56,21 @@ export function useBountyActions(
   onCancel: () => void | Promise<void>,
   onBookmark: () => Promise<void>,
 ) {
+  const { user } = useAuth();
+  const userId = user?.identity.id;
+  const [bookmarked, setBookmarked] = useState(isBookmarked);
+  useEffect(() => { setBookmarked(isBookmarked); }, [isBookmarked]);
+  useEffect(() => subscribeBountyActions((event) => {
+    if (event.type === "bookmark" && event.userId === userId && event.bountyId === bountyId) {
+      setBookmarked(event.bookmarked);
+    }
+  }), [bountyId, userId]);
   const cancel = useAction(() => cancelBounty(bountyId), onCancel,
-    "Bounty cancelled, but the display could not refresh. Please retry.");
-  const bookmark = useAction(() => setBountyBookmark(bountyId, !isBookmarked), onBookmark,
-    "Bookmark change saved, but its displayed state could not refresh. Please retry.");
-  return { cancel, bookmark };
+    "Bounty cancelled, but the display could not refresh. Please retry.", `${userId}:${bountyId}:cancel`);
+  const bookmark = useAction(async () => {
+    await setBountyBookmark(bountyId, !bookmarked);
+    if (userId) publishBountyAction({ type: "bookmark", userId, bountyId, bookmarked: !bookmarked });
+  }, onBookmark,
+    "Bookmark change saved, but its displayed state could not refresh. Please retry.", `${userId}:${bountyId}:bookmark`);
+  return { cancel, bookmark: { ...bookmark, isBookmarked: bookmarked } };
 }

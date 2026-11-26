@@ -387,3 +387,43 @@ test("winner filtering applies before pagination and total counting", async () =
   assert.deepEqual(pages.map(page => page.items.length), [20, 5, 0]);
   assert.deepEqual(pages.flatMap(page => page.items.map(item => item.id)), expected.map(row => row.id).sort());
 });
+
+test("list bookmark flags follow the viewer across filters and accounts", async () => {
+  const aliceOnly = await seed();
+  const bobOnly = await seed();
+  const neither = await seed();
+  await db.insert(bountyBookmarks).values([
+    { bountyId: aliceOnly.id, userId: alice.id },
+    { bountyId: bobOnly.id, userId: bob.id },
+  ]);
+  for (const [viewer, own, other] of [[alice, aliceOnly, bobOnly], [bob, bobOnly, aliceOnly]] as const) {
+    const cookie = await cookieFor(viewer.id);
+    const result = await list({}, cookie);
+    const flags = new Map(result.items.map(item => [item.id, item.engagement.isBookmarkedByCurrentUser]));
+    assert.equal(flags.get(own.id), true);
+    assert.equal(flags.get(other.id), false);
+    assert.equal(flags.get(neither.id), false);
+    const filtered = await list({ relationship: "bookmarked" }, cookie);
+    assert.deepEqual(filtered.items.map(item => item.id), [own.id]);
+    assert.equal(filtered.items[0]!.engagement.isBookmarkedByCurrentUser, true);
+  }
+});
+
+test("bookmark enrichment uses the viewer on hunt cards and preserves anonymous nulls", async () => {
+  const { bountyHunts } = require("../src/db/schema") as typeof import("../src/db/schema");
+  const { toBounty } = require("../src/db/bounties") as typeof import("../src/db/bounties");
+  const { enrichBounties } = require("../src/services/bounty-enrichment") as typeof import("../src/services/bounty-enrichment");
+  const { getBookmarkedBounties } = require("../src/services/bounty-bookmarks") as typeof import("../src/services/bounty-bookmarks");
+  const selected = await seed();
+  await db.insert(bountyBookmarks).values({ bountyId: selected.id, userId: bob.id });
+  await db.insert(bountyHunts).values({ bountyId: selected.id, userId: alice.id, status: "ongoing" });
+  for (const viewer of [alice, bob]) {
+    const response = await httpFetch(`${baseUrl}/users/${alice.id}/hunts`, { headers: { cookie: await cookieFor(viewer.id) } });
+    assert.equal(response.status, 200);
+    const pairs = await response.json() as { bounty: { engagement: { isBookmarkedByCurrentUser: boolean } } }[];
+    assert.equal(pairs[0]!.bounty.engagement.isBookmarkedByCurrentUser, viewer.id === bob.id);
+  }
+  assert.equal((await getBookmarkedBounties(bob.id))[0]!.engagement.isBookmarkedByCurrentUser, true);
+  assert.equal((await enrichBounties([toBounty(selected)]))[0]!.engagement.isBookmarkedByCurrentUser, null);
+  assert.deepEqual(await enrichBounties([], bob.id), []);
+});

@@ -62,18 +62,19 @@ export function BeatmapCard({
       return (
         <div className="relative shrink-0 h-24 overflow-hidden text-left">
           <div
-            className={`relative z-10 gap-4 ${aes_font.className} flex size-full p-2 px-4`}
+            className={`relative z-10 ${aes_font.className} flex size-full flex-col p-2 px-4`}
           >
-            <div className="flex min-w-0 flex-2 flex-col">
-              <p className="text-accent truncate text-lg font-bold">{title}</p>
+            <div className="flex min-w-0 items-baseline gap-2 text-accent text-lg font-bold">
+              <p className="min-w-0 truncate">{title}</p>
+              <p className="min-w-0 max-w-[50%] shrink-0 truncate">
+                [ {version} ]
+              </p>
+            </div>
+            <div className="flex min-w-0 items-baseline gap-2">
               <p className="text-foreground-muted truncate text-sm italic">
                 {artist}
               </p>
-            </div>
-            <div className="flex min-w-0 flex-1 flex-col text-end">
-              <p className="text-accent truncate text-lg font-bold">
-                [ {version} ]
-              </p>
+              <span className="shrink-0 text-foreground-muted text-sm">-</span>
               <p className="text-foreground-muted truncate text-sm italic">
                 {mapper}
               </p>

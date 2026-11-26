@@ -1,6 +1,7 @@
 import { getUserHunts } from "@/lib/api/users";
 import type { UserHuntedBounties } from "@marksman/contracts";
 import { useEffect, useState } from "react";
+import { subscribeBountyActions } from "@/lib/bounty-action-events";
 
 type HuntsState = {
   userId: string;
@@ -15,11 +16,15 @@ export function useUserHunts(id: string) {
     status: "loading",
   });
   const [refresh, setRefresh] = useState(0);
+  useEffect(() => subscribeBountyActions((event) => {
+    if (event.type === "hunt" && event.userId === id) setRefresh((value) => value + 1);
+  }), [id]);
 
   useEffect(() => {
     const controller = new AbortController();
     let ignore = false;
-    setState({ userId: id, hunts: [], status: "loading" });
+    setState((previous) => previous.userId === id && previous.status === "complete"
+      ? previous : { userId: id, hunts: [], status: "loading" });
 
     async function load() {
       try {

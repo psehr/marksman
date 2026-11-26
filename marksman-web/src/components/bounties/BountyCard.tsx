@@ -16,6 +16,11 @@ import GradeIcon from "../osu/GradeIcon";
 import { BeatmapCard } from "../beatmaps/BeatmapCard";
 import { BadgeLabel } from "../ui/BadgeLabel";
 import BountyHuntStamps from "./BountyHuntStamps";
+import BountyCardActions from "./BountyCardActions";
+import { useEffect, useRef, useState } from "react";
+import { useAuth } from "../auth/AuthProvider";
+import { getBounty } from "@/lib/api/bounties";
+import { subscribeBountyActions } from "@/lib/bounty-action-events";
 
 const tierColors = {
   Easy: "#a3cf83",
@@ -60,6 +65,30 @@ export type BountyCardDisplay = {
 };
 
 export default function BountyCard({ bounty }: { bounty: ExtendedBounty }) {
+  const { user } = useAuth();
+  const userId = user?.identity.id;
+  const [updated, setUpdated] = useState<{ source: ExtendedBounty; userId: string | undefined; bounty: ExtendedBounty }>();
+  const original = bounty;
+  const generation = useRef(0);
+  const revision = useRef(0);
+  if (updated?.source === original && updated.userId === userId) bounty = updated.bounty;
+  async function refresh() {
+    const current = generation.current;
+    const request = ++revision.current;
+    const result = await getBounty(original.id);
+    if (generation.current === current && revision.current === request) {
+      setUpdated({ source: original, userId, bounty: result });
+    }
+  }
+  useEffect(() => {
+    generation.current++;
+    const unsubscribe = subscribeBountyActions((event) => {
+      if (event.type === "hunt-invalidated") return;
+      const id = event.type === "hunt" ? event.hunt.bountyId : event.bountyId;
+      if (event.userId === userId && id === original.id) void refresh().catch(() => {});
+    });
+    return () => { generation.current++; unsubscribe(); };
+  }, [original, userId]);
   const content: BountyCardDisplay = {
     beatmap: bounty.beatmap,
     goal: bounty.goal,
@@ -108,20 +137,24 @@ export default function BountyCard({ bounty }: { bounty: ExtendedBounty }) {
   }
 
   return (
-    <Link
-      className="relative isolate bg-card border-[var(--bounty-tier-border,var(--color-border))] hover:border-focus-ring focus-visible:border-accent flex w-full min-w-0 cursor-pointer flex-col justify-between overflow-hidden rounded border transition-all focus-visible:outline-0"
-      style={bountyCardBorderStyle(bounty.rewardBp)}
-      href={`/bounties/${bounty.id}`}
-    >
-      <BountyCardContent
-        content={content}
-        status={status}
-        hunterCount={bounty.engagement.hunterCount}
-        stampSeed={bounty.id}
-        completed={bounty.status === "completed"}
-        cancelled={bounty.status === "cancelled"}
-      />
-    </Link>
+    <div className="relative flex w-full min-w-0">
+      <Link
+        className="relative isolate bg-card border-[var(--bounty-tier-border,var(--color-border))] hover:border-focus-ring focus-visible:border-accent flex w-full min-w-0 cursor-pointer flex-col justify-between overflow-hidden rounded border transition-all focus-visible:outline-0"
+        style={bountyCardBorderStyle(bounty.rewardBp)}
+        href={`/bounties/${bounty.id}`}
+      >
+        <BountyCardContent
+          content={content}
+          status={status}
+          hunterCount={bounty.engagement.hunterCount}
+          stampSeed={bounty.id}
+          completed={bounty.status === "completed"}
+          cancelled={bounty.status === "cancelled"}
+          reserveActionSpace
+        />
+      </Link>
+      <BountyCardActions bounty={bounty} refresh={refresh} />
+    </div>
   );
 }
 
@@ -132,6 +165,7 @@ export function BountyCardContent({
   stampSeed,
   completed = false,
   cancelled = false,
+  reserveActionSpace = false,
 }: {
   content: BountyCardDisplay;
   status?: React.ReactNode;
@@ -139,6 +173,7 @@ export function BountyCardContent({
   stampSeed?: string;
   completed?: boolean;
   cancelled?: boolean;
+  reserveActionSpace?: boolean;
 }) {
   let acc_requirement;
   let gradeRequirement;
@@ -294,7 +329,9 @@ export function BountyCardContent({
       {hunterCount > 0 && (
         <BountyHuntStamps count={hunterCount} seed={stampSeed} />
       )}
-      <BeatmapCard beatmapMetadata={content.beatmap} variant="bounty" />
+      <div className={reserveActionSpace ? "shrink-0 pr-20" : "shrink-0"}>
+        <BeatmapCard beatmapMetadata={content.beatmap} variant="bounty" />
+      </div>
       <div className="relative z-10 flex place-content-between items-end gap-4 p-4">
         <div className="flex min-w-0 flex-1 flex-col gap-2">
           <div className="flex flex-wrap items-center gap-2">

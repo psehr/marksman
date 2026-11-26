@@ -13,6 +13,7 @@ are marked until deployment is confirmed. Deployment names increment as
 
 - 761e76d — feat: add optional minimum grade requirements to Pass and Full-Combo bounties.
 - 4df8521 — feat: choose required and forbidden mods individually, with an exact-mods option.
+- feat: hunt and bookmark directly from bounty cards, with synchronized action states and viewer-specific bookmark indicators.
 - b4f2159 — feat: show Completed and Cancelled status badges alongside bounty card requirements.
 
 ### Fixes
@@ -22,7 +23,7 @@ are marked until deployment is confirmed. Deployment names increment as
 
 ### Styles
 
-- style: show one faint background stamp per hunter at stable scattered positions on bounty cards.
+- 0522726 — style: show one faint background stamp per hunter at stable scattered positions on bounty cards.
 - 08a142f — style: remove the redundant status banner from bounty details.
 - fa52bad — style: refine creation goal buttons and guidance, mod controls, and responsive reward layout.
 - 2ac474b — style: replace bounty card tier badges with tier-colored borders and a subtle inner glow, with a rainbow treatment for Phantasm.

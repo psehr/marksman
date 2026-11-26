@@ -62,6 +62,14 @@ export async function isBountyBookmarkedByUser(
   return Boolean(row);
 }
 
+export async function findBookmarkedBountyIds(userId: string, bountyIds: string[]): Promise<string[]> {
+  if (bountyIds.length === 0) return [];
+  const rows = await db.select({ bountyId: bountyBookmarks.bountyId })
+    .from(bountyBookmarks)
+    .where(and(eq(bountyBookmarks.userId, userId), inArray(bountyBookmarks.bountyId, bountyIds)));
+  return rows.map((row) => row.bountyId);
+}
+
 export async function listBountiesBookmarkedByUserId(
   userId: string,
 ): Promise<Bounty[]> {

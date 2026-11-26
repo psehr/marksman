@@ -64,7 +64,7 @@ bountiesRouter.get("/", async (req, res) => {
 
   const bounties = await listBounties(parsedQuery.data, identity);
 
-  const extendedBounties = await enrichBounties(bounties.items);
+  const extendedBounties = await enrichBounties(bounties.items, identity?.id);
 
   return res.json({ ...bounties, items: extendedBounties });
 });

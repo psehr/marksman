@@ -39,5 +39,5 @@ export async function unbookmarkBounty(userId: string, bountyId: string) {
 export async function getBookmarkedBounties(userId: string) {
   const bounties = await listBountiesBookmarkedByUserId(userId);
 
-  return await enrichBounties(bounties);
+  return await enrichBounties(bounties, userId);
 }

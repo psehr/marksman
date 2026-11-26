@@ -3,6 +3,7 @@ import { ExtendedBounty } from "@marksman/contracts";
 import { ApiError } from "@/lib/api/client";
 import { useEffect, useRef, useState } from "react";
 import { useAuth } from "@/components/auth/AuthProvider";
+import { subscribeBountyActions } from "@/lib/bounty-action-events";
 
 export function useBountyDetails(bountyId: string) {
   const [queryStatus, setQueryStatus] = useState<
@@ -42,6 +43,13 @@ export function useBountyDetails(bountyId: string) {
     );
   };
   const { user } = useAuth();
+  useEffect(() => subscribeBountyActions((event) => {
+    if (event.type === "hunt-invalidated") return;
+    const id = event.type === "hunt" ? event.hunt.bountyId : event.bountyId;
+    if (event.userId === user?.identity.id && id === bountyId) {
+      void refreshEngagement().catch(() => {});
+    }
+  }), [bountyId, user?.identity.id]);
 
   const AUTOMATIC_POLLING_INTERVAL = 5_000;
 

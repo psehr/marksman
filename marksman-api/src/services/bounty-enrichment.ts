@@ -3,6 +3,7 @@ import { findUserByOsuId } from "../db/users";
 import {
   countBookmarksByBountyIds,
   isBountyBookmarkedByUser,
+  findBookmarkedBountyIds,
 } from "../db/bounty-bookmarks";
 import { findBeatmapById } from "../db/bounty-beatmaps";
 import { db } from "../db";
@@ -91,15 +92,18 @@ export async function enrichBounty(
 
 export async function enrichBounties(
   bounties: Bounty[],
+  userId?: string,
 ): Promise<ExtendedBounty[]> {
   const bountyIds = bounties.map((bounty) => {
     return bounty.id;
   });
 
-  const [rows, huntRows] = await Promise.all([
+  const [rows, huntRows, bookmarkedIds] = await Promise.all([
     countBookmarksByBountyIds(bountyIds),
     countOngoingHuntsByBountyIds(bountyIds),
+    userId ? findBookmarkedBountyIds(userId, bountyIds) : Promise.resolve([]),
   ]);
+  const bookmarked = new Set(bookmarkedIds);
 
   let enrichedBounties = [];
 
@@ -116,7 +120,7 @@ export async function enrichBounties(
     const engagement: BountyEngagement = {
       hunterCount: hunterCountsByBountyId.get(selectedBounty.id) ?? 0,
       bookmarkCount: bookmarkCountsByBountyId.get(selectedBounty.id) ?? 0,
-      isBookmarkedByCurrentUser: null,
+      isBookmarkedByCurrentUser: userId ? bookmarked.has(selectedBounty.id) : null,
     };
 
     enrichedBounties.push(

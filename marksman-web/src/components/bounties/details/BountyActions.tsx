@@ -68,7 +68,7 @@ function ConnectedActions({
           </div>
         )}
         <BeatmapActions bounty={bounty} />
-        {(canBookmark || canUnbookmark) && (
+        {(canBookmark || canUnbookmark) && (bounty.status === "open" || bookmark.isBookmarked || bookmark.refreshFailed) && (
           <div className="flex flex-col gap-2">
             <Button
               size="lg"
@@ -79,7 +79,7 @@ function ConnectedActions({
                 action={
                   bookmark.pending || bookmark.refreshFailed
                     ? "refresh"
-                    : canUnbookmark
+                    : bookmark.isBookmarked
                       ? "bookmarked"
                       : "bookmark"
                 }
@@ -88,7 +88,7 @@ function ConnectedActions({
                 ? "Saving..."
                 : bookmark.refreshFailed
                   ? "Retry refresh"
-                  : canUnbookmark
+                  : bookmark.isBookmarked
                     ? "Unbookmark"
                     : "Bookmark"}
             </Button>

@@ -84,6 +84,7 @@ usersRouter.get("/:id/hunts", async (req, res) => {
   try {
     const ongoingHunts = await getOngoingHuntedBountiesForUser(
       parsedUserId.data,
+      req.session.userId,
     );
 
     return res.json(ongoingHunts);
