@@ -7,7 +7,7 @@ commits are excluded from these public release notes. Pending sections
 are marked until deployment is confirmed. Deployment names increment as
 **Alpha - Update 1**, **Alpha - Update 2**, and so on.
 
-## Alpha - Update 3 — Pending
+## Alpha - Update 3 — 2026-11-26
 
 ### Features
 
@@ -26,7 +26,7 @@ are marked until deployment is confirmed. Deployment names increment as
 
 ### Styles
 
-- style: add icons to navbar links and bounty board status filters, with responsive navbar spacing.
+- 767bb9a — style: add icons to navbar links and bounty board status filters, with responsive navbar spacing.
 - 0522726 — style: show one faint background stamp per hunter at stable scattered positions on bounty cards.
 - 08a142f — style: remove the redundant status banner from bounty details.
 - fa52bad — style: refine creation goal buttons and guidance, mod controls, and responsive reward layout.
