@@ -13,6 +13,7 @@ import type { ReactNode } from "react";
 import BeatmapActions from "./BeatmapActions";
 import ShareBounty from "./ShareBounty";
 import BountyStatusDescriptor from "./BountyStatusDescriptor";
+import CancelBountyAction from "./CancelBountyAction";
 
 export type AvailableActions = {
   canCancel: boolean;
@@ -53,20 +54,7 @@ function ConnectedActions({
     return (
       <div className="grid grid-cols-1 sm:grid-cols-2 items-start gap-4">
         {huntControls}
-        {canCancel && (
-          <div className="flex flex-col gap-2 col-span-full">
-            <Button
-              size="lg"
-              variant="danger"
-              disabled={cancel.pending}
-              onClick={() => void cancel.run()}
-            >
-              <ActionIcon action={cancel.pending ? "refresh" : "cancel"} />
-              {cancel.pending ? "Cancelling..." : "Cancel bounty"}
-            </Button>
-            {cancel.error && <p role="alert">{cancel.error}</p>}
-          </div>
-        )}
+        {canCancel && <CancelBountyAction cancel={cancel} />}
         <BeatmapActions bounty={bounty} />
         {(canBookmark || canUnbookmark) && (bounty.status === "open" || bookmark.isBookmarked || bookmark.refreshFailed) && (
           <div className="flex flex-col gap-2">

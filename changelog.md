@@ -13,7 +13,8 @@ are marked until deployment is confirmed. Deployment names increment as
 
 - 761e76d — feat: add optional minimum grade requirements to Pass and Full-Combo bounties.
 - 4df8521 — feat: choose required and forbidden mods individually, with an exact-mods option.
-- feat: hunt and bookmark directly from bounty cards, with synchronized action states and viewer-specific bookmark indicators.
+- cdbdd4c — feat: hunt and bookmark directly from bounty cards, with synchronized action states and viewer-specific bookmark indicators.
+- feat: require confirmation before cancelling a bounty, with a reminder of principal refunds and nonrefundable fees.
 - b4f2159 — feat: show Completed and Cancelled status badges alongside bounty card requirements.
 
 ### Fixes
