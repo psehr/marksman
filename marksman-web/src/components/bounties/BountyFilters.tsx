@@ -116,12 +116,14 @@ export default function BountyFilters(props: {
               pressed={props.bountyType === "open"}
               onClick={() => props.setBountyType("open")}
             >
+              <ActionIcon action="hunt" />
               Open
             </FilterButton>
             <FilterButton
               pressed={props.bountyType === "completed"}
               onClick={() => props.setBountyType("completed")}
             >
+              <ActionIcon action="completed" />
               Completed
             </FilterButton>
           </div>

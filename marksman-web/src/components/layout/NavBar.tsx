@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState, type ComponentProps } from "react";
 import Button from "../ui/Button";
 import { usePathname } from "next/navigation";
 import Link from "next/link";
@@ -11,16 +11,19 @@ import MarksmanLogo from "../ui/MarksmanLogo";
 import { aes_font } from "@/lib/fonts";
 import BPIcon from "../economy/BPIcon";
 import HuntingSlots from "./HuntingSlots";
+import ActionIcon from "../ui/ActionIcon";
 
 function RouteLink({
   url,
   title,
+  icon,
   selected,
   className,
   onClick,
 }: {
   url: string;
   title: string;
+  icon: ComponentProps<typeof ActionIcon>["action"];
   selected: boolean;
   className?: string;
   onClick?: () => void;
@@ -29,9 +32,10 @@ function RouteLink({
     <Link
       href={url}
       onClick={onClick}
-      className={`cursor-pointer rounded focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-4 ${className ?? ""} ${selected ? "text-accent" : "text-foreground-muted"} ${aes_font.className} font-bold  text-xl`}
+      className={`inline-flex items-center justify-center gap-1.5 whitespace-nowrap cursor-pointer rounded focus-visible:outline-2 focus-visible:outline-accent focus-visible:outline-offset-4 ${className ?? ""} ${selected ? "text-accent" : "text-foreground-muted"} ${aes_font.className} font-bold text-xl`}
       aria-current={selected ? "page" : undefined}
     >
+      <ActionIcon action={icon} />
       {title}
     </Link>
   );
@@ -65,7 +69,7 @@ export default function NavBar() {
           menuButton.current?.focus();
         }
       }}
-      className="border-border bg-surface flex min-h-16 w-full flex-wrap items-center border-b px-4 py-3"
+      className="border-border bg-surface flex min-h-16 w-full flex-wrap items-center border-b px-4 py-3 md:flex-nowrap"
     >
       <div className="flex min-w-0 flex-1 place-content-start md:flex-none md:shrink-0">
         <Link
@@ -104,24 +108,27 @@ export default function NavBar() {
         id="mobile-navigation"
         className={`${menuOpen ? "flex" : "hidden"} w-full flex-col gap-4 pt-4 md:contents`}
       >
-        <div className="flex flex-col gap-4 text-center md:flex-1 md:flex-row md:justify-center md:text-left">
+        <div className="flex flex-col gap-4 text-center md:flex-1 md:flex-row md:justify-center md:gap-2 md:text-left lg:gap-4">
           <RouteLink
             url="/bounties"
             title="Bounties"
+            icon="browse"
             selected={path.startsWith("/bounties")}
             onClick={closeMenu}
           />
-          <span className="text-border hidden md:inline">•</span>
+          <span className="text-border hidden lg:inline">•</span>
           <RouteLink
             url="/rankings"
             title="Rankings"
+            icon="rankings"
             selected={path.startsWith("/rankings")}
             onClick={closeMenu}
           />
-          <span className="text-border hidden md:inline">•</span>
+          <span className="text-border hidden lg:inline">•</span>
           <RouteLink
             url="/wiki"
             title="Wiki"
+            icon="wiki"
             selected={path.startsWith("/wiki")}
             onClick={closeMenu}
           />

@@ -50,6 +50,10 @@ for (const width of [320, 390, 768, 1024, 1280]) {
     const userBox = await nav.getByRole("link", { name: "Profile", exact: true }).boundingBox();
     expect(slotBox!.x + slotBox!.width).toBeLessThanOrEqual(userBox!.x);
     expect(Math.abs(slotBox!.y - userBox!.y)).toBeLessThan(8);
+    if (width >= 768) {
+      const wikiBox = await nav.getByRole("link", { name: "Wiki", exact: true }).boundingBox();
+      expect(wikiBox!.x + wikiBox!.width).toBeLessThanOrEqual(slotBox!.x);
+    }
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth)).toBe(true);
     expect(await nav.evaluate(el => el.scrollWidth <= el.clientWidth)).toBe(true);
   });

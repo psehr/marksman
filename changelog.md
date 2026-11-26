@@ -22,10 +22,11 @@ are marked until deployment is confirmed. Deployment names increment as
 
 - f35012e — fix: hide the extra-mod indicator when no compatible additional mods are available.
 - dc0ecf1 — fix: use higher-resolution beatmap covers when available.
-- fix: stack Goal and Mods sections on separate rows on mobile bounty details.
+- 82aef4c — fix: stack Goal and Mods sections on separate rows on mobile bounty details.
 
 ### Styles
 
+- style: add icons to navbar links and bounty board status filters, with responsive navbar spacing.
 - 0522726 — style: show one faint background stamp per hunter at stable scattered positions on bounty cards.
 - 08a142f — style: remove the redundant status banner from bounty details.
 - fa52bad — style: refine creation goal buttons and guidance, mod controls, and responsive reward layout.

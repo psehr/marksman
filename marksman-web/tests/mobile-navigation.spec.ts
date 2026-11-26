@@ -73,6 +73,9 @@ for (const width of [320, 390, 768, 1280]) {
       await expect(amount.getByRole("img", { name: "Bounty Points" })).toBeVisible();
       const profile = nav.getByRole("link", { name: "Profile", exact: true });
       await expect(profile).toBeVisible();
+      for (const name of ["Bounties", "Rankings", "Wiki"]) {
+        await expect(nav.getByRole("link", { name, exact: true }).locator("svg")).toHaveAttribute("aria-hidden", "true");
+      }
       const avatar = profile.locator('img[alt=""]');
       await expect(avatar).toBeVisible();
       expect(new URL((await avatar.getAttribute("src"))!, "http://127.0.0.1:3100").searchParams.get("url")).toBe("https://a.ppy.sh/123");

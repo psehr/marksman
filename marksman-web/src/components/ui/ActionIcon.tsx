@@ -14,6 +14,9 @@ type Action =
   | "sign-in"
   | "sign-out"
   | "browse"
+  | "rankings"
+  | "wiki"
+  | "completed"
   | "create"
   | "back"
   | "continue"
@@ -24,6 +27,15 @@ type Action =
 export default function ActionIcon({ action }: { action: Action }) {
   let artwork: ReactNode;
   switch (action) {
+    case "completed":
+      artwork = <><circle cx="12" cy="12" r="9" /><path d="m7 12 3 3 7-7" /></>;
+      break;
+    case "rankings":
+      artwork = <><path d="M8 3h8v5a4 4 0 0 1-8 0V3ZM8 5H4v2a4 4 0 0 0 4 4m8-6h4v2a4 4 0 0 1-4 4M12 12v6m-4 3h8m-7 0v-3h6v3" /></>;
+      break;
+    case "wiki":
+      artwork = <><path d="M12 5C9 3 6 3 3 4v15c3-1 6-1 9 1 3-2 6-2 9-1V4c-3-1-6-1-9 1Zm0 0v15" /></>;
+      break;
     case "copy":
       artwork = <><rect x="8" y="8" width="12" height="13" rx="2" /><path d="M16 8V3H3v13h5" /></>;
       break;
