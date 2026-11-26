@@ -103,7 +103,7 @@ export default function BountyDetailsPage() {
                 ))}
               </div>
               {view === "overview" ? (
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <InfoSection title="Goal">
                     <GoalCategory bounty={bounty} />
                   </InfoSection>

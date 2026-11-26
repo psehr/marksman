@@ -15,13 +15,14 @@ are marked until deployment is confirmed. Deployment names increment as
 - 4df8521 — feat: choose required and forbidden mods individually, with an exact-mods option.
 - cdbdd4c — feat: hunt and bookmark directly from bounty cards, with synchronized action states and viewer-specific bookmark indicators.
 - c621303 — feat: require confirmation before cancelling a bounty, with a reminder of principal refunds and nonrefundable fees.
-- feat: show remaining hunting slots and available/used target stamps beside the navbar user card.
+- e1907ee — feat: show remaining hunting slots and available/used target stamps beside the navbar user card.
 - b4f2159 — feat: show Completed and Cancelled status badges alongside bounty card requirements.
 
 ### Fixes
 
 - f35012e — fix: hide the extra-mod indicator when no compatible additional mods are available.
 - dc0ecf1 — fix: use higher-resolution beatmap covers when available.
+- fix: stack Goal and Mods sections on separate rows on mobile bounty details.
 
 ### Styles
 
