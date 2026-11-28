@@ -19,8 +19,6 @@ import {
 } from "@/lib/bounty-filters";
 import { useSearchParams } from "next/navigation";
 import { Suspense } from "react";
-import { aes_font } from "@/lib/fonts";
-import PageHeaderBadge from "@/components/ui/PageHeaderBadge";
 import ActionIcon from "@/components/ui/ActionIcon";
 
 export default function BountiesPage() {
@@ -135,7 +133,7 @@ function Bounties() {
 
   return (
     <div className="flex flex-col w-full h-full items-center gap-8 py-12 px-4">
-      <PageHeaderBadge icon="browse">Bounty Board</PageHeaderBadge>
+      <h1 className="sr-only">Bounty Board</h1>
       <div className="flex flex-col w-full max-w-6xl h-full items-center gap-4">
         <div className="flex flex-col w-full gap-4">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">

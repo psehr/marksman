@@ -12,7 +12,6 @@ import BeatmapRequirement from "@/components/bounties/details/BeatmapRequirement
 import { useBountyDetails } from "@/hooks/useBountyDetails";
 import BountyCard from "@/components/bounties/BountyCard";
 import { InfoSection } from "@/components/ui/InfoSection";
-import PageHeaderBadge from "@/components/ui/PageHeaderBadge";
 import Button from "@/components/ui/Button";
 import { useBountyView } from "@/hooks/useBountyView";
 import UserStatsCardContainer from "@/components/users/UserStatsCard";
@@ -50,8 +49,7 @@ export default function BountyDetailsPage() {
   } else {
     return (
       <div className="flex flex-col w-full h-full place-content-center items-center py-12 px-4 gap-8">
-        <PageHeaderBadge icon="info">Bounty Details</PageHeaderBadge>
-
+        <h1 className="sr-only">Bounty Details</h1>
         <div className="flex flex-col w-full max-w-2xl h-fit gap-4">
           {queryStatus === "complete" && bounty ? (
             <>
