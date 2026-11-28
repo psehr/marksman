@@ -25,6 +25,34 @@ export function beatmapIdFromInput(input: string): number | undefined {
   return Number.isSafeInteger(id) && id > 0 ? id : undefined;
 }
 
+export function parseBeatmapSearchInput(input: string):
+  | { type: "difficulty"; id: number }
+  | { type: "search"; query: string }
+  | { type: "invalid" } {
+  const query = input.trim();
+  if (!/^(?:https?:\/\/|www\.)/i.test(query)) {
+    return { type: "search", query };
+  }
+
+  const id = beatmapIdFromInput(query);
+  if (id) return { type: "difficulty", id };
+
+  try {
+    const url = new URL(query);
+    const setId = /^\/beatmapsets\/(\d+)\/?$/.exec(url.pathname)?.[1];
+    if (
+      url.protocol === "https:" && url.hostname === "osu.ppy.sh" &&
+      setId && Number.isSafeInteger(Number(setId)) && Number(setId) > 0 &&
+      /^(?:#(?:osu|taiko|fruits|mania))?$/.test(url.hash)
+    ) {
+      return { type: "search", query: setId };
+    }
+  } catch {
+    // A pasted link must identify an official beatmap or beatmapset.
+  }
+  return { type: "invalid" };
+}
+
 export function isSelectedBeatmapValid(
   props: BeatmapValidationInput,
 ): BeatmapValidity {

@@ -11,7 +11,8 @@ are marked until deployment is confirmed. Deployment names increment as
 
 ### Features
 
-- feat: add a paginated beatmap search API returning eligible osu!standard difficulties.
+- feat: search beatmaps by text, ID or URL in bounty creation, with three mapsets per page and selectable difficulties ordered easiest first.
+- 163affe — feat: add a paginated beatmap search API returning eligible osu!standard difficulties.
 
 ### Styles
 

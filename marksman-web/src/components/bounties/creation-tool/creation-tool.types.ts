@@ -17,14 +17,12 @@ export type BeatmapValidity =
   | { status: "invalid"; reasons: string[] };
 
 export type BeatmapStepProps = {
-  beatmapInput: string;
-  onBeatmapChange: (value: string) => void;
+  onBeatmapSelect: (beatmapId: number) => void;
   beatmapMetadata: OsuBeatmapMetadata | null;
   beatmapLookupStatus: "idle" | "loading" | "success" | "error";
   beatmapLookupError: string | null;
   retryLookup: () => void;
   beatmapValidity: BeatmapValidity;
-  invalidInput: boolean;
 };
 
 export type GoalStepProps = {
@@ -72,5 +70,5 @@ export type BountyType = "full_combo" | "pass";
 
 export type BeatmapValidationInput = Pick<
   BeatmapStepProps,
-  "beatmapInput" | "beatmapLookupStatus" | "beatmapMetadata"
->;
+  "beatmapLookupStatus" | "beatmapMetadata"
+> & { beatmapInput: string };

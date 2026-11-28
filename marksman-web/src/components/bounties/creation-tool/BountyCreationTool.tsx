@@ -52,11 +52,14 @@ export default function BountyCreationTool() {
   const beatmapId = beatmapIdFromInput(beatmapInput);
 
   const {
-    beatmapMetadata,
+    beatmapMetadata: loadedBeatmapMetadata,
     beatmapLookupStatus,
     beatmapLookupError,
     retryLookup,
   } = useBeatmapMetadata(beatmapId);
+
+  const beatmapMetadata =
+    loadedBeatmapMetadata?.id === beatmapId ? loadedBeatmapMetadata : null;
 
   const beatmapValidity = isSelectedBeatmapValid({
     beatmapInput,
@@ -65,14 +68,12 @@ export default function BountyCreationTool() {
   });
 
   const beatmapStepProps: BeatmapStepProps = {
-    beatmapInput,
-    onBeatmapChange: (input: string) => setBeatmapInput(input),
+    onBeatmapSelect: (id) => setBeatmapInput(String(id)),
     beatmapMetadata,
     beatmapLookupStatus,
     beatmapLookupError,
     retryLookup,
     beatmapValidity,
-    invalidInput: beatmapId === undefined,
   };
 
   const [selectedBountyType, setSelectedBountyType] =

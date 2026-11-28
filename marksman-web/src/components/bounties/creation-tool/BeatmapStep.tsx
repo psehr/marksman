@@ -1,6 +1,6 @@
 import Button from "@/components/ui/Button";
 import type { BeatmapStepProps } from "./creation-tool.types";
-import TextInput from "@/components/ui/TextInput";
+import BeatmapSearch from "./BeatmapSearch";
 import { BeatmapCard } from "@/components/beatmaps/BeatmapCard";
 import { osuBeatmapMetadatatoBountyBeatmapMetadata } from "@marksman/contracts";
 
@@ -44,14 +44,7 @@ export default function BeatmapStep({ props }: { props: BeatmapStepProps }) {
 
   return (
     <div className="flex flex-col items-center gap-4 w-full">
-      <TextInput
-        aria-label="beatmap input"
-        value={props.beatmapInput}
-        onChange={(event) => props.onBeatmapChange(event.target.value)}
-        className="px-2"
-        size="xl"
-        placeholder="Enter beatmap URL or ID here..."
-      />
+      <BeatmapSearch onSelect={props.onBeatmapSelect} />
       {beatmapMetadata ? (
         <div className="flex flex-col gap-2 w-full min-w-0">
           <BeatmapCard beatmapMetadata={beatmapMetadata} />
@@ -59,12 +52,6 @@ export default function BeatmapStep({ props }: { props: BeatmapStepProps }) {
             {statusNotice}
           </div>
         </div>
-      ) : null}
-
-      {props.beatmapInput.trim() && props.invalidInput ? (
-        <p className="text-xs text-danger font-bold" role="alert">
-          ❌ Invalid URL/ID input provided. ❌
-        </p>
       ) : null}
 
       {props.beatmapLookupStatus === "loading" ? (
