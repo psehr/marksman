@@ -9,9 +9,13 @@ are marked until deployment is confirmed. Deployment names increment as
 
 ## Alpha - Update 4 — Pending
 
+### Features
+
+- feat: add a paginated beatmap search API returning eligible osu!standard difficulties.
+
 ### Styles
 
-- style: remove page header badges from the bounty board, details, creation and profile pages while preserving screen-reader headings.
+- 060a359 — style: remove page header badges from the bounty board, details, creation and profile pages while preserving screen-reader headings.
 
 ## Alpha - Update 3 — 2026-11-26
 

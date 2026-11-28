@@ -152,3 +152,39 @@ export function osuBeatmapMetadatatoBountyBeatmapMetadata(
     },
   };
 }
+
+export const beatmapSearchRequestSchema = z.object({
+  query: z.string().trim().min(1).max(200),
+  cursor: z.string().min(1).max(4096).optional(),
+});
+
+export type BeatmapSearchRequest = z.infer<typeof beatmapSearchRequestSchema>;
+
+export const beatmapSearchDifficultySchema = osuBeatmapMetadataSchema.pick({
+  id: true,
+  version: true,
+  difficulty_rating: true,
+  mode: true,
+  status: true,
+  total_length: true,
+});
+
+export const beatmapSearchSetSchema = z.object({
+  id: z.number().int().positive(),
+  title: z.string(),
+  artist: z.string(),
+  creator: z.string(),
+  status: osuBeatmapMetadataSchema.shape.status,
+  covers: osuBeatmapMetadataSchema.shape.beatmapset.unwrap().shape.covers,
+  beatmaps: z.array(beatmapSearchDifficultySchema),
+});
+
+export const beatmapSearchResponseSchema = z.object({
+  beatmapsets: z.array(beatmapSearchSetSchema),
+  total: z.number().int().nonnegative(),
+  cursor: z.string().nullish(),
+});
+
+export type BeatmapSearchDifficulty = z.infer<typeof beatmapSearchDifficultySchema>;
+export type BeatmapSearchSet = z.infer<typeof beatmapSearchSetSchema>;
+export type BeatmapSearchResponse = z.infer<typeof beatmapSearchResponseSchema>;
